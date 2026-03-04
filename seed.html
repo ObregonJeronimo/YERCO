@@ -3,202 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YERCO - Cargar productos a Firestore</title>
+    <title>YERCO - Migrar productos de Google Sheet a Firebase</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; background: #f0f0f0; padding: 2rem; }
-        .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { color: #4a5d44; margin-bottom: 0.5rem; }
-        p { color: #666; margin-bottom: 1.5rem; }
-        #seedBtn { background: #5a6f52; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; cursor: pointer; width: 100%; }
-        #seedBtn:hover { background: #4a5d44; }
-        #seedBtn:disabled { background: #ccc; cursor: not-allowed; }
-        #log { margin-top: 1.5rem; background: #1a1a2e; color: #0f0; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
-        .success { color: #0f0; }
-        .error { color: #f44; }
-        .info { color: #4fc3f7; }
-        .warn { color: #ffb74d; }
+        body { font-family: system-ui, sans-serif; background: #111; color: #e4e4e7; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; background: #1a1d27; border: 1px solid #2e3140; border-radius: 12px; padding: 2rem; }
+        h1 { color: #8fb37e; margin-bottom: 0.5rem; font-size: 1.5rem; }
+        p { color: #8b8d97; margin-bottom: 1.5rem; font-size: 0.9rem; }
+        .warn { background: rgba(230,162,60,0.12); color: #e6a23c; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.85rem; }
+        button { background: #6c8c5e; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; font-weight: 600; }
+        button:hover { background: #8fb37e; }
+        button:disabled { background: #333; cursor: not-allowed; color: #666; }
+        #log { margin-top: 1.5rem; background: #0f1117; color: #0f0; padding: 1rem; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; max-height: 500px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
+        .s { color: #4ade80; } .e { color: #f87171; } .i { color: #60a5fa; } .w { color: #fbbf24; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem; }
+        .stat { background: #252836; border-radius: 8px; padding: 1rem; text-align: center; }
+        .stat .num { font-size: 1.8rem; font-weight: 700; font-family: monospace; }
+        .stat .label { font-size: 0.75rem; color: #8b8d97; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Cargar productos a Firestore</h1>
-        <p>Esto va a crear la colección <strong>"productos"</strong> con los 12 productos iniciales. Solo necesitás ejecutarlo una vez.</p>
+        <h1>Migrar productos a Firebase</h1>
+        <p>Lee TODOS los productos de tu Google Sheet original y los sube a Firestore. Ejecutalo una sola vez.</p>
         
-        <button id="seedBtn" onclick="seedProducts()">Cargar productos a Firebase</button>
+        <div class="warn">
+            ⚠️ Esto va a BORRAR los productos existentes en Firestore y cargar los de la Sheet. Asegurate de que tus reglas de Firestore permitan lectura y escritura.
+        </div>
+
+        <button id="migrateBtn" onclick="migrate()">Migrar productos de Google Sheet → Firebase</button>
         
+        <div class="stats" id="statsRow" style="display:none">
+            <div class="stat"><div class="num i" id="statRead">0</div><div class="label">Leídos</div></div>
+            <div class="stat"><div class="num s" id="statUp">0</div><div class="label">Subidos</div></div>
+            <div class="stat"><div class="num w" id="statCats">0</div><div class="label">Categorías</div></div>
+        </div>
+
         <div id="log"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
         const logEl = document.getElementById('log');
-        
-        function log(msg, type = 'info') {
-            const line = document.createElement('div');
-            line.className = type;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logEl.appendChild(line);
+        function log(msg, cls = 'i') {
+            const d = document.createElement('div');
+            d.className = cls;
+            d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(d);
             logEl.scrollTop = logEl.scrollHeight;
         }
 
-        const productos = [
-            {
-                nombre: "Yerba Mate Tucanguá",
-                categoria: "Yerba Mate",
-                precio: 3500,
-                stock: 50,
-                imagen: "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
-                descripcion: "Yerba mate elaborada con palo, libre de gluten. 1kg"
-            },
-            {
-                nombre: "Yerba Mate Playadito",
-                categoria: "Yerba Mate",
-                precio: 3200,
-                stock: 35,
-                imagen: "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
-                descripcion: "Yerba mate suave y rendidora. 1kg"
-            },
-            {
-                nombre: "Mix de Frutos Secos Premium",
-                categoria: "Frutos Secos",
-                precio: 4500,
-                stock: 25,
-                imagen: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
-                descripcion: "Almendras, nueces, castañas y pasas. 500g"
-            },
-            {
-                nombre: "Almendras Naturales",
-                categoria: "Frutos Secos",
-                precio: 5200,
-                stock: 20,
-                imagen: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400",
-                descripcion: "Almendras crudas sin sal. 500g"
-            },
-            {
-                nombre: "Harina Integral Orgánica",
-                categoria: "Harinas",
-                precio: 1800,
-                stock: 40,
-                imagen: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
-                descripcion: "Harina de trigo integral 100% orgánica. 1kg"
-            },
-            {
-                nombre: "Harina de Avena",
-                categoria: "Harinas",
-                precio: 2100,
-                stock: 30,
-                imagen: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
-                descripcion: "Harina de avena sin gluten. 1kg"
-            },
-            {
-                nombre: "Miel Pura de Abeja",
-                categoria: "Endulzantes",
-                precio: 3800,
-                stock: 15,
-                imagen: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400",
-                descripcion: "Miel pura artesanal de Córdoba. 500g"
-            },
-            {
-                nombre: "Azúcar Mascabo",
-                categoria: "Endulzantes",
-                precio: 2200,
-                stock: 45,
-                imagen: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400",
-                descripcion: "Azúcar mascabo orgánico. 1kg"
-            },
-            {
-                nombre: "Granola Artesanal",
-                categoria: "Cereales",
-                precio: 2800,
-                stock: 22,
-                imagen: "https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=400",
-                descripcion: "Granola con miel y frutos secos. 400g"
-            },
-            {
-                nombre: "Semillas de Chía",
-                categoria: "Semillas",
-                precio: 2400,
-                stock: 35,
-                imagen: "https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=400",
-                descripcion: "Semillas de chía premium. 500g"
-            },
-            {
-                nombre: "Semillas de Lino",
-                categoria: "Semillas",
-                precio: 1600,
-                stock: 40,
-                imagen: "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400",
-                descripcion: "Semillas de lino dorado. 500g"
-            },
-            {
-                nombre: "Aceite de Coco Virgen",
-                categoria: "Aceites",
-                precio: 4200,
-                stock: 18,
-                imagen: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400",
-                descripcion: "Aceite de coco extra virgen. 500ml"
-            }
-        ];
+        const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSto_wqZUx2eDg_dCKCVju5Yd1ltJQcdyU6rZjSoF361t_YMMEYS-XmccIzSAC8SPy_0J7pMwKs1FZD/pub?gid=852674266&single=true&output=csv";
 
-        async function seedProducts() {
-            const btn = document.getElementById('seedBtn');
+        async function migrate() {
+            const btn = document.getElementById('migrateBtn');
             btn.disabled = true;
-            btn.textContent = 'Cargando...';
+            btn.textContent = 'Migrando...';
             logEl.innerHTML = '';
+            document.getElementById('statsRow').style.display = 'grid';
 
-            log('Conectando con Firestore...', 'info');
-
-            // Verificar si ya existen productos
+            // 1) Leer CSV de Google Sheet
+            log('Descargando datos de Google Sheet...', 'i');
+            let csvText;
             try {
-                const existing = await db.collection('productos').get();
-                if (!existing.empty) {
-                    log(`Ya existen ${existing.size} productos en Firestore.`, 'warn');
-                    log('Eliminando productos existentes para recargar...', 'warn');
-                    const batch = db.batch();
-                    existing.docs.forEach(doc => batch.delete(doc.ref));
-                    await batch.commit();
-                    log('Productos anteriores eliminados.', 'info');
-                }
+                const res = await fetch(SHEET_URL + '&t=' + Date.now(), { cache: 'no-store' });
+                csvText = await res.text();
+                log('CSV descargado correctamente.', 's');
             } catch (e) {
-                log('Error verificando productos existentes: ' + e.message, 'error');
-                log('Puede que necesites configurar las reglas de Firestore. Ver instrucciones.', 'error');
+                log('Error descargando Sheet: ' + e.message, 'e');
                 btn.disabled = false;
                 btn.textContent = 'Reintentar';
                 return;
             }
 
-            // Cargar productos
-            let ok = 0;
-            let fail = 0;
+            // 2) Parsear con PapaParse
+            log('Parseando CSV...', 'i');
+            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+            log(`Filas encontradas: ${parsed.data.length}`, 'i');
 
-            for (let i = 0; i < productos.length; i++) {
-                const p = productos[i];
+            // Mostrar las columnas detectadas
+            if (parsed.data.length > 0) {
+                const cols = Object.keys(parsed.data[0]);
+                log(`Columnas detectadas: ${cols.join(', ')}`, 'i');
+            }
+
+            // 3) Mapear productos
+            const productos = parsed.data
+                .filter(r => {
+                    const nombre = r['NOMBRE'] || r['nombre'] || '';
+                    return nombre.trim() !== '';
+                })
+                .map(r => {
+                    const nombre = (r['NOMBRE'] || r['nombre'] || '').trim();
+                    const precioRaw = r['PRECIO'] || r['precio'] || '0';
+                    const precio = parseInt(String(precioRaw).replace(/[^\d]/g, '')) || 0;
+                    const stockRaw = r['STOCK'] || r['stock'] || '0';
+                    const stock = parseInt(String(stockRaw).replace(/[^\d]/g, '')) || 0;
+                    const categoria = (r['CATEGORIA'] || r['categoria'] || 'Sin categoría').trim();
+                    const subcategoria = (r['SUB-CATEGORIA'] || r['subcategoria'] || r['SUBCATEGORIA'] || '').trim() || null;
+                    const imagen = (r['IMAGEN'] || r['imagen'] || '').trim() || null;
+
+                    return { nombre, precio, stock, categoria, subcategoria, imagen, descripcion: nombre };
+                });
+
+            log(`Productos válidos: ${productos.length}`, 's');
+            document.getElementById('statRead').textContent = productos.length;
+
+            const cats = new Set(productos.map(p => p.categoria));
+            document.getElementById('statCats').textContent = cats.size;
+            log(`Categorías: ${[...cats].join(', ')}`, 'i');
+
+            if (productos.length === 0) {
+                log('No se encontraron productos válidos. Revisá las columnas del Sheet.', 'e');
+                btn.disabled = false;
+                btn.textContent = 'Reintentar';
+                return;
+            }
+
+            // 4) Borrar productos existentes en Firestore
+            log('Limpiando Firestore...', 'w');
+            try {
+                const existing = await db.collection('productos').get();
+                if (!existing.empty) {
+                    // Borrar en batches de 450
+                    let delCount = 0;
+                    let batch = db.batch();
+                    let batchCount = 0;
+                    for (const doc of existing.docs) {
+                        batch.delete(doc.ref);
+                        batchCount++;
+                        if (batchCount >= 450) {
+                            await batch.commit();
+                            delCount += batchCount;
+                            log(`  Eliminados ${delCount}/${existing.size}...`, 'w');
+                            batch = db.batch();
+                            batchCount = 0;
+                        }
+                    }
+                    if (batchCount > 0) {
+                        await batch.commit();
+                        delCount += batchCount;
+                    }
+                    log(`${delCount} productos anteriores eliminados.`, 'w');
+                } else {
+                    log('Firestore vacío, no hay nada que borrar.', 'i');
+                }
+            } catch (e) {
+                log('Error limpiando Firestore: ' + e.message, 'e');
+                log('Asegurate de que las reglas permitan write: if true', 'e');
+                btn.disabled = false;
+                btn.textContent = 'Reintentar';
+                return;
+            }
+
+            // 5) Subir productos nuevos en batches
+            log('Subiendo productos a Firestore...', 'i');
+            let uploaded = 0;
+            const batchSize = 450;
+
+            for (let i = 0; i < productos.length; i += batchSize) {
+                const batch = db.batch();
+                const chunk = productos.slice(i, i + batchSize);
+
+                for (const p of chunk) {
+                    const ref = db.collection('productos').doc();
+                    batch.set(ref, p);
+                }
+
                 try {
-                    await db.collection('productos').add(p);
-                    ok++;
-                    log(`✓ [${ok}/${productos.length}] ${p.nombre} - $${p.precio}`, 'success');
+                    await batch.commit();
+                    uploaded += chunk.length;
+                    document.getElementById('statUp').textContent = uploaded;
+                    log(`  ✓ ${uploaded}/${productos.length} subidos`, 's');
                 } catch (e) {
-                    fail++;
-                    log(`✗ Error con "${p.nombre}": ${e.message}`, 'error');
+                    log(`  ✗ Error en batch: ${e.message}`, 'e');
                 }
             }
 
-            log('', 'info');
-            if (fail === 0) {
-                log(`═══════════════════════════════════════`, 'success');
-                log(`  ¡LISTO! ${ok} productos cargados correctamente`, 'success');
-                log(`  Ya podés abrir index.html y ver la tienda`, 'success');
-                log(`═══════════════════════════════════════`, 'success');
-                btn.textContent = '¡Completado!';
-            } else {
-                log(`Resultado: ${ok} OK, ${fail} errores`, 'warn');
-                btn.disabled = false;
-                btn.textContent = 'Reintentar';
-            }
+            log('', 'i');
+            log('═══════════════════════════════════════════', 's');
+            log(`  ¡MIGRACIÓN COMPLETA! ${uploaded} productos en Firebase`, 's');
+            log(`  ${cats.size} categorías detectadas`, 's');
+            log('  Ya podés abrir index.html y ver la tienda', 's');
+            log('═══════════════════════════════════════════', 's');
+            log('', 'i');
+            log('IMPORTANTE: Ahora cambiá las reglas de Firestore a:', 'w');
+            log('  allow read: if true;', 'w');
+            log('  allow write: if request.auth != null;', 'w');
+
+            btn.textContent = '¡Migración completa!';
         }
     </script>
 </body>
