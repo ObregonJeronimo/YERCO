@@ -1,0 +1,122 @@
+{
+  "productos": [
+    {
+      "id": 1,
+      "nombre": "Yerba Mate Tucanguá",
+      "categoria": "Yerba Mate",
+      "precio": 3500,
+      "stock": 50,
+      "imagen": "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
+      "descripcion": "Yerba mate elaborada con palo, libre de gluten. 1kg"
+    },
+    {
+      "id": 2,
+      "nombre": "Yerba Mate Playadito",
+      "categoria": "Yerba Mate",
+      "precio": 3200,
+      "stock": 35,
+      "imagen": "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
+      "descripcion": "Yerba mate suave y rendidora. 1kg"
+    },
+    {
+      "id": 3,
+      "nombre": "Mix de Frutos Secos Premium",
+      "categoria": "Frutos Secos",
+      "precio": 4500,
+      "stock": 25,
+      "imagen": "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
+      "descripcion": "Almendras, nueces, castañas y pasas. 500g"
+    },
+    {
+      "id": 4,
+      "nombre": "Almendras Naturales",
+      "categoria": "Frutos Secos",
+      "precio": 5200,
+      "stock": 20,
+      "imagen": "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400",
+      "descripcion": "Almendras crudas sin sal. 500g"
+    },
+    {
+      "id": 5,
+      "nombre": "Harina Integral Orgánica",
+      "categoria": "Harinas",
+      "precio": 1800,
+      "stock": 40,
+      "imagen": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
+      "descripcion": "Harina de trigo integral 100% orgánica. 1kg"
+    },
+    {
+      "id": 6,
+      "nombre": "Harina de Avena",
+      "categoria": "Harinas",
+      "precio": 2100,
+      "stock": 30,
+      "imagen": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+      "descripcion": "Harina de avena sin gluten. 1kg"
+    },
+    {
+      "id": 7,
+      "nombre": "Miel Pura de Abeja",
+      "categoria": "Endulzantes",
+      "precio": 3800,
+      "stock": 15,
+      "imagen": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400",
+      "descripcion": "Miel pura artesanal de Córdoba. 500g"
+    },
+    {
+      "id": 8,
+      "nombre": "Azúcar Mascabo",
+      "categoria": "Endulzantes",
+      "precio": 2200,
+      "stock": 45,
+      "imagen": "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400",
+      "descripcion": "Azúcar mascabo orgánico. 1kg"
+    },
+    {
+      "id": 9,
+      "nombre": "Granola Artesanal",
+      "categoria": "Cereales",
+      "precio": 2800,
+      "stock": 22,
+      "imagen": "https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=400",
+      "descripcion": "Granola con miel y frutos secos. 400g"
+    },
+    {
+      "id": 10,
+      "nombre": "Semillas de Chía",
+      "categoria": "Semillas",
+      "precio": 2400,
+      "stock": 35,
+      "imagen": "https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=400",
+      "descripcion": "Semillas de chía premium. 500g"
+    },
+    {
+      "id": 11,
+      "nombre": "Semillas de Lino",
+      "categoria": "Semillas",
+      "precio": 1600,
+      "stock": 40,
+      "imagen": "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400",
+      "descripcion": "Semillas de lino dorado. 500g"
+    },
+    {
+      "id": 12,
+      "nombre": "Aceite de Coco Virgen",
+      "categoria": "Aceites",
+      "precio": 4200,
+      "stock": 18,
+      "imagen": "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400",
+      "descripcion": "Aceite de coco extra virgen. 500ml"
+    }
+  ],
+  "categorias": [
+    "Todos",
+    "Yerba Mate",
+    "Frutos Secos",
+    "Harinas",
+    "Endulzantes",
+    "Cereales",
+    "Semillas",
+    "Aceites"
+  ]
+}
