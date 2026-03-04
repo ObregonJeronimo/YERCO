@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YERCO - Cargar productos a Firestore</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: #f0f0f0; padding: 2rem; }
+        .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #4a5d44; margin-bottom: 0.5rem; }
+        p { color: #666; margin-bottom: 1.5rem; }
+        #seedBtn { background: #5a6f52; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; cursor: pointer; width: 100%; }
+        #seedBtn:hover { background: #4a5d44; }
+        #seedBtn:disabled { background: #ccc; cursor: not-allowed; }
+        #log { margin-top: 1.5rem; background: #1a1a2e; color: #0f0; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+        .success { color: #0f0; }
+        .error { color: #f44; }
+        .info { color: #4fc3f7; }
+        .warn { color: #ffb74d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cargar productos a Firestore</h1>
+        <p>Esto va a crear la colección <strong>"productos"</strong> con los 12 productos iniciales. Solo necesitás ejecutarlo una vez.</p>
+        
+        <button id="seedBtn" onclick="seedProducts()">Cargar productos a Firebase</button>
+        
+        <div id="log"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        const logEl = document.getElementById('log');
+        
+        function log(msg, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        const productos = [
+            {
+                nombre: "Yerba Mate Tucanguá",
+                categoria: "Yerba Mate",
+                precio: 3500,
+                stock: 50,
+                imagen: "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
+                descripcion: "Yerba mate elaborada con palo, libre de gluten. 1kg"
+            },
+            {
+                nombre: "Yerba Mate Playadito",
+                categoria: "Yerba Mate",
+                precio: 3200,
+                stock: 35,
+                imagen: "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=400",
+                descripcion: "Yerba mate suave y rendidora. 1kg"
+            },
+            {
+                nombre: "Mix de Frutos Secos Premium",
+                categoria: "Frutos Secos",
+                precio: 4500,
+                stock: 25,
+                imagen: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
+                descripcion: "Almendras, nueces, castañas y pasas. 500g"
+            },
+            {
+                nombre: "Almendras Naturales",
+                categoria: "Frutos Secos",
+                precio: 5200,
+                stock: 20,
+                imagen: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400",
+                descripcion: "Almendras crudas sin sal. 500g"
+            },
+            {
+                nombre: "Harina Integral Orgánica",
+                categoria: "Harinas",
+                precio: 1800,
+                stock: 40,
+                imagen: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400",
+                descripcion: "Harina de trigo integral 100% orgánica. 1kg"
+            },
+            {
+                nombre: "Harina de Avena",
+                categoria: "Harinas",
+                precio: 2100,
+                stock: 30,
+                imagen: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+                descripcion: "Harina de avena sin gluten. 1kg"
+            },
+            {
+                nombre: "Miel Pura de Abeja",
+                categoria: "Endulzantes",
+                precio: 3800,
+                stock: 15,
+                imagen: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400",
+                descripcion: "Miel pura artesanal de Córdoba. 500g"
+            },
+            {
+                nombre: "Azúcar Mascabo",
+                categoria: "Endulzantes",
+                precio: 2200,
+                stock: 45,
+                imagen: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400",
+                descripcion: "Azúcar mascabo orgánico. 1kg"
+            },
+            {
+                nombre: "Granola Artesanal",
+                categoria: "Cereales",
+                precio: 2800,
+                stock: 22,
+                imagen: "https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=400",
+                descripcion: "Granola con miel y frutos secos. 400g"
+            },
+            {
+                nombre: "Semillas de Chía",
+                categoria: "Semillas",
+                precio: 2400,
+                stock: 35,
+                imagen: "https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=400",
+                descripcion: "Semillas de chía premium. 500g"
+            },
+            {
+                nombre: "Semillas de Lino",
+                categoria: "Semillas",
+                precio: 1600,
+                stock: 40,
+                imagen: "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400",
+                descripcion: "Semillas de lino dorado. 500g"
+            },
+            {
+                nombre: "Aceite de Coco Virgen",
+                categoria: "Aceites",
+                precio: 4200,
+                stock: 18,
+                imagen: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400",
+                descripcion: "Aceite de coco extra virgen. 500ml"
+            }
+        ];
+
+        async function seedProducts() {
+            const btn = document.getElementById('seedBtn');
+            btn.disabled = true;
+            btn.textContent = 'Cargando...';
+            logEl.innerHTML = '';
+
+            log('Conectando con Firestore...', 'info');
+
+            // Verificar si ya existen productos
+            try {
+                const existing = await db.collection('productos').get();
+                if (!existing.empty) {
+                    log(`Ya existen ${existing.size} productos en Firestore.`, 'warn');
+                    log('Eliminando productos existentes para recargar...', 'warn');
+                    const batch = db.batch();
+                    existing.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                    log('Productos anteriores eliminados.', 'info');
+                }
+            } catch (e) {
+                log('Error verificando productos existentes: ' + e.message, 'error');
+                log('Puede que necesites configurar las reglas de Firestore. Ver instrucciones.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Reintentar';
+                return;
+            }
+
+            // Cargar productos
+            let ok = 0;
+            let fail = 0;
+
+            for (let i = 0; i < productos.length; i++) {
+                const p = productos[i];
+                try {
+                    await db.collection('productos').add(p);
+                    ok++;
+                    log(`✓ [${ok}/${productos.length}] ${p.nombre} - $${p.precio}`, 'success');
+                } catch (e) {
+                    fail++;
+                    log(`✗ Error con "${p.nombre}": ${e.message}`, 'error');
+                }
+            }
+
+            log('', 'info');
+            if (fail === 0) {
+                log(`═══════════════════════════════════════`, 'success');
+                log(`  ¡LISTO! ${ok} productos cargados correctamente`, 'success');
+                log(`  Ya podés abrir index.html y ver la tienda`, 'success');
+                log(`═══════════════════════════════════════`, 'success');
+                btn.textContent = '¡Completado!';
+            } else {
+                log(`Resultado: ${ok} OK, ${fail} errores`, 'warn');
+                btn.disabled = false;
+                btn.textContent = 'Reintentar';
+            }
+        }
+    </script>
+</body>
+</html>
