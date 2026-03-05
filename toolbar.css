@@ -2,6 +2,10 @@
 .brand-text-img { height: 36px; width: auto; transition: transform 0.3s ease; }
 .navbar-brand:hover .brand-text-img { transform: scale(1.03); }
 
+/* === FEATURE CARD BORDER FIX === */
+.feature-card { border: 1px solid var(--color-beige) !important; }
+.feature-card:hover { border-color: var(--color-primary-light) !important; }
+
 /* === PRODUCTS TOOLBAR === */
 .products-toolbar { display:flex; align-items:center; gap:1rem; margin-bottom:var(--spacing-lg); flex-wrap:wrap; }
 .search-products { flex:1; min-width:200px; position:relative; }
