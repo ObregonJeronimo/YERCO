@@ -1,0 +1,18 @@
+/* === FOOTER DEV CREDITS === */
+.footer-dev {
+    text-align: center;
+    padding-top: 1rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+.footer-dev a {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.footer-dev a:hover {
+    color: rgba(255,255,255,0.7);
+}
