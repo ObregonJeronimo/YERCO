@@ -42,15 +42,15 @@ function renderAdminPagination(containerId, currentPage, totalPages, totalItems,
     if (!pag) { pag = document.createElement('div'); pag.className = 'admin-pagination'; container.appendChild(pag); }
     if (totalPages <= 1) { pag.innerHTML = ''; return; }
     let html = '<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:1.25rem;flex-wrap:wrap">';
-    html += '<button class="btn btn-sm btn-secondary" onclick="adminGoPage(\'' + type + '\',' + (currentPage - 1) + ')"' + (currentPage === 1 ? ' disabled' : '') + ' style="min-width:36px"><i class="bi bi-chevron-left"></i></button>';
+    html += '<button class="btn btn-sm btn-secondary" onclick="adminGoPage(\'' + type + '\',' + (currentPage - 1) + ')"' + (currentPage === 1 ? ' disabled' : '') + ' style="min-width:36px;width:auto"><i class="bi bi-chevron-left"></i></button>';
     for (let i = 1; i <= totalPages; i++) {
         if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-            html += '<button class="btn btn-sm ' + (i === currentPage ? 'btn-primary' : 'btn-secondary') + '" onclick="adminGoPage(\'' + type + '\',' + i + ')" style="min-width:36px">' + i + '</button>';
+            html += '<button class="btn btn-sm ' + (i === currentPage ? 'btn-primary' : 'btn-secondary') + '" onclick="adminGoPage(\'' + type + '\',' + i + ')" style="min-width:36px;width:auto">' + i + '</button>';
         } else if (i === currentPage - 2 || i === currentPage + 2) {
             html += '<span style="color:var(--text-dim);padding:0 0.2rem">...</span>';
         }
     }
-    html += '<button class="btn btn-sm btn-secondary" onclick="adminGoPage(\'' + type + '\',' + (currentPage + 1) + ')"' + (currentPage === totalPages ? ' disabled' : '') + ' style="min-width:36px"><i class="bi bi-chevron-right"></i></button>';
+    html += '<button class="btn btn-sm btn-secondary" onclick="adminGoPage(\'' + type + '\',' + (currentPage + 1) + ')"' + (currentPage === totalPages ? ' disabled' : '') + ' style="min-width:36px;width:auto"><i class="bi bi-chevron-right"></i></button>';
     html += '</div>';
     html += '<p style="text-align:center;font-size:0.78rem;color:var(--text-dim);margin-top:0.5rem">' + ((currentPage - 1) * ADMIN_PER_PAGE + 1) + ' - ' + Math.min(currentPage * ADMIN_PER_PAGE, totalItems) + ' de ' + totalItems + '</p>';
     pag.innerHTML = html;
