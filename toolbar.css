@@ -25,9 +25,9 @@
 /* === TIPOGRAFÍA PRODUCTOS === */
 .product-name { font-family: 'Source Sans 3', sans-serif !important; font-size: 0.95rem !important; font-weight: 600; color: var(--color-primary-dark); margin-bottom: 0.4rem; line-height: 1.3; letter-spacing: 0.2px; }
 .product-price { font-family: 'Source Sans 3', sans-serif !important; font-size: 1.25rem !important; font-weight: 700; color: var(--color-primary); letter-spacing: -0.5px; }
-.product-footer { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; }
-.product-info { padding: 0.85rem 1rem !important; }
-.add-to-cart-btn { font-size:0.82rem; padding:0.65rem 0.75rem; font-family:'Source Sans 3',sans-serif; }
+.product-footer { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-bottom: 0.75rem; }
+.product-info { padding: 1.1rem 1.15rem !important; }
+.add-to-cart-btn { font-size:0.85rem; padding:0.75rem 0.85rem; font-family:'Source Sans 3',sans-serif; }
 
 /* === MOBILE === */
 @media (max-width:768px) {
@@ -46,10 +46,10 @@
     .product-image { height:140px; }
     .product-name { font-size:0.82rem!important; }
     .product-price { font-size:1.05rem!important; }
-    .product-info { padding:0.65rem 0.75rem!important; }
-    .product-footer { flex-direction:column; align-items:stretch; gap:0.4rem; }
+    .product-info { padding:0.85rem 0.85rem!important; }
+    .product-footer { flex-direction:column; align-items:stretch; gap:0.5rem; margin-bottom: 0.5rem; }
     .quantity-controls { justify-content:center; }
-    .add-to-cart-btn { font-size:0.78rem; padding:0.55rem; }
+    .add-to-cart-btn { font-size:0.78rem; padding:0.6rem; }
     .product-category { font-size:0.6rem; padding:0.2rem 0.5rem; }
     .product-stock { font-size:0.6rem; padding:0.2rem 0.4rem; }
     .hero-stats { gap:1.5rem; }
