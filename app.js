@@ -2,7 +2,7 @@
  * YERCO DIETÉTICA - SCRIPT PRINCIPAL
  * Firebase Firestore + Filtros jerárquicos + Búsqueda + Orden
  */
-const WHATSAPP_NUMBER = '5493512333009';
+const WHATSAPP_NUMBER = '5493515314675';
 let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
@@ -34,8 +34,8 @@ function initParticles() {
 }
 
 function initContactForm() {
-    const form = document.getElementById('contactForm'), ok = document.getElementById('formSuccess'); if (!form) return;
-    form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value,em=document.getElementById('email').value,m=document.getElementById('mensaje').value; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent('¡Hola! Soy '+n+'.\n\nEmail: '+em+'\n\nMensaje: '+m),'_blank'); form.style.display='none'; ok.classList.add('show'); setTimeout(()=>{form.reset();form.style.display='block';ok.classList.remove('show');},5000); });
+    const form = document.getElementById('contactForm'); if (!form) return;
+    form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value,em=document.getElementById('email').value,m=document.getElementById('mensaje').value; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent('¡Hola! Soy '+n+'.\nEmail: '+em+'\nMensaje: '+m),'_blank'); form.reset(); if(document.getElementById('chatFloatBox'))document.getElementById('chatFloatBox').classList.remove('show'); if(document.getElementById('chatFloatBtn'))document.getElementById('chatFloatBtn').classList.remove('hide'); });
 }
 
 async function loadProductsFromFirebase() {
@@ -70,7 +70,6 @@ function updateSortButtonUI() { const b=document.getElementById('sortBtn'); if(!
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
     container.innerHTML = '';
-
     const todosBtn = document.createElement('button');
     todosBtn.className = 'filter-btn active'; todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
@@ -108,10 +107,26 @@ function renderProducts(list) {
     const c = document.getElementById('productsGrid'); if(!c)return;
     if (list.length===0) { c.innerHTML='<div class="empty-products"><i class="bi bi-search" style="font-size:2.5rem;color:var(--color-text-light)"></i><p style="color:var(--color-text-light);margin-top:1rem;font-size:1.05rem">No se encontraron productos</p></div>'; return; }
     c.innerHTML = list.map(p => {
-        let sc='',st='Stock: '+p.stock; if(p.stock===0){sc='out';st='Sin stock';}else if(p.stock<10){sc='low';st='Últimas '+p.stock;}
         const ci=carrito.find(i=>i.id===p.id),qty=ci?ci.cantidad:0;
         const img=p.imagen||'https://via.placeholder.com/400x300?text=Sin+imagen';
-        return '<article class="product-card" data-id="'+p.id+'"><div class="product-image"><img src="'+img+'" alt="'+p.nombre+'" loading="lazy" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\'"><span class="product-category">'+p.categoria+(p.subcategoria?' - '+p.subcategoria:'')+'</span><span class="product-stock '+sc+'">'+st+'</span></div><div class="product-info"><h3 class="product-name">'+p.nombre+'</h3><div class="product-footer"><span class="product-price">$'+formatPrice(p.precio)+'</span><div class="quantity-controls"><button class="qty-btn" onclick="updateProductQuantity(\''+p.id+'\',-1)"'+(qty===0?' disabled':'')+'><i class="bi bi-dash"></i></button><span class="qty-value" id="qty-'+p.id+'">'+qty+'</span><button class="qty-btn" onclick="updateProductQuantity(\''+p.id+'\',1)"'+(p.stock===0||qty>=p.stock?' disabled':'')+'><i class="bi bi-plus"></i></button></div></div><button class="add-to-cart-btn'+(qty>0?' added':'')+'" onclick="addToCart(\''+p.id+'\')"'+(p.stock===0?' disabled':'')+'><i class="bi '+(qty>0?'bi-check-lg':'bi-cart-plus')+'"></i> '+(p.stock===0?'Sin stock':(qty>0?'En el carrito':'Agregar al carrito'))+'</button></div></article>';
+        const noStock = p.stock === 0;
+        return '<article class="product-card" data-id="'+p.id+'">' +
+            '<div class="product-image"><img src="'+img+'" alt="'+p.nombre+'" loading="lazy" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\'">' +
+            '<span class="product-category">'+p.categoria+(p.subcategoria?' - '+p.subcategoria:'')+'</span>' +
+            (noStock?'<span class="product-stock out">Sin stock</span>':'') +
+            '</div>' +
+            '<div class="product-info">' +
+            '<h3 class="product-name">'+p.nombre+'</h3>' +
+            '<div class="product-footer">' +
+            '<span class="product-price">$'+formatPrice(p.precio)+'</span>' +
+            '<div class="quantity-controls">' +
+            '<button class="qty-btn" onclick="updateProductQuantity(\''+p.id+'\',-1)"'+(qty===0?' disabled':'')+'><i class="bi bi-dash"></i></button>' +
+            '<span class="qty-value" id="qty-'+p.id+'">'+qty+'</span>' +
+            '<button class="qty-btn" onclick="updateProductQuantity(\''+p.id+'\',1)"'+(noStock||qty>=p.stock?' disabled':'')+'><i class="bi bi-plus"></i></button>' +
+            '</div></div>' +
+            '<button class="add-to-cart-btn'+(qty>0?' added':'')+'" onclick="addToCart(\''+p.id+'\')"'+(noStock?' disabled':'')+'>' +
+            '<i class="bi '+(qty>0?'bi-check-lg':'bi-cart-plus')+'"></i> '+(noStock?'Sin stock':(qty>0?'En el carrito':'Agregar')) +
+            '</button></div></article>';
     }).join('');
 }
 
@@ -144,7 +159,7 @@ function updateProductCard(id) {
     const p=productos.find(x=>x.id===id),ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const qe=document.getElementById('qty-'+id);if(qe)qe.textContent=qty;
     const card=document.querySelector('.product-card[data-id="'+id+'"]');
-    if(card){const mb=card.querySelector('.qty-btn:first-child'),pb=card.querySelector('.qty-btn:last-child'),ab=card.querySelector('.add-to-cart-btn');if(mb)mb.disabled=qty===0;if(pb)pb.disabled=p.stock===0||qty>=p.stock;if(ab){ab.classList.toggle('added',qty>0);ab.innerHTML=qty>0?'<i class="bi bi-check-lg"></i> En el carrito':'<i class="bi bi-cart-plus"></i> Agregar al carrito';}}
+    if(card){const mb=card.querySelector('.qty-btn:first-child'),pb=card.querySelector('.qty-btn:last-child'),ab=card.querySelector('.add-to-cart-btn');if(mb)mb.disabled=qty===0;if(pb)pb.disabled=p.stock===0||qty>=p.stock;if(ab){ab.classList.toggle('added',qty>0);ab.innerHTML=qty>0?'<i class="bi bi-check-lg"></i> En el carrito':'<i class="bi bi-cart-plus"></i> Agregar';}}
 }
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=p.stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+p.stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
