@@ -1,14 +1,16 @@
 /**
  * YERCO DIETÉTICA - SCRIPT PRINCIPAL
- * Firebase Firestore + Filtros jerárquicos + Búsqueda + Orden
+ * Firebase Firestore + Filtros jerárquicos + Búsqueda + Orden + Paginación
  */
 const WHATSAPP_NUMBER = '5493515314675';
+const PRODUCTS_PER_PAGE = 10;
 let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
 let subcategoriaActual = null;
 let ordenAscendente = true;
 let busquedaTexto = '';
+let paginaActual = 1;
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavbar(); initParticles(); initContactForm(); initCart();
@@ -58,13 +60,13 @@ function aplicarFiltros() {
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
     if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
     r.sort((a,b) => ordenAscendente ? a.precio-b.precio : b.precio-a.precio);
-    renderProducts(r); updateSortButtonUI();
+    renderProductsPaginated(r); updateSortButtonUI();
 }
 
-function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; aplicarFiltros(); }
-function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; aplicarFiltros(); }
-function onSearchInput(v) { busquedaTexto=v; aplicarFiltros(); }
-function toggleSortOrder() { ordenAscendente=!ordenAscendente; aplicarFiltros(); }
+function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
+function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; paginaActual=1; aplicarFiltros(); }
+function onSearchInput(v) { busquedaTexto=v; paginaActual=1; aplicarFiltros(); }
+function toggleSortOrder() { ordenAscendente=!ordenAscendente; paginaActual=1; aplicarFiltros(); }
 function updateSortButtonUI() { const b=document.getElementById('sortBtn'); if(!b)return; b.innerHTML=ordenAscendente?'<i class="bi bi-sort-numeric-up"></i> Menor precio':'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio'; }
 
 function renderCategoryFilters(mapa) {
@@ -74,16 +76,14 @@ function renderCategoryFilters(mapa) {
     todosBtn.className = 'filter-btn active'; todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
-
     Object.keys(mapa).sort().forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
         const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; catBtn.textContent = cat;
         const subRow = document.createElement('div'); subRow.className = 'sub-filters-row';
-
         if (subs.length > 0) {
             const allBtn = document.createElement('button'); allBtn.className = 'sub-btn active'; allBtn.textContent = 'Todo';
-            allBtn.addEventListener('click', () => { subRow.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active')); allBtn.classList.add('active'); subcategoriaActual=null; aplicarFiltros(); });
+            allBtn.addEventListener('click', () => { subRow.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active')); allBtn.classList.add('active'); subcategoriaActual=null; paginaActual=1; aplicarFiltros(); });
             subRow.appendChild(allBtn);
             subs.forEach(sub => {
                 const subBtn = document.createElement('button'); subBtn.className = 'sub-btn'; subBtn.textContent = sub;
@@ -91,8 +91,7 @@ function renderCategoryFilters(mapa) {
                 subRow.appendChild(subBtn);
             });
         }
-
-        catBtn.addEventListener('click', () => { setActiveFilter(catBtn); hideAllSubFilters(); if(subs.length>0)subRow.classList.add('show'); subcategoriaActual=null; filterByCategory(cat); });
+        catBtn.addEventListener('click', () => { setActiveFilter(catBtn); hideAllSubFilters(); if(subs.length>0)subRow.classList.add('show'); subcategoriaActual=null; paginaActual=1; filterByCategory(cat); });
         wrapper.appendChild(catBtn);
         if (subs.length > 0) wrapper.appendChild(subRow);
         container.appendChild(wrapper);
@@ -102,6 +101,41 @@ function setActiveFilter(btn) { document.querySelectorAll('#categoryFilters .fil
 function hideAllSubFilters() { document.querySelectorAll('.sub-filters-row').forEach(r=>r.classList.remove('show')); }
 
 function formatPrice(v) { return v.toLocaleString('es-AR',{minimumFractionDigits:0}); }
+
+function renderProductsPaginated(list) {
+    const totalPages = Math.ceil(list.length / PRODUCTS_PER_PAGE);
+    if (paginaActual > totalPages) paginaActual = totalPages || 1;
+    const start = (paginaActual - 1) * PRODUCTS_PER_PAGE;
+    const end = start + PRODUCTS_PER_PAGE;
+    const pageItems = list.slice(start, end);
+    renderProducts(pageItems);
+    renderPagination(totalPages, list.length);
+}
+
+function renderPagination(totalPages, totalItems) {
+    const container = document.getElementById('paginationContainer'); if(!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    let html = '<div class="pagination-container">';
+    html += '<button onclick="goToPage('+(paginaActual-1)+')"'+(paginaActual===1?' disabled':'')+'><i class="bi bi-chevron-left"></i></button>';
+    for (let i = 1; i <= totalPages; i++) {
+        if (totalPages <= 7 || i === 1 || i === totalPages || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+            html += '<button onclick="goToPage('+i+')"'+(i===paginaActual?' class="active"':'')+'>'+i+'</button>';
+        } else if (i === paginaActual - 2 || i === paginaActual + 2) {
+            html += '<span style="padding:0 0.3rem;color:var(--color-text-light)">...</span>';
+        }
+    }
+    html += '<button onclick="goToPage('+(paginaActual+1)+')"'+(paginaActual===totalPages?' disabled':'')+'><i class="bi bi-chevron-right"></i></button>';
+    html += '</div>';
+    html += '<p class="pagination-info">Mostrando '+(((paginaActual-1)*PRODUCTS_PER_PAGE)+1)+' - '+Math.min(paginaActual*PRODUCTS_PER_PAGE, totalItems)+' de '+totalItems+' productos</p>';
+    container.innerHTML = html;
+}
+
+function goToPage(page) {
+    paginaActual = page;
+    aplicarFiltros();
+    const section = document.getElementById('productos');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function renderProducts(list) {
     const c = document.getElementById('productsGrid'); if(!c)return;
@@ -191,4 +225,4 @@ function showToast(message,type){type=type||'info';const c=document.getElementBy
 
 function initScrollAnimations(){const o=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('animate-in');o.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});document.querySelectorAll('.service-card,.feature-card,.product-card').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='opacity 0.6s ease, transform 0.6s ease';o.observe(el);});const s=document.createElement('style');s.textContent='.animate-in{opacity:1!important;transform:translateY(0)!important;}';document.head.appendChild(s);}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortOrder=toggleSortOrder;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortOrder=toggleSortOrder;window.goToPage=goToPage;
