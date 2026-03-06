@@ -67,9 +67,4 @@
     .cart-sidebar { max-width:100%; }
     .brand-text-img { height: 38px; }
 }
-@media (max-width:400px) {
-    .products-grid { grid-template-columns:1fr!important; }
-    .product-image { height:180px; }
-    .product-name { font-size:0.95rem!important; }
-}
 @keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
