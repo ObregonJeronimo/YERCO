@@ -225,12 +225,12 @@ function updateShippingBar(total) {
 
 function checkout() {
     if(carrito.length===0){showToast('Carrito vacío','error');return;}
-    let msg='¡Hola! 🌿 Quiero realizar el siguiente pedido:\n\n📦 *DETALLE DEL PEDIDO*\n--------------------\n';let total=0;
-    carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;total+=sub;msg+='🛒 '+(i+1)+'. '+item.nombre+'\n   Cantidad: '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
-    msg+='--------------------\n💰 *TOTAL: $'+formatPrice(total)+'*\n';
-    if(total>=100000){msg+='🚚 *ENVIO GRATIS* (compra mayor a $100.000)\n';}
-    else{msg+='🚚 Envio: $2.000\n💰 *TOTAL CON ENVIO: $'+formatPrice(total+2000)+'*\n';}
-    msg+='\n🙏 ¡Gracias!';
+    let msg='Hola! Quiero realizar el siguiente pedido:\n\n*DETALLE DEL PEDIDO*\n--------------------\n';let total=0;
+    carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;total+=sub;msg+=''+(i+1)+'. '+item.nombre+'\n   Cantidad: '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
+    msg+='--------------------\n*TOTAL: $'+formatPrice(total)+'*\n';
+    if(total>=100000){msg+='*ENVIO GRATIS* (compra mayor a $100.000)\n';}
+    else{msg+='Envio: $2.000\n*TOTAL CON ENVIO: $'+formatPrice(total+2000)+'*\n';}
+    msg+='\nGracias!';
     window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');showToast('Redirigiendo a WhatsApp...','success');closeCart();
 }
 
