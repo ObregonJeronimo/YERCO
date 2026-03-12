@@ -206,6 +206,7 @@ function updateCartUI() {
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer)footer.style.display='block';renderCartItems();}
     if(ckBtn)ckBtn.disabled=carrito.length===0;
+    updateShippingBar(tp);
 }
 function renderCartItems() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
@@ -213,11 +214,24 @@ function renderCartItems() {
     carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+(item.imagen||'https://via.placeholder.com/70x70?text=?')+'" alt="'+item.nombre+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+item.nombre+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
 }
 
+function updateShippingBar(total) {
+    const msg=document.getElementById('shippingMsg'),fill=document.getElementById('shippingBarFill');
+    if(!msg||!fill)return;
+    const MIN_ORDER=30000,FREE_SHIPPING=100000;
+    if(total<MIN_ORDER){const faltan=MIN_ORDER-total;msg.textContent='Faltan $'+formatPrice(faltan)+' para pedido minimo ($30.000)';msg.className='shipping-msg under-min';fill.style.width=(total/FREE_SHIPPING*100)+'%';fill.style.background='#c0392b';}
+    else if(total<FREE_SHIPPING){const faltan=FREE_SHIPPING-total;msg.textContent='Faltan $'+formatPrice(faltan)+' para envio gratis!';msg.className='shipping-msg near-free';fill.style.width=(total/FREE_SHIPPING*100)+'%';fill.style.background='#e67e22';}
+    else{msg.textContent='Tenes envio gratis!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
+}
+
 function checkout() {
     if(carrito.length===0){showToast('Carrito vacío','error');return;}
     let msg='¡Hola! 🌿 Quiero realizar el siguiente pedido:\n\n📦 *DETALLE DEL PEDIDO*\n--------------------\n';let total=0;
     carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;total+=sub;msg+='🛒 '+(i+1)+'. '+item.nombre+'\n   Cantidad: '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
-    msg+='--------------------\n💰 *TOTAL: $'+formatPrice(total)+'*\n\n📍 Por favor, indíquenme opciones de envío o retiro.\n🙏 ¡Gracias!';
+    msg+='--------------------\n💰 *TOTAL: $'+formatPrice(total)+'*\n\n';
+    if(total>=100000){msg+='🚚 *ENVIO GRATIS* (compra mayor a $100.000)\n\n';}
+    else if(total>=30000){msg+='📍 Por favor, indiquenme opciones de envio o retiro.\n';}
+    else{msg+='⚠️ Pedido minimo: $30.000\n';}
+    msg+='🙏 ¡Gracias!';
     window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');showToast('Redirigiendo a WhatsApp...','success');closeCart();
 }
 
