@@ -204,7 +204,7 @@ function updateCartUI() {
     const ti=carrito.reduce((s,i)=>s+i.cantidad,0),tp=carrito.reduce((s,i)=>s+(i.precio*i.cantidad),0);
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
-    else{if(empty)empty.style.display='none';if(footer)footer.style.display='block';renderCartItems();}
+    else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
     if(ckBtn)ckBtn.disabled=carrito.length===0;
     updateShippingBar(tp);
 }
