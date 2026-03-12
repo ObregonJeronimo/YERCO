@@ -198,6 +198,7 @@ function updateProductCard(id) {
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=p.stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+p.stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
 function saveCart(){localStorage.setItem('yercoCart',JSON.stringify(carrito));}
+function clearCart(){if(carrito.length===0)return;if(!confirm('Vaciar todo el carrito?'))return;const ids=carrito.map(i=>i.id);carrito=[];saveCart();updateCartUI();ids.forEach(id=>updateProductCard(id));showToast('Carrito vaciado','info');}
 
 function updateCartUI() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty'),footer=document.getElementById('cartFooter'),count=document.getElementById('cartCount'),total=document.getElementById('cartTotal'),cta=document.getElementById('ctaCartCount'),ckBtn=document.getElementById('checkoutBtn');

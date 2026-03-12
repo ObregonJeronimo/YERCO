@@ -228,6 +228,8 @@ img { max-width: 100%; height: auto; }
 .btn-whatsapp { width: 100%; background: var(--color-whatsapp); color: white; border: none; padding: 1rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all var(--transition-normal); }
 .btn-whatsapp:hover { background: #1da851; transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .btn-whatsapp:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; transform: none; }
+.btn-clear-cart { background: none; border: none; color: var(--color-text-light); font-size: 0.8rem; cursor: pointer; padding: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 4px; transition: color 0.2s; }
+.btn-clear-cart:hover { color: #c0392b; }
 .shipping-progress { margin-bottom: var(--spacing-md); }
 .shipping-msg { font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; text-align: center; }
 .shipping-msg.under-min { color: #c0392b; }
