@@ -201,7 +201,7 @@ img { max-width: 100%; height: auto; }
 /* === CARRITO SIDEBAR === */
 .cart-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1040; opacity: 0; visibility: hidden; transition: all var(--transition-normal); }
 .cart-overlay.show { opacity: 1; visibility: visible; }
-.cart-sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: 420px; height: 100vh; background: white; z-index: 1050; display: flex; flex-direction: column; transition: right var(--transition-normal); box-shadow: var(--shadow-lg); }
+.cart-sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: 420px; height: 100dvh; background: white; z-index: 1050; display: flex; flex-direction: column; transition: right var(--transition-normal); box-shadow: var(--shadow-lg); }
 .cart-sidebar.show { right: 0; }
 .cart-header { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-md) var(--spacing-lg); border-bottom: 1px solid var(--color-beige); }
 .cart-header h3 { display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem; margin: 0; font-family: var(--font-body); font-weight: 700; }
@@ -222,7 +222,7 @@ img { max-width: 100%; height: auto; }
 .cart-item-controls .qty-value { font-size: 0.9rem; min-width: 25px; }
 .cart-item-remove { background: none; border: none; color: #dc3545; cursor: pointer; padding: 0.25rem; margin-left: auto; font-size: 1rem; transition: transform var(--transition-fast); }
 .cart-item-remove:hover { transform: scale(1.2); }
-.cart-footer { padding: var(--spacing-md) var(--spacing-lg); border-top: 1px solid var(--color-beige); background: var(--color-cream); }
+.cart-footer { padding: var(--spacing-md) var(--spacing-lg); padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 16px)); border-top: 1px solid var(--color-beige); background: var(--color-cream); flex-shrink: 0; }
 .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md); font-size: 1.1rem; }
 .total-amount { font-family: var(--font-body); font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
 .btn-whatsapp { width: 100%; background: var(--color-whatsapp); color: white; border: none; padding: 1rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all var(--transition-normal); }
