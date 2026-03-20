@@ -61,15 +61,17 @@ function aplicarFiltros() {
     if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
     if(ordenActual==='precio-asc') r.sort((a,b)=>a.precio-b.precio);
     else if(ordenActual==='precio-desc') r.sort((a,b)=>b.precio-a.precio);
-    else r.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    else if(ordenActual==='alfa-asc') r.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    else r.sort((a,b)=>(b.nombre||'').localeCompare(a.nombre||'','es'));
     renderProductsPaginated(r); updateSortButtonUI();
 }
 
 function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
 function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; paginaActual=1; aplicarFiltros(); }
 function onSearchInput(v) { busquedaTexto=v; paginaActual=1; aplicarFiltros(); }
-function toggleSortOrder() { const cycle=['precio-asc','precio-desc','alfa'];const i=cycle.indexOf(ordenActual);ordenActual=cycle[(i+1)%3]; paginaActual=1; aplicarFiltros(); }
-function updateSortButtonUI() { const b=document.getElementById('sortBtn'); if(!b)return; const map={'precio-asc':'<i class="bi bi-sort-numeric-up"></i> Menor precio','precio-desc':'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio','alfa':'<i class="bi bi-sort-alpha-down"></i> A-Z'};b.innerHTML=map[ordenActual]; }
+function toggleSortPrice() { ordenActual=ordenActual==='precio-asc'?'precio-desc':'precio-asc'; paginaActual=1; aplicarFiltros(); }
+function toggleSortAlfa() { ordenActual=ordenActual==='alfa-asc'?'alfa-desc':'alfa-asc'; paginaActual=1; aplicarFiltros(); }
+function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=document.getElementById('sortAlfaBtn'); if(b){const active=ordenActual.startsWith('precio');b.innerHTML=ordenActual==='precio-desc'?'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio':'<i class="bi bi-sort-numeric-up"></i> Menor precio';b.style.borderColor=active?'var(--color-primary)':'';} if(a){const active=ordenActual.startsWith('alfa');a.innerHTML=ordenActual==='alfa-desc'?'<i class="bi bi-sort-alpha-up-alt"></i> Z-A':'<i class="bi bi-sort-alpha-down"></i> A-Z';a.style.borderColor=active?'var(--color-primary)':'';} }
 
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
