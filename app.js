@@ -206,7 +206,7 @@ function updateCartUI() {
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
-    if(ckBtn)ckBtn.disabled=carrito.length===0;
+    if(ckBtn){ckBtn.disabled=carrito.length===0||tp<30000;if(tp>0&&tp<30000){ckBtn.innerHTML='<i class="bi bi-whatsapp"></i> Minimo $30.000';}else{ckBtn.innerHTML='<i class="bi bi-whatsapp"></i> Comprar por WhatsApp';}}
     updateShippingBar(tp);
 }
 function renderCartItems() {
