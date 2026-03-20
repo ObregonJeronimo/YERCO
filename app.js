@@ -8,7 +8,7 @@ let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
 let subcategoriaActual = null;
-let ordenAscendente = true;
+let ordenActual = 'precio-asc';
 let busquedaTexto = '';
 let paginaActual = 1;
 
@@ -59,15 +59,17 @@ function aplicarFiltros() {
     if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
     if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
-    r.sort((a,b) => ordenAscendente ? a.precio-b.precio : b.precio-a.precio);
+    if(ordenActual==='precio-asc') r.sort((a,b)=>a.precio-b.precio);
+    else if(ordenActual==='precio-desc') r.sort((a,b)=>b.precio-a.precio);
+    else r.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     renderProductsPaginated(r); updateSortButtonUI();
 }
 
 function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
 function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; paginaActual=1; aplicarFiltros(); }
 function onSearchInput(v) { busquedaTexto=v; paginaActual=1; aplicarFiltros(); }
-function toggleSortOrder() { ordenAscendente=!ordenAscendente; paginaActual=1; aplicarFiltros(); }
-function updateSortButtonUI() { const b=document.getElementById('sortBtn'); if(!b)return; b.innerHTML=ordenAscendente?'<i class="bi bi-sort-numeric-up"></i> Menor precio':'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio'; }
+function toggleSortOrder() { const cycle=['precio-asc','precio-desc','alfa'];const i=cycle.indexOf(ordenActual);ordenActual=cycle[(i+1)%3]; paginaActual=1; aplicarFiltros(); }
+function updateSortButtonUI() { const b=document.getElementById('sortBtn'); if(!b)return; const map={'precio-asc':'<i class="bi bi-sort-numeric-up"></i> Menor precio','precio-desc':'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio','alfa':'<i class="bi bi-sort-alpha-down"></i> A-Z'};b.innerHTML=map[ordenActual]; }
 
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
