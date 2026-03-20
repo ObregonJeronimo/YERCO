@@ -6,9 +6,10 @@ const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
 let productos = [];
 let carrito = [];
-let categoriaActual = 'Todos';
+let categoriaActual = 'YERBAS';
 let subcategoriaActual = null;
-let ordenActual = 'precio-asc';
+let ordenPrecio = 'asc';
+let ordenAlfa = null;
 let busquedaTexto = '';
 let paginaActual = 1;
 
@@ -59,31 +60,32 @@ function aplicarFiltros() {
     if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
     if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
-    if(ordenActual==='precio-asc') r.sort((a,b)=>a.precio-b.precio);
-    else if(ordenActual==='precio-desc') r.sort((a,b)=>b.precio-a.precio);
-    else if(ordenActual==='alfa-asc') r.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
-    else r.sort((a,b)=>(b.nombre||'').localeCompare(a.nombre||'','es'));
+    r.sort((a,b)=>{
+        if(ordenAlfa){const cmp=(a.nombre||'').localeCompare(b.nombre||'','es');if(cmp!==0)return ordenAlfa==='asc'?cmp:-cmp;}
+        if(ordenPrecio){const cmp=a.precio-b.precio;if(cmp!==0)return ordenPrecio==='asc'?cmp:-cmp;}
+        return 0;
+    });
     renderProductsPaginated(r); updateSortButtonUI();
 }
 
 function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
 function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; paginaActual=1; aplicarFiltros(); }
 function onSearchInput(v) { busquedaTexto=v; paginaActual=1; aplicarFiltros(); }
-function toggleSortPrice() { ordenActual=ordenActual==='precio-asc'?'precio-desc':'precio-asc'; paginaActual=1; aplicarFiltros(); }
-function toggleSortAlfa() { ordenActual=ordenActual==='alfa-asc'?'alfa-desc':'alfa-asc'; paginaActual=1; aplicarFiltros(); }
-function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=document.getElementById('sortAlfaBtn'); if(b){const active=ordenActual.startsWith('precio');b.innerHTML=ordenActual==='precio-desc'?'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio':'<i class="bi bi-sort-numeric-up"></i> Menor precio';b.style.borderColor=active?'var(--color-primary)':'';} if(a){const active=ordenActual.startsWith('alfa');a.innerHTML=ordenActual==='alfa-desc'?'<i class="bi bi-sort-alpha-up-alt"></i> Z-A':'<i class="bi bi-sort-alpha-down"></i> A-Z';a.style.borderColor=active?'var(--color-primary)':'';} }
+function toggleSortPrice() { if(!ordenPrecio)ordenPrecio='asc';else if(ordenPrecio==='asc')ordenPrecio='desc';else ordenPrecio='asc'; paginaActual=1; aplicarFiltros(); }
+function toggleSortAlfa() { if(!ordenAlfa)ordenAlfa='asc';else if(ordenAlfa==='asc')ordenAlfa='desc';else ordenAlfa='asc'; paginaActual=1; aplicarFiltros(); }
+function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=document.getElementById('sortAlfaBtn'); if(b){b.innerHTML=ordenPrecio==='desc'?'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio':'<i class="bi bi-sort-numeric-up"></i> Menor precio';b.style.borderColor=ordenPrecio?'var(--color-primary)':'';b.style.opacity=ordenPrecio?'1':'0.5';} if(a){a.innerHTML=ordenAlfa==='desc'?'<i class="bi bi-sort-alpha-up-alt"></i> Z-A':'<i class="bi bi-sort-alpha-down"></i> A-Z';a.style.borderColor=ordenAlfa?'var(--color-primary)':'';a.style.opacity=ordenAlfa?'1':'0.5';} }
 
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
     container.innerHTML = '';
     const todosBtn = document.createElement('button');
-    todosBtn.className = 'filter-btn active'; todosBtn.textContent = 'Todos';
+    todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
     Object.keys(mapa).sort().forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
-        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; catBtn.textContent = cat;
+        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'+(categoriaActual===cat?' active':''); catBtn.textContent = cat;
         const subRow = document.createElement('div'); subRow.className = 'sub-filters-row';
         if (subs.length > 0) {
             const allBtn = document.createElement('button'); allBtn.className = 'sub-btn active'; allBtn.textContent = 'Todo';
@@ -243,4 +245,4 @@ function showToast(message,type){type=type||'info';const c=document.getElementBy
 
 function initScrollAnimations(){const o=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('animate-in');o.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});document.querySelectorAll('.service-card,.feature-card,.product-card').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='opacity 0.6s ease, transform 0.6s ease';o.observe(el);});const s=document.createElement('style');s.textContent='.animate-in{opacity:1!important;transform:translateY(0)!important;}';document.head.appendChild(s);}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortOrder=toggleSortOrder;window.goToPage=goToPage;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;
