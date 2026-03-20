@@ -6,7 +6,7 @@ const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
 let productos = [];
 let carrito = [];
-let categoriaActual = 'YERBAS';
+let categoriaActual = 'Todos';
 let subcategoriaActual = null;
 let ordenPrecio = 'asc';
 let ordenAlfa = null;
@@ -79,13 +79,13 @@ function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
     container.innerHTML = '';
     const todosBtn = document.createElement('button');
-    todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); todosBtn.textContent = 'Todos';
+    todosBtn.className = 'filter-btn active'; todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
     Object.keys(mapa).sort().forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
-        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'+(categoriaActual===cat?' active':''); catBtn.textContent = cat;
+        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; catBtn.textContent = cat;
         const subRow = document.createElement('div'); subRow.className = 'sub-filters-row';
         if (subs.length > 0) {
             const allBtn = document.createElement('button'); allBtn.className = 'sub-btn active'; allBtn.textContent = 'Todo';
@@ -151,7 +151,7 @@ function renderProducts(list) {
         const img=p.imagen||'https://via.placeholder.com/400x300?text=Sin+imagen';
         const noStock = p.stock === 0;
         return '<article class="product-card" data-id="'+p.id+'">' +
-            '<div class="product-image"><img src="'+img+'" alt="'+p.nombre+'" loading="lazy" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\'">' +
+            '<div class="product-image"><div class="img-skeleton"></div><img src="'+img+'" alt="'+p.nombre+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
             '<span class="product-category">'+p.categoria+(p.subcategoria?' - '+p.subcategoria:'')+'</span>' +
             (noStock?'<span class="product-stock out">Sin stock</span>':'') +
             '</div>' +
