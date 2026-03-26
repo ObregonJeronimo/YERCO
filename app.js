@@ -6,7 +6,7 @@ const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
 let productos = [];
 let carrito = [];
-let categoriaActual = 'Todos';
+let categoriaActual = 'Populares';
 let subcategoriaActual = null;
 let ordenPrecio = 'asc';
 let ordenAlfa = null;
@@ -57,7 +57,8 @@ function getCategoriasConSub(prods) {
 
 function aplicarFiltros() {
     let r = [...productos];
-    if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
+    if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
+    else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
     if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
     r.sort((a,b)=>{
@@ -78,8 +79,12 @@ function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=doc
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
     container.innerHTML = '';
+    const popBtn = document.createElement('button');
+    popBtn.className = 'filter-btn'+(categoriaActual==='Populares'?' active':''); popBtn.innerHTML = '<i class="bi bi-star-fill" style="margin-right:4px"></i>Populares';
+    popBtn.addEventListener('click', () => { setActiveFilter(popBtn); hideAllSubFilters(); filterByCategory('Populares'); });
+    container.appendChild(popBtn);
     const todosBtn = document.createElement('button');
-    todosBtn.className = 'filter-btn active'; todosBtn.textContent = 'Todos';
+    todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
     Object.keys(mapa).sort().forEach(cat => {
