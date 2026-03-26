@@ -66,7 +66,7 @@ img { max-width: 100%; height: auto; }
 
 /* === HERO SECTION === */
 .hero-section { position: relative; min-height: 100vh; background: linear-gradient(135deg, #e8e0d5 0%, #d4c4b0 50%, #c9a87c 100%); overflow: hidden; }
-.hero-overlay { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920') center/cover; opacity: 0; transition: opacity 0.5s ease; }
+.hero-overlay { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920') center/cover; opacity: 0; }
 .hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .particle { position: absolute; width: 10px; height: 10px; background: var(--color-primary-light); border-radius: 50%; opacity: 0.3; animation: float 15s infinite ease-in-out; }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-100px) rotate(180deg); } }
