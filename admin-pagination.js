@@ -11,7 +11,7 @@ renderTable = function(prods) {
     const start = (adminTablePage - 1) * ADMIN_PER_PAGE;
     const pageItems = prods.slice(start, start + ADMIN_PER_PAGE);
     _origRenderTable(pageItems);
-    renderAdminPagination('tab-products', adminTablePage, totalPages, prods.length, 'table');
+    renderAdminPagination('sec-products', adminTablePage, totalPages, prods.length, 'table');
 };
 
 // Override renderStockList to add pagination
@@ -23,7 +23,7 @@ renderStockList = function() {
     let f = allProducts;
     if (q) f = f.filter(p => (p.nombre || '').toLowerCase().includes(q));
     if (cat) f = f.filter(p => p.categoria === cat);
-    if (!f.length) { c.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No hay productos</p></div>'; removePagination('tab-stock'); return; }
+    if (!f.length) { c.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No hay productos</p></div>'; removePagination('sec-stock'); return; }
     const totalPages = Math.ceil(f.length / ADMIN_PER_PAGE);
     if (adminStockPage > totalPages) adminStockPage = totalPages || 1;
     const start = (adminStockPage - 1) * ADMIN_PER_PAGE;
@@ -32,7 +32,7 @@ renderStockList = function() {
         const img = p.imagen || 'https://via.placeholder.com/40x40?text=?';
         return '<div class="stock-row"><img src="' + img + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=?\'"><div class="stock-row-info"><strong>' + p.nombre + '</strong><small>' + (p.categoria || '') + (p.subcategoria ? ' / ' + p.subcategoria : '') + '</small></div><input type="number" class="stock-input" id="stock-' + p.id + '" value="' + (p.stock || 0) + '" min="0"><button class="stock-save" onclick="saveStock(\'' + p.id + '\')"><i class="bi bi-check-lg"></i></button></div>';
     }).join('');
-    renderAdminPagination('tab-stock', adminStockPage, totalPages, f.length, 'stock');
+    renderAdminPagination('sec-stock', adminStockPage, totalPages, f.length, 'stock');
 };
 
 function renderAdminPagination(containerId, currentPage, totalPages, totalItems, type) {
@@ -65,9 +65,3 @@ function adminGoPage(type, page) {
     if (type === 'table') { adminTablePage = page; filterTable(); }
     else if (type === 'stock') { adminStockPage = page; renderStockList(); }
 }
-
-// Reset page on search/filter
-const _origFilterTable = filterTable;
-filterTable = function() { adminTablePage = 1; _origFilterTable(); };
-const _origFilterStock = filterStockList;
-filterStockList = function() { adminStockPage = 1; _origFilterStock(); };
