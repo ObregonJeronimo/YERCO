@@ -107,6 +107,7 @@ function setActiveFilter(btn) { document.querySelectorAll('#categoryFilters .fil
 function hideAllSubFilters() { document.querySelectorAll('.sub-filters-row').forEach(r=>r.classList.remove('show')); }
 
 function formatPrice(v) { return v.toLocaleString('es-AR',{minimumFractionDigits:0}); }
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 function renderProductsPaginated(list) {
     const totalPages = Math.ceil(list.length / PRODUCTS_PER_PAGE);
@@ -151,12 +152,12 @@ function renderProducts(list) {
         const img=p.imagen||'https://via.placeholder.com/400x300?text=Sin+imagen';
         const noStock = p.stock === 0;
         return '<article class="product-card" data-id="'+p.id+'">' +
-            '<div class="product-image"><div class="img-skeleton"></div><img src="'+img+'" alt="'+p.nombre+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
-            '<span class="product-category">'+p.categoria+(p.subcategoria?' - '+p.subcategoria:'')+'</span>' +
+            '<div class="product-image"><div class="img-skeleton"></div><img src="'+esc(img)+'" alt="'+esc(p.nombre)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
+            '<span class="product-category">'+esc(p.categoria)+(p.subcategoria?' - '+esc(p.subcategoria):'')+'</span>' +
             (noStock?'<span class="product-stock out">Sin stock</span>':'') +
             '</div>' +
             '<div class="product-info">' +
-            '<h3 class="product-name">'+p.nombre+'</h3>' +
+            '<h3 class="product-name">'+esc(p.nombre)+'</h3>' +
             '<div class="product-footer">' +
             '<span class="product-price">$'+formatPrice(p.precio)+'</span>' +
             '<div class="quantity-controls">' +
@@ -218,7 +219,7 @@ function updateCartUI() {
 function renderCartItems() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
     body.querySelectorAll('.cart-item').forEach(i=>i.remove());
-    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+(item.imagen||'https://via.placeholder.com/70x70?text=?')+'" alt="'+item.nombre+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+item.nombre+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
+    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(item.imagen||'https://via.placeholder.com/70x70?text=?')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
 }
 
 function updateShippingBar(total) {
