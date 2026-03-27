@@ -16,6 +16,7 @@ renderTable = function(prods) {
 
 // Override renderStockList to add pagination
 const _origRenderStock = renderStockList;
+let stockSortDir = null;
 renderStockList = function() {
     const c = document.getElementById('stockList'); if (!c) return;
     const q = (document.getElementById('stockSearch')?.value || '').toLowerCase();
@@ -23,6 +24,9 @@ renderStockList = function() {
     let f = allProducts;
     if (q) f = f.filter(p => (p.nombre || '').toLowerCase().includes(q));
     if (cat) f = f.filter(p => p.categoria === cat);
+    if (stockSortDir) {
+        f = [...f].sort((a, b) => stockSortDir === 'desc' ? (b.stock || 0) - (a.stock || 0) : (a.stock || 0) - (b.stock || 0));
+    }
     if (!f.length) { c.innerHTML = '<div class="empty-state" style="padding:2rem"><p>No hay productos</p></div>'; removePagination('sec-stock'); return; }
     const totalPages = Math.ceil(f.length / ADMIN_PER_PAGE);
     if (adminStockPage > totalPages) adminStockPage = totalPages || 1;
@@ -34,6 +38,20 @@ renderStockList = function() {
     }).join('');
     renderAdminPagination('sec-stock', adminStockPage, totalPages, f.length, 'stock');
 };
+
+function toggleStockSort() {
+    if (!stockSortDir) stockSortDir = 'desc';
+    else if (stockSortDir === 'desc') stockSortDir = 'asc';
+    else stockSortDir = null;
+    const btn = document.getElementById('stockSortBtn');
+    if (btn) {
+        if (stockSortDir === 'desc') btn.innerHTML = '<i class="bi bi-sort-numeric-down"></i> Mayor stock';
+        else if (stockSortDir === 'asc') btn.innerHTML = '<i class="bi bi-sort-numeric-up"></i> Menor stock';
+        else btn.innerHTML = '<i class="bi bi-sort-numeric-down"></i> Ordenar stock';
+    }
+    adminStockPage = 1;
+    renderStockList();
+}
 
 function renderAdminPagination(containerId, currentPage, totalPages, totalItems, type) {
     const container = document.getElementById(containerId);
