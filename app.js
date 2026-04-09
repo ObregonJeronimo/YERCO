@@ -89,7 +89,7 @@ function renderCategoryFilters(mapa) {
     todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); todosBtn.textContent = 'Todos';
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
-    Object.keys(mapa).sort().forEach(cat => {
+    Object.keys(mapa).sort((a,b)=>{const yA=a.toUpperCase().startsWith('YERBA')?1:0;const yB=b.toUpperCase().startsWith('YERBA')?1:0;if(yA!==yB)return yA-yB;return a.localeCompare(b);}).forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
         const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; catBtn.textContent = cat;

@@ -123,7 +123,7 @@ img { max-width: 100%; height: auto; }
 /* === PRODUCTOS === */
 .products-section { padding: var(--spacing-xxl) 0; background: var(--color-beige); }
 .category-filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: var(--spacing-xl); }
-@media(min-width:769px){.category-filters.cat-hidden{display:none;}}
+
 .filter-btn { background: white; color: var(--color-text); border: 2px solid var(--color-brown-light); padding: 0.6rem 1.5rem; border-radius: 50px; font-weight: 500; cursor: pointer; transition: all var(--transition-normal); }
 .filter-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: white; }
 .filter-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
