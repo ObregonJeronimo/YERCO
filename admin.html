@@ -377,7 +377,7 @@
                 const data=await file.arrayBuffer();
                 const pdf=await pdfjsLib.getDocument({data}).promise;
                 const OPS=pdfjsLib.OPS;const opNames={};for(const[n,c]of Object.entries(OPS))opNames[c]=n;
-                const PAGE_H=1023;const COL_SPLIT=350;
+                const PAGE_H=1023;const COL_SPLIT=280;
                 pb.style.width='10%';pt.textContent='Leyendo '+pdf.numPages+' paginas...';
                 const pdfProds=[];const yellowProds=new Set();const greenProds=new Set();
                 for(let p=1;p<=pdf.numPages;p++){
