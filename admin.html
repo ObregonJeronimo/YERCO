@@ -364,11 +364,9 @@
     
         /* === PDF SEMANAL === */
         let wpRemoved=[],wpPriceChanges=[],wpNewProds=[];
-        function openWeeklyPdfModal(){document.getElementById('wpResults').style.display='none';document.getElementById('wpProgress').style.display='none';document.getElementById('weeklyPdfInput').value='';document.getElementById('weeklyPdfModal').classList.add('show');}
+        function openWeeklyPdfModal(){document.getElementById('wpResults').style.display='none';document.getElementById('wpProgress').style.display='none';document.getElementById('weeklyPdfInput').value='';document.getElementById('weeklyPdfModal').classList.add('show');wpInitDz();}
         function wpScrollTo(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});}
-        const _dzwp=document.getElementById('dropZoneWeekly'),_wpi=document.getElementById('weeklyPdfInput');
-        if(_dzwp){_dzwp.addEventListener('click',()=>_wpi.click());_dzwp.addEventListener('dragover',e=>{e.preventDefault();_dzwp.classList.add('dragover')});_dzwp.addEventListener('dragleave',()=>_dzwp.classList.remove('dragover'));_dzwp.addEventListener('drop',e=>{e.preventDefault();_dzwp.classList.remove('dragover');if(e.dataTransfer.files[0])processWeeklyPdf(e.dataTransfer.files[0]);});}
-        if(_wpi)_wpi.addEventListener('change',e=>{if(e.target.files[0])processWeeklyPdf(e.target.files[0]);});
+        let _wpDzInit=false;function wpInitDz(){if(_wpDzInit)return;const dz=document.getElementById('dropZoneWeekly'),fi=document.getElementById('weeklyPdfInput');if(!dz||!fi)return;_wpDzInit=true;dz.addEventListener('click',()=>fi.click());dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files[0])processWeeklyPdf(e.dataTransfer.files[0]);});fi.addEventListener('change',e=>{if(e.target.files[0])processWeeklyPdf(e.target.files[0]);});}
 
         async function processWeeklyPdf(file){
             if(!file.name.match(/\.pdf$/i)){showAdminToast('Solo archivos PDF','error');return;}
@@ -449,7 +447,7 @@
                 document.getElementById('wpResults').style.display='block';
                 pb.style.width='100%';pt.textContent='Listo! PDF: '+uniquePdf.length+' productos';
                 setTimeout(()=>{pw.style.display='none';},1000);
-            }catch(e){pw.style.display='none';showAdminToast('Error: '+e.message,'error');console.error(e);}_wpi.value='';
+            }catch(e){pw.style.display='none';showAdminToast('Error: '+e.message,'error');console.error(e);}var _fi=document.getElementById('weeklyPdfInput');if(_fi)_fi.value='';
         }
 
         function renderWpRemoved(){
