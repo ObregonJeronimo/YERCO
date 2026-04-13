@@ -294,3 +294,15 @@ img { max-width: 100%; height: auto; }
 /* === MOBILE PERF === */
 @media(max-width:768px){.product-card{transition:none}.product-image img{transition:none}.hero-particles{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* === POPULARES SECTION === */
+#popularesRow::-webkit-scrollbar { display: none; }
+.popular-card { min-width: 200px; max-width: 200px; scroll-snap-align: start; background: white; border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.popular-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+.popular-card img { width: 100%; height: 140px; object-fit: cover; }
+.popular-card-info { padding: 0.6rem 0.75rem; }
+.popular-card-name { font-size: 0.82rem; font-weight: 500; color: var(--color-text); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.popular-card-price { font-size: 1rem; font-weight: 700; color: var(--color-primary-dark); margin-top: 0.3rem; }
+.popular-card-btn { width: 100%; background: var(--color-primary); color: white; border: none; padding: 0.5rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.popular-card-btn:hover { background: var(--color-primary-dark); }
+@media(max-width:768px) { .popular-card { min-width: 160px; max-width: 160px; } .popular-card img { height: 110px; } }
