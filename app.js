@@ -177,10 +177,10 @@ function renderProducts(list) {
     if (list.length===0) { c.innerHTML='<div class="empty-products"><i class="bi bi-search" style="font-size:2.5rem;color:var(--color-text-light)"></i><p style="color:var(--color-text-light);margin-top:1rem;font-size:1.05rem">No se encontraron productos</p></div>'; return; }
     c.innerHTML = list.map(p => {
         const ci=carrito.find(i=>i.id===p.id),qty=ci?ci.cantidad:0;
-        const img=p.imagen||'https://via.placeholder.com/400x300?text=Sin+imagen';
+        const img=p.imagen||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e8e0d5%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22155%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22%3ESin imagen%3C/text%3E%3C/svg%3E';
         const noStock = p.stock === 0;
         return '<article class="product-card" data-id="'+p.id+'">' +
-            '<div class="product-image"><div class="img-skeleton"></div><img src="'+esc(img)+'" alt="'+esc(p.nombre)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'https://via.placeholder.com/400x300?text=Sin+imagen\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
+            '<div class="product-image"><div class="img-skeleton"></div><img src="'+esc(img)+'" alt="'+esc(p.nombre)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'img/default-product.jpg\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
             '<span class="product-category">'+esc(p.categoria)+(p.subcategoria?' - '+esc(p.subcategoria):'')+'</span>' +
             (noStock?'<span class="product-stock out">Sin stock</span>':'') +
             '</div>' +
@@ -247,7 +247,7 @@ function updateCartUI() {
 function renderCartItems() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
     body.querySelectorAll('.cart-item').forEach(i=>i.remove());
-    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(item.imagen||'https://via.placeholder.com/70x70?text=?')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
+    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(item.imagen||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
 }
 
 function updateShippingBar(total) {
