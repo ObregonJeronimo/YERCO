@@ -43,13 +43,14 @@ function initContactForm() {
     form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value,em=document.getElementById('email').value,m=document.getElementById('mensaje').value; const msg='Hola, soy *'+n+'*\n\nConsulta: '+m+'\n\nMi email de contacto: '+em; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank'); form.reset(); if(document.getElementById('chatFloatBox'))document.getElementById('chatFloatBox').classList.remove('show'); if(document.getElementById('chatFloatBtn'))document.getElementById('chatFloatBtn').classList.remove('hide'); });
 }
 
-async function loadProductsFromFirebase() {
+async function loadProductsFromFirebase(retries) {
+    if (retries === undefined) retries = 2;
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
         productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', precio:r.precio||0, stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false }; });
         renderCategoryFilters(getCategoriasConSub(productos)); renderPopulares(); aplicarFiltros();
-    } catch(e) { console.error(e); showToast('Error al cargar productos.','error'); }
+    } catch(e) { console.error(e); if(retries>0){setTimeout(()=>loadProductsFromFirebase(retries-1),1500);return;} showToast('Error al cargar productos.','error'); }
     finally { if (loading) loading.classList.remove('show'); }
 }
 
