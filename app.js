@@ -4,6 +4,7 @@
  */
 const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
+function optImg(url,w){if(!url||!url.startsWith('http'))return url;return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&q=70&output=webp&default=img/default-product.jpg';}
 let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
@@ -62,7 +63,7 @@ function renderPopulares() {
     if (pops.length === 0) { sec.style.display = 'none'; return; }
     sec.style.display = 'block';
     row.innerHTML = pops.map(p => {
-        const img = p.imagen || 'img/default-product.jpg';
+        const img = optImg(p.imagen,300) || 'img/default-product.jpg';
         return '<div class="popular-card" onclick="scrollToProduct(\''+p.id+'\')"><img src="'+esc(img)+'" alt="'+esc(p.nombre)+'" loading="lazy"><div class="popular-card-info"><div class="popular-card-name">'+esc(p.nombre)+'</div><div class="popular-card-price">$'+p.precio.toLocaleString('es-AR')+'</div></div><button class="popular-card-btn" onclick="event.stopPropagation();addToCart(\''+p.id+'\')"><i class="bi bi-cart-plus"></i> Agregar</button></div>';
     }).join('');
 }
@@ -177,7 +178,7 @@ function renderProducts(list) {
     if (list.length===0) { c.innerHTML='<div class="empty-products"><i class="bi bi-search" style="font-size:2.5rem;color:var(--color-text-light)"></i><p style="color:var(--color-text-light);margin-top:1rem;font-size:1.05rem">No se encontraron productos</p></div>'; return; }
     c.innerHTML = list.map(p => {
         const ci=carrito.find(i=>i.id===p.id),qty=ci?ci.cantidad:0;
-        const img=p.imagen||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e8e0d5%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22155%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22%3ESin imagen%3C/text%3E%3C/svg%3E';
+        const img=optImg(p.imagen,400)||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23e8e0d5%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22155%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22%3ESin imagen%3C/text%3E%3C/svg%3E';
         const noStock = p.stock === 0;
         return '<article class="product-card" data-id="'+p.id+'">' +
             '<div class="product-image"><div class="img-skeleton"></div><img src="'+esc(img)+'" alt="'+esc(p.nombre)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'img/default-product.jpg\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
@@ -247,7 +248,7 @@ function updateCartUI() {
 function renderCartItems() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
     body.querySelectorAll('.cart-item').forEach(i=>i.remove());
-    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(item.imagen||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
+    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(optImg(item.imagen,100)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
 }
 
 function updateShippingBar(total) {
