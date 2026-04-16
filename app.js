@@ -284,19 +284,38 @@ async function loadSiteContent(){try{const snap=await db.collection('config').do
 loadSiteContent();
 
 // === REVIEWS ===
+let allReviewsIndex=[];let rvFilter='all';
 async function loadReviews(){
     const grid=document.getElementById('reviewsGrid');if(!grid)return;
     try{
-        const snap=await db.collection('resenas').orderBy('fecha','desc').limit(30).get();
-        const docs=snap.docs.filter(d=>{const r=d.data();return r.visible===true&&r.usado===true;}).slice(0,12);
-        if(!docs.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>Aun no hay opiniones. Se el primero!</p></div>';return;}
-        grid.innerHTML=docs.map(d=>{
-            const r=d.data();
-            const stars='&#9733;'.repeat(r.estrellas||0)+'&#9734;'.repeat(5-(r.estrellas||0));
-            const fecha=r.fecha&&r.fecha.toDate?r.fecha.toDate().toLocaleDateString('es-AR'):'';
-            return '<div class="review-card"><div class="review-stars">'+stars+'</div><div class="review-text">"'+esc(r.comentario||'')+'"</div><div class="review-author">'+esc(r.nombre||'')+'</div><div class="review-date">'+fecha+'</div></div>';
-        }).join('');
+        const snap=await db.collection('resenas').orderBy('fecha','desc').limit(50).get();
+        allReviewsIndex=snap.docs.filter(d=>{const r=d.data();return r.visible===true&&r.usado===true;}).map(d=>{const r=d.data();return{...r,fecha:r.fecha&&r.fecha.toDate?r.fecha.toDate():new Date()};});
+        const filtersEl=document.getElementById('reviewsFilters');
+        if(filtersEl)filtersEl.style.display=allReviewsIndex.length>0?'flex':'none';
+        renderReviewsIndex();
     }catch(e){console.error('Reviews error:',e);grid.innerHTML='';}
+}
+function filterReviews(f){
+    rvFilter=f;
+    document.querySelectorAll('.rv-filter-btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderReviewsIndex();
+}
+window.filterReviews=filterReviews;
+function renderReviewsIndex(){
+    const grid=document.getElementById('reviewsGrid');if(!grid)return;
+    let items=allReviewsIndex;
+    if(rvFilter==='positive')items=items.filter(r=>(r.estrellas||0)>=3);
+    else if(rvFilter==='negative')items=items.filter(r=>(r.estrellas||0)<=2);
+    else if(typeof rvFilter==='number')items=items.filter(r=>(r.estrellas||0)===rvFilter);
+    items=items.slice(0,10);
+    if(!items.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>'+(rvFilter==='all'?'Aun no hay opiniones.':'No hay opiniones con este filtro.')+'</p></div>';return;}
+    grid.innerHTML=items.map(r=>{
+        const stars='&#9733;'.repeat(r.estrellas||0)+'&#9734;'.repeat(5-(r.estrellas||0));
+        const fecha=r.fecha.toLocaleDateString('es-AR');
+        const hora=r.fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+        return '<div class="review-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem"><div class="review-stars">'+stars+'</div><span class="review-date">'+fecha+' '+hora+'</span></div><div class="review-text">"'+esc(r.comentario||'')+'"</div><div class="review-author">'+esc(r.nombre||'')+'</div></div>';
+    }).join('');
 }
 loadReviews();
 
