@@ -298,3 +298,48 @@ async function loadReviews(){
     }catch(e){console.error('Reviews error:',e);grid.innerHTML='';}
 }
 loadReviews();
+
+// === REVIEW SYSTEM ===
+let rvStars=0,rvTokenId=null;
+function rvSetStars(n){rvStars=n;document.querySelectorAll('#rvStars span').forEach((s,i)=>{s.style.color=i<n?'#e6a817':'#d4cfc5';s.style.transform=i<n?'scale(1.15)':'scale(1)';});}
+window.rvSetStars=rvSetStars;
+
+async function rvSubmit(){
+    const nombre=document.getElementById('rvNombre').value.trim();
+    const comentario=document.getElementById('rvComentario').value.trim();
+    if(!nombre){showToast('Escribi tu nombre','error');return;}
+    if(!rvStars){showToast('Selecciona las estrellas','error');return;}
+    if(!comentario){showToast('Escribi un comentario','error');return;}
+    const btn=document.getElementById('rvSubmitBtn');
+    btn.disabled=true;btn.textContent='Enviando...';
+    try{
+        await db.collection('resenas').doc(rvTokenId).set({nombre,estrellas:rvStars,comentario,fecha:new Date(),visible:true,usado:true});
+        document.getElementById('rvFormArea').style.display='none';
+        document.getElementById('rvSuccessArea').style.display='block';
+        loadReviews();
+    }catch(e){showToast('Error al enviar','error');btn.disabled=false;btn.textContent='Enviar opinion';}
+}
+window.rvSubmit=rvSubmit;
+
+async function checkReviewToken(){
+    const hash=window.location.hash;
+    if(!hash||!hash.startsWith('#resena-'))return;
+    rvTokenId=hash.replace('#resena-','');
+    if(!rvTokenId)return;
+    try{
+        const doc=await db.collection('resenas').doc(rvTokenId).get();
+        const modal=document.getElementById('reviewModal');
+        if(doc.exists&&doc.data().usado){
+            document.getElementById('rvFormArea').style.display='none';
+            document.getElementById('rvUsedArea').style.display='block';
+        }else{
+            document.getElementById('rvFormArea').style.display='block';
+            document.getElementById('rvUsedArea').style.display='none';
+            document.getElementById('rvSuccessArea').style.display='none';
+        }
+        modal.style.display='flex';
+    }catch(e){console.error('Review token error:',e);}
+    window.location.hash='';
+}
+checkReviewToken();
+window.addEventListener('hashchange',checkReviewToken);
