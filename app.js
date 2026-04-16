@@ -287,13 +287,14 @@ loadSiteContent();
 async function loadReviews(){
     const grid=document.getElementById('reviewsGrid');if(!grid)return;
     try{
-        const snap=await db.collection('resenas').where('visible','==',true).orderBy('fecha','desc').limit(12).get();
-        if(snap.empty){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>Aun no hay opiniones. Se el primero!</p></div>';return;}
-        grid.innerHTML=snap.docs.map(d=>{
+        const snap=await db.collection('resenas').orderBy('fecha','desc').limit(30).get();
+        const docs=snap.docs.filter(d=>{const r=d.data();return r.visible===true&&r.usado===true;}).slice(0,12);
+        if(!docs.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>Aun no hay opiniones. Se el primero!</p></div>';return;}
+        grid.innerHTML=docs.map(d=>{
             const r=d.data();
-            const stars='&#9733;'.repeat(r.estrellas)+'&#9734;'.repeat(5-r.estrellas);
+            const stars='&#9733;'.repeat(r.estrellas||0)+'&#9734;'.repeat(5-(r.estrellas||0));
             const fecha=r.fecha&&r.fecha.toDate?r.fecha.toDate().toLocaleDateString('es-AR'):'';
-            return '<div class="review-card"><div class="review-stars">'+stars+'</div><div class="review-text">"'+esc(r.comentario)+'"</div><div class="review-author">'+esc(r.nombre)+'</div><div class="review-date">'+fecha+'</div></div>';
+            return '<div class="review-card"><div class="review-stars">'+stars+'</div><div class="review-text">"'+esc(r.comentario||'')+'"</div><div class="review-author">'+esc(r.nombre||'')+'</div><div class="review-date">'+fecha+'</div></div>';
         }).join('');
     }catch(e){console.error('Reviews error:',e);grid.innerHTML='';}
 }
