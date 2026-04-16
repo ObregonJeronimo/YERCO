@@ -322,24 +322,23 @@ async function rvSubmit(){
 window.rvSubmit=rvSubmit;
 
 async function checkReviewToken(){
-    const hash=window.location.hash;
-    if(!hash||!hash.startsWith('#resena-'))return;
-    rvTokenId=hash.replace('#resena-','');
-    if(!rvTokenId)return;
+    const params=new URLSearchParams(window.location.search);
+    const token=params.get('r');
+    if(!token)return;
+    rvTokenId=token;
     try{
         const doc=await db.collection('resenas').doc(rvTokenId).get();
         const modal=document.getElementById('reviewModal');
         if(doc.exists&&doc.data().usado){
             document.getElementById('rvFormArea').style.display='none';
             document.getElementById('rvUsedArea').style.display='block';
-        }else{
+        }else if(doc.exists){
             document.getElementById('rvFormArea').style.display='block';
             document.getElementById('rvUsedArea').style.display='none';
             document.getElementById('rvSuccessArea').style.display='none';
-        }
+        }else{return;}
         modal.style.display='flex';
     }catch(e){console.error('Review token error:',e);}
-    window.location.hash='';
+    window.history.replaceState(null,'',window.location.pathname);
 }
 checkReviewToken();
-window.addEventListener('hashchange',checkReviewToken);
