@@ -316,7 +316,7 @@ img { max-width: 100%; height: auto; }
 .review-text { font-size: 0.95rem; color: var(--color-text); line-height: 1.5; margin-bottom: 0.75rem; font-style: italic; }
 .review-author { font-size: 0.85rem; font-weight: 600; color: var(--color-primary-dark); }
 .review-date { font-size: 0.75rem; color: var(--color-text-light); margin-top: 0.25rem; }
-@media(max-width:768px) { .reviews-grid { grid-template-columns: 1fr; } }
+@media(max-width:768px) { .reviews-grid { grid-template-columns: 1fr; gap: 0; } .review-card { border-radius: 0; padding: 0.75rem 1rem; box-shadow: none; border-bottom: 1px solid #e8e0d5; } .review-card:hover { transform: none; } .review-stars { font-size: 0.85rem; letter-spacing: 1px; } .review-text { font-size: 0.85rem; margin-bottom: 0.4rem; line-height: 1.4; } .review-author { font-size: 0.8rem; } .review-date { font-size: 0.7rem; } .reviews-grid-wrap { background: white; border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); } }
 
 /* === REVIEW FILTERS === */
 .reviews-filters { display: flex; }

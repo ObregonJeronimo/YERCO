@@ -284,7 +284,7 @@ async function loadSiteContent(){try{const snap=await db.collection('config').do
 loadSiteContent();
 
 // === REVIEWS ===
-let allReviewsIndex=[];let rvFilter='all';
+let allReviewsIndex=[];let rvFilter='all';let rvPage=0;
 async function loadReviews(){
     const grid=document.getElementById('reviewsGrid');if(!grid)return;
     try{
@@ -292,30 +292,38 @@ async function loadReviews(){
         allReviewsIndex=snap.docs.filter(d=>{const r=d.data();return r.visible===true&&r.usado===true;}).map(d=>{const r=d.data();return{...r,fecha:r.fecha&&r.fecha.toDate?r.fecha.toDate():new Date()};});
         const filtersEl=document.getElementById('reviewsFilters');
         if(filtersEl)filtersEl.style.display=allReviewsIndex.length>0?'flex':'none';
-        renderReviewsIndex();
+        rvPage=0;renderReviewsIndex();
     }catch(e){console.error('Reviews error:',e);grid.innerHTML='';}
 }
 function filterReviews(f){
-    rvFilter=f;
+    rvFilter=f;rvPage=0;
     document.querySelectorAll('.rv-filter-btn').forEach(b=>b.classList.remove('active'));
     event.target.classList.add('active');
     renderReviewsIndex();
 }
 window.filterReviews=filterReviews;
+function rvGoPage(p){rvPage=p;renderReviewsIndex();document.getElementById('resenas').scrollIntoView({behavior:'smooth'});}
+window.rvGoPage=rvGoPage;
 function renderReviewsIndex(){
     const grid=document.getElementById('reviewsGrid');if(!grid)return;
     let items=allReviewsIndex;
     if(rvFilter==='positive')items=items.filter(r=>(r.estrellas||0)>=3);
     else if(rvFilter==='negative')items=items.filter(r=>(r.estrellas||0)<=2);
     else if(typeof rvFilter==='number')items=items.filter(r=>(r.estrellas||0)===rvFilter);
-    items=items.slice(0,10);
-    if(!items.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>'+(rvFilter==='all'?'Aun no hay opiniones.':'No hay opiniones con este filtro.')+'</p></div>';return;}
-    grid.innerHTML=items.map(r=>{
+    const isMobile=window.innerWidth<=768;
+    const perPage=isMobile?4:10;
+    const pages=Math.ceil(items.length/perPage)||1;
+    if(rvPage>=pages)rvPage=pages-1;
+    const shown=items.slice(rvPage*perPage,(rvPage+1)*perPage);
+    if(!shown.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#999;grid-column:1/-1"><p>'+(rvFilter==='all'?'Aun no hay opiniones.':'No hay opiniones con este filtro.')+'</p></div>';document.getElementById('reviewsPager').innerHTML='';return;}
+    grid.innerHTML=shown.map(r=>{
         const stars='&#9733;'.repeat(r.estrellas||0)+'&#9734;'.repeat(5-(r.estrellas||0));
         const fecha=r.fecha.toLocaleDateString('es-AR');
         const hora=r.fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-        return '<div class="review-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem"><div class="review-stars">'+stars+'</div><span class="review-date">'+fecha+' '+hora+'</span></div><div class="review-text">"'+esc(r.comentario||'')+'"</div><div class="review-author">'+esc(r.nombre||'')+'</div></div>';
+        return '<div class="review-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem"><div class="review-stars">'+stars+'</div><span class="review-date">'+fecha+' '+hora+'</span></div><div class="review-text">"'+esc(r.comentario||'')+'"</div><div class="review-author">'+esc(r.nombre||'')+'</div></div>';
     }).join('');
+    const pg=document.getElementById('reviewsPager');
+    if(pages>1){pg.innerHTML='<button onclick="rvGoPage('+(rvPage-1)+')" style="padding:0.4rem 1rem;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer"'+(rvPage===0?' disabled':'')+'>Ant</button><span style="padding:0.4rem 0.5rem;font-size:0.85rem;color:#666">'+(rvPage+1)+'/'+pages+'</span><button onclick="rvGoPage('+(rvPage+1)+')" style="padding:0.4rem 1rem;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer"'+(rvPage>=pages-1?' disabled':'')+'>Sig</button>';}else{pg.innerHTML='';}
 }
 loadReviews();
 
