@@ -49,7 +49,7 @@ async function loadProductsFromFirebase(retries) {
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
-        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', precio:r.precio||0, stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false }; });
+        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', precio:r.precio||0, stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); loadIndexPacks(); aplicarFiltros();
     } catch(e) { console.error(e); if(retries>0){setTimeout(()=>loadProductsFromFirebase(retries-1),1500);return;} showToast('Error al cargar productos.','error'); }
     finally { if (loading) loading.classList.remove('show'); }
