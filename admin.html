@@ -97,7 +97,7 @@
     </nav>
     <div class="admin-main">
     <div class="stats-row"><div class="stat-card"><div class="stat-label">Total Productos</div><div class="stat-value" id="statTotal">0</div></div><div class="stat-card"><div class="stat-label">Categorias</div><div class="stat-value" id="statCats">0</div></div><div class="stat-card"><div class="stat-label">Sin Stock <span class="stat-tooltip-trigger" onclick="toggleStatTooltip('outstock')">?</span><div class="stat-tooltip" id="tooltipOutstock"></div></div><div class="stat-value" style="color:var(--danger)" id="statOutStock">0</div></div><div class="stat-card"><div class="stat-label">Stock Bajo <span class="stat-tooltip-trigger" onclick="toggleStatTooltip('lowstock')">?</span><div class="stat-tooltip" id="tooltipLowstock"></div></div><div class="stat-value" style="color:var(--warning)" id="statLowStock">0</div><div class="stock-threshold-row"><label>Limite:</label><input type="number" class="threshold-input" id="lowStockThreshold" value="10" min="1" max="999" onchange="saveLowStockThreshold()"></div></div><div class="stat-card"><div class="stat-label">Sin Categoria <span class="stat-tooltip-trigger" onclick="openNoCatModal()">?</span></div><div class="stat-value" style="color:#9b59b6" id="statNoCat">0</div></div></div>
-    <div class="section-content active" id="sec-products"><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." id="searchInput" oninput="filterTable()"></div><select class="form-input" style="width:auto;min-width:160px" id="filterCat" onchange="filterTable()"><option value="">Todas</option></select><button class="btn btn-secondary" style="width:auto;padding:6px 10px" onclick="openCatManager()" title="Administrar categorias"><i class="bi bi-gear"></i></button><button class="btn btn-primary" style="width:auto" onclick="openModal()"><i class="bi bi-plus-lg"></i> Nuevo</button><button class="btn btn-secondary" style="width:auto" onclick="openPriceModal('all')"><i class="bi bi-percent"></i> Costo %</button><button class="btn btn-secondary" style="width:auto" onclick="exportCostosExcel()"><i class="bi bi-download"></i> Exportar</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excel')"><i class="bi bi-upload"></i> Importar Costos</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excelNew')"><i class="bi bi-file-earmark-plus"></i> Importar Nuevos</button><button class="btn btn-secondary" style="width:auto" onclick="openRoundModal('all')"><i class="bi bi-arrows-angle-contract"></i> Redondear</button><button class="btn btn-secondary" style="width:auto;background:#2d6b4a;border-color:#2d6b4a;color:#ccc" onclick="openWeeklyPdfModal()"><i class="bi bi-calendar-week"></i> PDF Semanal</button></div><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th onclick="sortTableBy('imagen')" style="cursor:pointer">Img <i class="bi bi-arrow-down-up" id="sortIconImagen" style="font-size:0.6rem;opacity:0.4"></i></th><th>Nombre</th><th>Cat / Sub</th><th onclick="sortTableBy('costo')">Costo <i class="bi bi-arrow-down-up" id="sortIconCosto" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('porcentaje')">Porcentaje(%) <i class="bi bi-arrow-down-up" id="sortIconPct" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('precio')">Precio <i class="bi bi-arrow-down-up" id="sortIconPrecio" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('stock')">Stock <i class="bi bi-arrow-down-up" id="sortIconStock" style="font-size:0.6rem;opacity:0.4"></i></th><th>Acciones</th></tr></thead><tbody id="productsTableBody"><tr><td colspan="8"><div class="empty-state"><i class="bi bi-box-seam"></i><p>Cargando...</p></div></td></tr></tbody></table></div></div></div>
+    <div class="section-content active" id="sec-products"><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." id="searchInput" oninput="filterTable()"></div><select class="form-input" style="width:auto;min-width:160px" id="filterCat" onchange="filterTable()"><option value="">Todas</option></select><button class="btn btn-secondary" style="width:auto;padding:6px 10px" onclick="openCatManager()" title="Administrar categorias"><i class="bi bi-gear"></i></button><button class="btn btn-primary" style="width:auto" onclick="openModal()"><i class="bi bi-plus-lg"></i> Nuevo</button><button class="btn btn-secondary" style="width:auto" onclick="openPriceModal('all')"><i class="bi bi-percent"></i> Costo %</button><button class="btn btn-secondary" style="width:auto" onclick="exportCostosExcel()"><i class="bi bi-download"></i> Exportar</button><button class="btn btn-secondary" style="width:auto;background:#8a2d2d;border-color:#8a2d2d;color:#fff" onclick="exportCatalogoPDF()" title="Descargar catalogo PDF para clientes"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excel')"><i class="bi bi-upload"></i> Importar Costos</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excelNew')"><i class="bi bi-file-earmark-plus"></i> Importar Nuevos</button><button class="btn btn-secondary" style="width:auto" onclick="openRoundModal('all')"><i class="bi bi-arrows-angle-contract"></i> Redondear</button><button class="btn btn-secondary" style="width:auto;background:#2d6b4a;border-color:#2d6b4a;color:#ccc" onclick="openWeeklyPdfModal()"><i class="bi bi-calendar-week"></i> PDF Semanal</button></div><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th onclick="sortTableBy('imagen')" style="cursor:pointer">Img <i class="bi bi-arrow-down-up" id="sortIconImagen" style="font-size:0.6rem;opacity:0.4"></i></th><th>Nombre</th><th>Cat / Sub</th><th onclick="sortTableBy('costo')">Costo <i class="bi bi-arrow-down-up" id="sortIconCosto" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('porcentaje')">Porcentaje(%) <i class="bi bi-arrow-down-up" id="sortIconPct" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('precio')">Precio <i class="bi bi-arrow-down-up" id="sortIconPrecio" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('stock')">Stock <i class="bi bi-arrow-down-up" id="sortIconStock" style="font-size:0.6rem;opacity:0.4"></i></th><th>Acciones</th></tr></thead><tbody id="productsTableBody"><tr><td colspan="8"><div class="empty-state"><i class="bi bi-box-seam"></i><p>Cargando...</p></div></td></tr></tbody></table></div></div></div>
     <div class="section-content" id="sec-packs"><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openPackModal()"><i class="bi bi-plus-lg"></i> Nuevo Pack</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar pack..." id="packSearch" oninput="filterPacks()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadPacks()"><i class="bi bi-arrow-clockwise"></i></button></div><div id="packsList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando packs...</p></div></div></div>
     <div class="modal-overlay" id="packModal"><div class="modal-box" style="max-width:750px;max-height:92vh"><div class="modal-header"><h3 id="packModalTitle">Nuevo Pack</h3><button class="modal-close" onclick="closePackModal()"><i class="bi bi-x-lg"></i></button></div><div style="padding:1.25rem;overflow-y:auto;max-height:calc(92vh - 80px)"><div class="form-group"><label>Nombre del pack</label><input type="text" class="form-input" id="packNombre" placeholder="Ej: Pack Desayuno Saludable"></div><div class="form-group"><label>Imagen (opcional)</label><div style="display:flex;align-items:center;gap:10px"><img id="packImgPreview" src="" style="width:50px;height:50px;object-fit:cover;border:1px solid var(--border);border-radius:8px;background:var(--bg-input)"><button type="button" class="btn btn-secondary btn-sm" style="width:auto" onclick="document.getElementById('packImgFile').click()"><i class="bi bi-upload"></i></button><input type="file" class="file-input-hidden" id="packImgFile" accept="image/*" onchange="packImgFileData=this.files[0];if(this.files[0])document.getElementById('packImgPreview').src=URL.createObjectURL(this.files[0])"></div></div><div class="form-group"><label>Agregar productos al pack</label><div class="search-box" style="margin-bottom:0.5rem"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." id="packProdSearch" oninput="filterPackProducts()"></div><div id="packProdList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px"></div></div><div class="form-group"><label>Productos en el pack</label><div id="packItemsList"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)"><div><span style="font-size:0.85rem;color:var(--text-dim)">Precio calculado: </span><strong style="color:var(--accent-light)" id="packCalcPrice">$0</strong></div><div style="display:flex;align-items:center;gap:8px"><label style="font-size:0.85rem;color:var(--text-dim)">Precio de venta:</label><input type="number" class="form-input" id="packPrecioVenta" style="width:120px" min="0" oninput="updatePackPrice()"></div></div></div><div class="form-actions"><button class="btn btn-secondary" onclick="closePackModal()">Cancelar</button><button class="btn btn-primary" onclick="savePack()" id="savePackBtn"><i class="bi bi-check-lg"></i> Guardar</button></div></div></div></div>
     <div class="section-content" id="sec-stock"><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto para agregar stock..." id="stockSearch" oninput="filterStockList()"></div><select class="form-input" style="width:auto;min-width:160px" id="stockFilterCat" onchange="filterStockList()"><option value="">Todas</option></select><button class="btn btn-secondary" style="width:auto" id="stockSortBtn" onclick="toggleStockSort()"><i class="bi bi-sort-numeric-down"></i> Mayor stock</button></div><div id="stockList"></div></div>
@@ -140,6 +140,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
         const auth=firebase.auth(),storage=firebase.storage();let allProducts=[],editingId=null,selectedImageFile=null,existingImageUrl=null;
@@ -380,6 +381,202 @@
 
         /* === EXPORTAR/IMPORTAR COSTOS EXCEL === */
         function exportCostosExcel(){if(!allProducts.length){showAdminToast('No hay productos','error');return;}const data=[['NOMBRE','COSTO','PORCENTAJE']];allProducts.forEach(p=>data.push([p.nombre||'',p.costo||0,p.porcentaje||0]));const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=[{wch:50},{wch:12},{wch:14}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Costos');XLSX.writeFile(wb,'YERCO_costos_'+new Date().toISOString().split('T')[0]+'.xlsx');showAdminToast('Excel exportado','success');}
+
+        /* === EXPORTAR CATALOGO PDF PARA CLIENTES === */
+        /* Orden de categorias segun PDF del proveedor. Matching por palabras clave (case-insensitive). */
+        const _catalogoOrden=[
+            {titulo:'MIX DE FRUTOS SECOS',keywords:['MIX DE FRUTOS SECOS','MIX DE FRUTOS','FRUTOS SECOS MIX']},
+            {titulo:'CEREALES',keywords:['CEREALES','CEREAL']},
+            {titulo:'FRUTAS SECAS',keywords:['FRUTAS SECAS','FRUTOS SECOS']},
+            {titulo:'FRUTAS DESECADAS',keywords:['FRUTAS DESECADAS','DESECADAS','DESHIDRATADAS']},
+            {titulo:'FRUTAS TROPICALES',keywords:['FRUTAS TROPICALES','TROPICALES']},
+            {titulo:'SEMILLAS',keywords:['SEMILLAS','SEMILLA']},
+            {titulo:'ARROZ',keywords:['ARROZ','ARROCES']},
+            {titulo:'SNACKS',keywords:['SNACK']},
+            {titulo:'HARINAS, FECULAS Y TEXTURIZADOS',keywords:['HARINA','FECULA','TEXTURIZAD']},
+            {titulo:'SUPLEMENTOS NATURALES',keywords:['SUPLEMENTO','SUPLEMENTOS']},
+            {titulo:'ACEITES',keywords:['ACEITE']},
+            {titulo:'CONDIMENTOS',keywords:['CONDIMENTO','ESPECIA']},
+            {titulo:'LEGUMBRES',keywords:['LEGUMBRE']},
+            {titulo:'FIDEOS Y PREMEZCLAS',keywords:['FIDEO','PREMEZCLA','PASTA']},
+            {titulo:'REPOSTERIA',keywords:['REPOSTERIA','REPOSTER']},
+            {titulo:'YERBA, TE, INFUSIONES Y CAFE',keywords:['YERBA','TE','INFUSION','CAFE','MATE']},
+            {titulo:'REGIONALES Y OTROS',keywords:['REGIONAL','OTROS','MIEL','MERMELADA','DULCE']}
+        ];
+
+        function _catalogoMatchIdx(catNombre){
+            if(!catNombre)return 999;
+            const up=catNombre.toUpperCase().trim();
+            for(let i=0;i<_catalogoOrden.length;i++){
+                const group=_catalogoOrden[i];
+                for(const kw of group.keywords){
+                    if(up===kw.toUpperCase())return i;
+                }
+            }
+            for(let i=0;i<_catalogoOrden.length;i++){
+                const group=_catalogoOrden[i];
+                for(const kw of group.keywords){
+                    if(up.includes(kw.toUpperCase()))return i;
+                }
+            }
+            return 999;
+        }
+
+        function exportCatalogoPDF(){
+            if(!allProducts.length){showAdminToast('No hay productos','error');return;}
+            if(!window.jspdf||!window.jspdf.jsPDF){showAdminToast('Libreria PDF no cargada, recarga la pagina','error');return;}
+            const visibles=allProducts.filter(p=>p.oculto!==true&&p.nombre&&(p.precio||0)>0);
+            if(!visibles.length){showAdminToast('No hay productos visibles con precio','error');return;}
+
+            /* Agrupar: { catNombre: { '__sin__': [...], subNombre: [...] } } */
+            const grupos={};
+            visibles.forEach(p=>{
+                const cat=p.categoria||'Sin categoria';
+                const sub=p.subcategoria||'__sin__';
+                if(!grupos[cat])grupos[cat]={};
+                if(!grupos[cat][sub])grupos[cat][sub]=[];
+                grupos[cat][sub].push(p);
+            });
+
+            /* Ordenar categorias: primero las del proveedor en su orden, luego las que no matchean alfabetico */
+            const catNames=Object.keys(grupos);
+            catNames.sort((a,b)=>{
+                const ia=_catalogoMatchIdx(a);
+                const ib=_catalogoMatchIdx(b);
+                if(ia!==ib)return ia-ib;
+                return a.localeCompare(b,'es');
+            });
+
+            /* Generar PDF con jsPDF */
+            const {jsPDF}=window.jspdf;
+            const doc=new jsPDF({unit:'mm',format:'a4'});
+            const pageW=doc.internal.pageSize.getWidth();
+            const pageH=doc.internal.pageSize.getHeight();
+            const marginX=12;
+            const marginTop=16;
+            const marginBottom=14;
+            const colGap=6;
+            const colW=(pageW-marginX*2-colGap)/2;
+
+            let col=0;
+            let y=marginTop;
+            const today=new Date().toLocaleDateString('es-AR');
+
+            /* Header de pagina */
+            function drawHeader(){
+                doc.setFillColor(45,107,74);
+                doc.rect(0,0,pageW,10,'F');
+                doc.setTextColor(255,255,255);
+                doc.setFont('helvetica','bold');
+                doc.setFontSize(11);
+                doc.text('YERCO  -  Lista de precios',marginX,6.8);
+                doc.setFont('helvetica','normal');
+                doc.setFontSize(8);
+                doc.text('Actualizado: '+today,pageW-marginX,6.8,{align:'right'});
+                doc.setTextColor(0,0,0);
+            }
+
+            function newPage(){
+                doc.addPage();
+                col=0;
+                y=marginTop;
+                drawHeader();
+            }
+
+            function nextColumnOrPage(){
+                if(col===0){col=1;y=marginTop;}
+                else{newPage();}
+            }
+
+            function ensureSpace(need){
+                if(y+need>pageH-marginBottom)nextColumnOrPage();
+            }
+
+            function colX(){return marginX+col*(colW+colGap);}
+
+            drawHeader();
+
+            /* Dibujar categorias */
+            catNames.forEach((catName,idx)=>{
+                const catGroup=grupos[catName];
+                /* Titulo categoria: fondo coloreado, bold, grande */
+                const catTitleH=9;
+                ensureSpace(catTitleH+6);
+                const x=colX();
+                doc.setFillColor(201,127,53);
+                doc.rect(x,y,colW,catTitleH,'F');
+                doc.setTextColor(255,255,255);
+                doc.setFont('helvetica','bold');
+                doc.setFontSize(11);
+                doc.text(catName.toUpperCase(),x+2.5,y+6);
+                doc.setTextColor(0,0,0);
+                y+=catTitleH+2;
+
+                /* Ordenar subcategorias: primero __sin__, despues alfabetico */
+                const subNames=Object.keys(catGroup).sort((a,b)=>{
+                    if(a==='__sin__')return -1;
+                    if(b==='__sin__')return 1;
+                    return a.localeCompare(b,'es');
+                });
+
+                subNames.forEach(subName=>{
+                    const prods=catGroup[subName].slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+                    if(subName!=='__sin__'){
+                        const subH=5.5;
+                        ensureSpace(subH+4);
+                        const sx=colX();
+                        doc.setFillColor(240,220,200);
+                        doc.rect(sx,y,colW,subH,'F');
+                        doc.setTextColor(120,55,10);
+                        doc.setFont('helvetica','bold');
+                        doc.setFontSize(8.5);
+                        doc.text(subName,sx+2,y+3.9);
+                        doc.setTextColor(0,0,0);
+                        y+=subH+1;
+                    }
+                    /* Productos */
+                    doc.setFont('helvetica','normal');
+                    doc.setFontSize(8);
+                    prods.forEach(p=>{
+                        const lineH=4.3;
+                        ensureSpace(lineH);
+                        const px=colX();
+                        const precio='$'+Math.round(p.precio||0).toLocaleString('es-AR');
+                        const precioW=doc.getTextWidth(precio);
+                        const maxNameW=colW-precioW-4;
+                        let nombre=p.nombre||'';
+                        /* Truncar nombre si no entra */
+                        while(doc.getTextWidth(nombre)>maxNameW&&nombre.length>4){
+                            nombre=nombre.slice(0,-1);
+                        }
+                        if(nombre!==(p.nombre||''))nombre=nombre.slice(0,-1)+'\u2026';
+                        doc.text(nombre,px,y+3);
+                        doc.setFont('helvetica','bold');
+                        doc.text(precio,px+colW,y+3,{align:'right'});
+                        doc.setFont('helvetica','normal');
+                        y+=lineH;
+                    });
+                    y+=1.5;
+                });
+                y+=2;
+            });
+
+            /* Numero de pagina en el pie */
+            const totalPages=doc.internal.getNumberOfPages();
+            for(let i=1;i<=totalPages;i++){
+                doc.setPage(i);
+                doc.setFont('helvetica','normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(120,120,120);
+                doc.text('Pagina '+i+' de '+totalPages,pageW/2,pageH-5,{align:'center'});
+                doc.setTextColor(0,0,0);
+            }
+
+            const fn='YERCO_catalogo_'+new Date().toISOString().split('T')[0]+'.pdf';
+            doc.save(fn);
+            showAdminToast('PDF exportado: '+visibles.length+' productos','success');
+            logAction('editar','Exportacion de catalogo PDF: '+visibles.length+' productos','');
+        }
 
         /* === EDITOR WEB === */
         const SC_FIELDS=['heroBadge','heroTitle1','heroTitle2','heroSubtitle','stat1Num','stat1Label','stat2Num','stat2Label','nosotrosTag','nosotrosTitulo','nosotrosTexto','badge1','badge2','card1t','card1p','card2t','card2p','card3t','card3p','card4t','card4p','ctaTitulo','ctaTexto','footerDesc','instagram','whatsapp','email'];
