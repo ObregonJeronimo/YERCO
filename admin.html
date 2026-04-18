@@ -617,6 +617,7 @@
             {nombre:'FLOR DE HIBISCUS x 1 kg',costo:15838},
             {nombre:'FLOR DE HIBISCUS x 20 kg',costo:293657}
         ];
+        const _lmImgFiles={};  /* idx -> File */
 
         function openLoadMissingModal(){
             document.getElementById('lmModal').classList.add('show');
@@ -630,8 +631,19 @@
             const el=document.getElementById('lmList');
             el.innerHTML=_missingFromPdf.map((p,i)=>{
                 const precio=Math.round(p.costo*(1+pct/100));
-                return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;flex:1;min-width:200px"><input type="checkbox" class="lm-sel" data-idx="'+i+'" checked><span style="color:#c084fc;font-weight:500">'+(i+1)+'. '+esc(p.nombre)+'</span></label><span style="font-family:var(--mono);color:var(--text-dim);font-size:0.82rem">Costo: $'+p.costo.toLocaleString('es-AR')+' \u2192 Precio: $'+precio.toLocaleString('es-AR')+'</span></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="lmCat_'+i+'" class="form-input" style="padding:3px 6px;font-size:0.82rem;flex:1;min-width:160px" onchange="lmCatChanged('+i+')">'+catOpts+'</select><select id="lmSub_'+i+'" class="form-input" style="padding:3px 6px;font-size:0.82rem;flex:1;min-width:160px"><option value="">(sin sub)</option></select></div></div>';
+                const imgFile=_lmImgFiles[i];
+                const imgLabel=imgFile?esc(imgFile.name):'Sin imagen';
+                const imgColor=imgFile?'#67c23a':'var(--text-dim)';
+                return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:6px;flex:1;min-width:200px"><input type="checkbox" class="lm-sel" data-idx="'+i+'" checked><span style="color:#c084fc;font-weight:500">'+(i+1)+'. '+esc(p.nombre)+'</span></label><span style="font-family:var(--mono);color:var(--text-dim);font-size:0.82rem">Costo: $'+p.costo.toLocaleString('es-AR')+' \u2192 Precio: $'+precio.toLocaleString('es-AR')+'</span></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="lmCat_'+i+'" class="form-input" style="padding:3px 6px;font-size:0.82rem;flex:1;min-width:140px" onchange="lmCatChanged('+i+')">'+catOpts+'</select><select id="lmSub_'+i+'" class="form-input" style="padding:3px 6px;font-size:0.82rem;flex:1;min-width:140px"><option value="">(sin sub)</option></select><button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.78rem;white-space:nowrap" onclick="lmPickImg('+i+')" type="button"><i class="bi bi-image"></i> Imagen</button><span id="lmImgLabel_'+i+'" style="font-size:0.72rem;color:'+imgColor+';max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+imgLabel+'</span><input type="file" id="lmImgInput_'+i+'" accept="image/*" style="display:none" onchange="lmHandleImg('+i+',this)"></div></div>';
             }).join('');
+        }
+
+        function lmPickImg(idx){const inp=document.getElementById('lmImgInput_'+idx);if(inp)inp.click();}
+        function lmHandleImg(idx,inp){
+            const f=inp.files[0];
+            if(f){_lmImgFiles[idx]=f;}else{delete _lmImgFiles[idx];}
+            const lbl=document.getElementById('lmImgLabel_'+idx);
+            if(lbl){lbl.textContent=f?f.name:'Sin imagen';lbl.style.color=f?'#67c23a':'var(--text-dim)';}
         }
 
         function lmCatChanged(idx){
@@ -645,21 +657,36 @@
             const checks=document.querySelectorAll('.lm-sel:checked');
             if(!checks.length){showAdminToast('Selecciona al menos un producto','error');return;}
             const pct=35;const stock=parseInt(document.getElementById('lmStock')?.value)||10;
-            const prods=[];const sinCat=[];
+            /* 1. Validar categoria y juntar items a cargar */
+            const items=[];const sinCat=[];
             checks.forEach(c=>{
                 const i=parseInt(c.dataset.idx);
                 const cat=document.getElementById('lmCat_'+i).value;
                 const sub=document.getElementById('lmSub_'+i).value||null;
                 if(!cat){sinCat.push(_missingFromPdf[i].nombre);return;}
-                const costo=_missingFromPdf[i].costo;
-                const precio=Math.round(costo*(1+pct/100));
-                prods.push({nombre:_missingFromPdf[i].nombre,costo,porcentaje:pct,precio,stock,categoria:cat,subcategoria:sub,descripcion:_missingFromPdf[i].nombre,imagen:null,popular:false});
+                items.push({idx:i,cat,sub,imgFile:_lmImgFiles[i]||null});
             });
             if(sinCat.length){showAdminToast('Falta categoria en: '+sinCat.join(', '),'error');return;}
-            if(!prods.length)return;
-            if(!confirm('Agregar '+prods.length+' productos a la BDD con 35% de ganancia y stock '+stock+'?'))return;
-            const btn=document.getElementById('lmAddBtn');btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Agregando...';
+            if(!items.length)return;
+            const conImg=items.filter(it=>it.imgFile).length;
+            if(!confirm('Agregar '+items.length+' productos a la BDD?\n\n'+conImg+' con imagen, '+(items.length-conImg)+' sin imagen\n35% ganancia, stock '+stock))return;
+            const btn=document.getElementById('lmAddBtn');btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Subiendo imagenes...';
             try{
+                /* 2. Subir imagenes en paralelo (las que haya) */
+                const imgUploads=items.map(async it=>{
+                    if(!it.imgFile)return null;
+                    try{return await uploadImage(it.imgFile);}
+                    catch(e){console.error('Error subiendo img de',_missingFromPdf[it.idx].nombre,e);return null;}
+                });
+                const imgUrls=await Promise.all(imgUploads);
+                btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Guardando en BDD...';
+                /* 3. Armar productos con URLs */
+                const prods=items.map((it,k)=>{
+                    const m=_missingFromPdf[it.idx];
+                    const precio=Math.round(m.costo*(1+pct/100));
+                    return {nombre:m.nombre,costo:m.costo,porcentaje:pct,precio,stock,categoria:it.cat,subcategoria:it.sub,descripcion:m.nombre,imagen:imgUrls[k],popular:false};
+                });
+                /* 4. Batches en Firestore */
                 for(let i=0;i<prods.length;i+=450){
                     const batch=db.batch();
                     prods.slice(i,i+450).forEach(p=>batch.set(db.collection('productos').doc(),p));
@@ -668,12 +695,17 @@
                 showAdminToast(prods.length+' productos agregados','success');
                 logAction('crear','[TEMP] Cargar Faltantes: '+prods.length+' productos agregados','Productos: '+prods.map(p=>p.nombre).join(', '));
                 await loadProducts();
-                /* Quitar los ya agregados de la lista */
-                const agregadosNombres=new Set(prods.map(p=>p.nombre));
-                for(let i=_missingFromPdf.length-1;i>=0;i--){if(agregadosNombres.has(_missingFromPdf[i].nombre))_missingFromPdf.splice(i,1);}
+                /* 5. Quitar de la lista los ya agregados */
+                const agregadosIdx=new Set(items.map(it=>it.idx));
+                const sortedDesc=[...agregadosIdx].sort((a,b)=>b-a);
+                sortedDesc.forEach(i=>{_missingFromPdf.splice(i,1);delete _lmImgFiles[i];});
+                /* reindexar _lmImgFiles (los indices posteriores se corrieron) */
+                const newImgs={};Object.keys(_lmImgFiles).map(Number).sort((a,b)=>a-b).forEach(oldIdx=>{let shift=0;sortedDesc.forEach(rem=>{if(rem<oldIdx)shift++;});newImgs[oldIdx-shift]=_lmImgFiles[oldIdx];});
+                Object.keys(_lmImgFiles).forEach(k=>delete _lmImgFiles[k]);
+                Object.assign(_lmImgFiles,newImgs);
                 renderLmList();
                 if(!_missingFromPdf.length){setTimeout(()=>{document.getElementById('lmModal').classList.remove('show');showAdminToast('Listo! Todos los faltantes fueron cargados','success');},800);}
-            }catch(e){showAdminToast('Error: '+e.message,'error');}
+            }catch(e){showAdminToast('Error: '+e.message,'error');console.error(e);}
             finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-plus-circle"></i> Agregar seleccionados a BDD';}
         }
         /* === FIN [TEMP] CARGAR FALTANTES === */
