@@ -41,7 +41,7 @@ function initParticles() {
 
 function initContactForm() {
     const form = document.getElementById('contactForm'); if (!form) return;
-    form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value,em=document.getElementById('email').value,m=document.getElementById('mensaje').value; const msg='Hola, soy *'+n+'*\n\nConsulta: '+m+'\n\nMi email de contacto: '+em; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank'); form.reset(); if(document.getElementById('chatFloatBox'))document.getElementById('chatFloatBox').classList.remove('show'); if(document.getElementById('chatFloatBtn'))document.getElementById('chatFloatBtn').classList.remove('hide'); });
+    form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value.trim(),em=document.getElementById('email').value.trim(),m=document.getElementById('mensaje').value.trim(); const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s; const msg='Hola! Mi nombre es *'+cap(n)+'*, tengo una consulta:\n\n'+cap(m)+'\n\nMi mail es: '+em; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank'); form.reset(); if(document.getElementById('chatFloatBox'))document.getElementById('chatFloatBox').classList.remove('show'); if(document.getElementById('chatFloatBtn'))document.getElementById('chatFloatBtn').classList.remove('hide'); });
 }
 
 async function loadProductsFromFirebase(retries) {
