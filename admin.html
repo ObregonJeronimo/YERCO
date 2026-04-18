@@ -541,7 +541,7 @@
                         const lineH=4.3;
                         ensureSpace(lineH);
                         const px=colX();
-                        const precio='$'+Math.round(p.precio||0).toLocaleString('es-AR');
+                        const precio='$'+(p.precio||0).toLocaleString('es-AR');
                         const precioW=doc.getTextWidth(precio);
                         const maxNameW=colW-precioW-4;
                         let nombre=p.nombre||'';
