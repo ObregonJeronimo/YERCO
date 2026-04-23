@@ -9,8 +9,8 @@ let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
 let subcategoriaActual = null;
-let ordenPrecio = 'asc';
-let ordenAlfa = null;
+let ordenPrecio = null;
+let ordenAlfa = 'asc';
 let busquedaTexto = '';
 let paginaActual = 1;
 
@@ -77,10 +77,29 @@ function showPackDetail(packId){
     document.getElementById('packDetailItems').innerHTML=(p.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:0.92rem"><span>'+esc(i.nombre)+' <span style="color:#999">x'+i.cantidad+'</span></span><span style="font-weight:600">$'+(i.precio*i.cantidad).toLocaleString('es-AR')+'</span></div>').join('');
     document.getElementById('packDetailTotal').innerHTML='<span>Total Pack</span><span style="color:var(--color-primary-dark)">$'+(p.precioVenta||0).toLocaleString('es-AR')+'</span>';
     const addBtn=document.getElementById('packDetailAddBtn');
-    addBtn.onclick=()=>{(p.items||[]).forEach(i=>{for(let q=0;q<i.cantidad;q++)addToCart(i.id);});document.getElementById('packDetailModal').style.display='none';showToast('Pack agregado al carrito','success');};
-    document.getElementById('packDetailModal').style.display='flex';
+    addBtn.onclick=()=>{(p.items||[]).forEach(i=>{for(let q=0;q<i.cantidad;q++)addToCart(i.id);});closePackDetail();showToast('Pack agregado al carrito','success');};
+    const modal=document.getElementById('packDetailModal');
+    modal.style.display='flex';
+    document.body.style.overflow='hidden';
 }
+function closePackDetail(){
+    document.getElementById('packDetailModal').style.display='none';
+    document.body.style.overflow='';
+}
+/* Cerrar con click en fondo oscuro */
+document.addEventListener('click',e=>{
+    const modal=document.getElementById('packDetailModal');
+    if(modal&&e.target===modal)closePackDetail();
+});
+/* Cerrar con Esc */
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+        const modal=document.getElementById('packDetailModal');
+        if(modal&&modal.style.display==='flex')closePackDetail();
+    }
+});
 window.showPackDetail=showPackDetail;
+window.closePackDetail=closePackDetail;
 
 function getCategoriasConSub(prods) {
     const m = {}; prods.forEach(p => { if(!p.categoria)return; if(!m[p.categoria])m[p.categoria]=new Set(); if(p.subcategoria)m[p.categoria].add(p.subcategoria); }); return m;
@@ -98,6 +117,13 @@ function aplicarFiltros() {
         return 0;
     });
     renderProductsPaginated(r); updateSortButtonUI();
+    /* Ocultar packs durante busqueda */
+    const packsSec=document.getElementById('packsSection');
+    if(packsSec){
+        const hayContenido=(indexPacks||[]).length>0;
+        const mostrar=hayContenido&&!busquedaTexto;
+        packsSec.style.display=mostrar?'block':'none';
+    }
 }
 
 function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
