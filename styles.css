@@ -66,8 +66,8 @@ img { max-width: 100%; height: auto; }
 
 /* === HERO SECTION === */
 .hero-section { position: relative; min-height: 100vh; background: linear-gradient(135deg, #e8e0d5 0%, #d4c4b0 50%, #c9a87c 100%); overflow: hidden; }
-.hero-overlay { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s ease; }
-.hero-section::after { content: ''; position: absolute; inset: 0; background: rgba(248, 244, 236, 0.78); z-index: 1; pointer-events: none; }
+.hero-overlay { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s ease; z-index: 0; }
+.hero-section::after { content: ''; position: absolute; inset: 0; background: rgba(248, 244, 236, 0.85); z-index: 1; pointer-events: none; }
 .hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
 .particle { position: absolute; width: 10px; height: 10px; background: var(--color-primary-light); border-radius: 50%; opacity: 0.3; animation: float 15s infinite ease-in-out; will-change: transform; }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-100px) rotate(180deg); } }
