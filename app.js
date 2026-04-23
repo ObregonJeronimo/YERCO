@@ -74,10 +74,10 @@ async function loadIndexPacks() {
 function showPackDetail(packId){
     const p=indexPacks.find(x=>x.id===packId);if(!p)return;
     document.getElementById('packDetailTitle').textContent=p.nombre;
-    document.getElementById('packDetailItems').innerHTML=(p.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:0.92rem"><span>'+esc(i.nombre)+' <span style="color:#999">x'+i.cantidad+'</span></span><span style="font-weight:600">$'+(i.precio*i.cantidad).toLocaleString('es-AR')+'</span></div>').join('');
+    document.getElementById('packDetailItems').innerHTML=(p.items||[]).map(i=>'<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #eee;font-size:0.92rem"><span style="min-width:0;word-wrap:break-word">'+esc(i.nombre)+'</span><span style="color:#999;font-size:0.85rem;white-space:nowrap">x'+i.cantidad+'</span><span style="font-weight:600;white-space:nowrap;text-align:right">$'+(i.precio*i.cantidad).toLocaleString('es-AR')+'</span></div>').join('');
     document.getElementById('packDetailTotal').innerHTML='<span>Total Pack</span><span style="color:var(--color-primary-dark)">$'+(p.precioVenta||0).toLocaleString('es-AR')+'</span>';
     const addBtn=document.getElementById('packDetailAddBtn');
-    addBtn.onclick=()=>{(p.items||[]).forEach(i=>{for(let q=0;q<i.cantidad;q++)addToCart(i.id);});closePackDetail();showToast('Pack agregado al carrito','success');};
+    addBtn.onclick=()=>{(p.items||[]).forEach(i=>{for(let q=0;q<i.cantidad;q++)updateProductQuantity(i.id,1);});closePackDetail();showToast('Pack agregado al carrito','success');};
     const modal=document.getElementById('packDetailModal');
     modal.style.display='flex';
     document.body.style.overflow='hidden';
