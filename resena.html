@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Tu opinion - Yerco Dietetica</title>
+    <title>Tu opinión - Yerco Dietética</title>
     <link rel="icon" href="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -46,8 +46,8 @@
     <div class="card">
         <div class="card-header">
             <img src="img/logo-yerco-light.png" alt="Yerco">
-            <h1>Tu opinion nos importa</h1>
-            <p>Contanos como fue tu experiencia</p>
+            <h1>Tu opinión nos importa</h1>
+            <p>Contanos cómo fue tu experiencia</p>
         </div>
 
         <div class="loading-view" id="loadingArea">
@@ -60,7 +60,7 @@
                 <label>Tu nombre</label>
                 <input type="text" id="rNombre" placeholder="Ej: Maria Garcia" maxlength="60">
             </div>
-            <label class="stars-label">Como calificarias tu experiencia?</label>
+            <label class="stars-label">¿Cómo calificarías tu experiencia?</label>
             <div class="stars" id="starsContainer">
                 <span onclick="setStars(1)">&#9733;</span>
                 <span onclick="setStars(2)">&#9733;</span>
@@ -70,29 +70,29 @@
             </div>
             <div class="field">
                 <label>Tu comentario</label>
-                <textarea id="rComentario" placeholder="Que te parecio? Que podemos mejorar?" maxlength="500"></textarea>
+                <textarea id="rComentario" placeholder="¿Qué te pareció? ¿Qué podemos mejorar?" maxlength="500"></textarea>
             </div>
-            <button class="btn-submit" id="submitBtn" onclick="submitReview()">Enviar opinion</button>
+            <button class="btn-submit" id="submitBtn" onclick="submitReview()">Enviar opinión</button>
         </div>
 
         <div class="state-view" id="successArea">
             <div class="icon">&#10003;</div>
-            <h2 style="color:#2d5a3a">Gracias por tu opinion!</h2>
-            <p>Tu comentario nos ayuda a mejorar cada dia.</p>
+            <h2 style="color:#2d5a3a">¡Gracias por tu opinión!</h2>
+            <p>Tu comentario nos ayuda a mejorar cada día.</p>
             <a href="https://yerco.ar" class="btn-back">Volver a Yerco</a>
         </div>
 
         <div class="state-view" id="usedArea">
             <div class="icon">&#128172;</div>
-            <h2 style="color:#333">Ya dejaste tu opinion</h2>
-            <p>Gracias por tu comentario anterior! Nos encanta saber que pensas.</p>
+            <h2 style="color:#333">Ya dejaste tu opinión</h2>
+            <p>¡Gracias por tu comentario anterior! Nos encanta saber qué pensás.</p>
             <a href="https://yerco.ar" class="btn-back">Volver a Yerco</a>
         </div>
 
         <div class="state-view" id="invalidArea">
             <div class="icon">&#128533;</div>
             <h2 style="color:#333">Link invalido</h2>
-            <p>Este link de resena no es valido o ya expiro.</p>
+            <p>Este link de reseña no es válido o ya expiró.</p>
             <a href="https://yerco.ar" class="btn-back">Ir a Yerco</a>
         </div>
     </div>
@@ -145,7 +145,7 @@
             const comentario=document.getElementById('rComentario').value.trim();
             if(!nombre){showToast('Escribi tu nombre');return;}
             if(!selectedStars){showToast('Selecciona las estrellas');return;}
-            if(!comentario){showToast('Escribi un comentario');return;}
+            if(!comentario){showToast('Escribí un comentario');return;}
             const btn=document.getElementById('submitBtn');
             btn.disabled=true;btn.textContent='Enviando...';
             try{
@@ -161,7 +161,7 @@
             }catch(e){
                 console.error(e);
                 showToast('Error al enviar, intenta de nuevo');
-                btn.disabled=false;btn.textContent='Enviar opinion';
+                btn.disabled=false;btn.textContent='Enviar opinión';
             }
         }
 
