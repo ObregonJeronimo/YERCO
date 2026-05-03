@@ -69,6 +69,9 @@
         .entrega-toggle{display:flex;gap:6px}.entrega-btn{flex:1;padding:0.6rem 0.8rem;background:var(--bg-input);border:1.5px solid var(--border);color:var(--text-dim);border-radius:var(--radius);cursor:pointer;font-size:0.88rem;font-weight:500;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:0.45rem}.entrega-btn:hover{border-color:var(--accent-light);color:var(--text-main)}.entrega-btn.active{background:var(--accent-dark);border-color:var(--accent-light);color:#fff;font-weight:600}.entrega-btn i{font-size:1rem}
         .venta-subtotal-row{display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text-dim);padding:2px 0}
         .mayo-row{display:flex;align-items:center;gap:0.75rem;background:var(--bg-input);padding:0.6rem 0.85rem;border-radius:var(--radius);font-size:0.9rem}
+        .mayo-block{display:flex;flex-direction:column}
+        .mayo-toggle{background:none;border:none;color:var(--text-dim);cursor:pointer;padding:2px 4px;display:flex;align-items:center;font-size:0.95rem;border-radius:4px;transition:background 0.12s}
+        .mayo-toggle:hover{background:rgba(91,45,138,0.2);color:var(--accent-light)}
         .mayo-count{flex:1;color:var(--text-main);font-weight:500}
         .mayo-pct-old{color:var(--text-dim);font-family:var(--mono);font-weight:600;min-width:48px;text-align:right}
         .mayo-arrow{color:var(--text-dim);font-size:1rem}
@@ -76,6 +79,22 @@
         .mayo-pct-input{flex:1;width:100%;background:transparent;border:none;color:var(--accent-light);font-family:var(--mono);font-weight:700;font-size:0.95rem;padding:4px 0;text-align:right;outline:none}
         .mayo-pct-input::-webkit-outer-spin-button,.mayo-pct-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .mayo-pct-suf{color:var(--text-dim);font-size:0.85rem;margin-left:2px}
+        .mayo-body{background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);margin-top:-4px;padding:0.5rem 0.75rem 0.6rem;display:flex;flex-direction:column;gap:0.5rem}
+        .mayo-search-row{display:flex;align-items:center;gap:6px;background:var(--bg-input);padding:5px 10px;border-radius:6px}
+        .mayo-search-row i{color:var(--text-dim);font-size:0.85rem}
+        .mayo-search-row input{flex:1;background:transparent;border:none;color:var(--text-main);font-size:0.85rem;outline:none;padding:2px 0}
+        .mayo-prod-list{display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto}
+        .mayo-prod{display:flex;align-items:center;gap:0.6rem;padding:5px 8px;font-size:0.82rem;border-radius:4px}
+        .mayo-prod:hover{background:var(--bg-input)}
+        .mayo-prod-name{flex:1;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .mayo-prod-cost{color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;min-width:88px;text-align:right}
+        .mayo-prod-arrow{color:var(--text-dim);font-size:0.78rem}
+        .mayo-prod-price{color:var(--accent-light);font-family:var(--mono);font-weight:600;min-width:78px;text-align:right}
+        .mayo-empty{color:var(--text-dim);font-size:0.82rem;padding:0.5rem;text-align:center;font-style:italic}
+        .mayo-pager{display:flex;align-items:center;justify-content:center;gap:0.6rem;font-size:0.82rem;color:var(--text-dim)}
+        .mayo-pager button{background:var(--bg-input);border:1px solid var(--border);color:var(--text-main);width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .mayo-pager button:disabled{opacity:0.4;cursor:not-allowed}
+        .mayo-pager button:not(:disabled):hover{background:rgba(91,45,138,0.25)}
         .venta-card{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}.venta-card:hover{background:var(--bg-input)}.venta-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.venta-card-num{font-family:var(--mono);font-size:0.75rem;color:var(--accent-light)}.venta-card-total{font-family:var(--mono);font-weight:700;color:var(--accent-light)}.venta-card-mid{font-size:0.82rem;margin-bottom:3px}.venta-card-bot{display:flex;gap:10px;font-size:0.72rem;color:var(--text-dim)}.venta-card-actions{display:flex;gap:6px;margin-top:6px}.venta-card-actions button{font-size:0.75rem;padding:3px 8px}.v-items{display:none}.v-items.show{display:block}
         .cliente-card{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);transition:background 0.15s;gap:12px}.cliente-card:hover{background:var(--bg-input)}.cliente-info{flex:1;min-width:0}.cliente-name{font-weight:600;font-size:0.9rem;margin-bottom:2px}.cliente-detail{font-size:0.75rem;color:var(--text-dim);display:flex;gap:12px;flex-wrap:wrap}.cliente-actions{display:flex;gap:6px;flex-shrink:0}.cliente-actions button{font-size:0.75rem;padding:3px 8px}
         .ch-items.show{display:block!important}
@@ -838,19 +857,23 @@
         }
 
         /* === MODAL MAYORISTA === */
-        let mayoristaGroups=[]; /* [{oldPct, count, newPct}] */
+        let mayoristaGroups=[]; /* [{oldPct, count, newPct, products:[], expanded, search, page}] */
 
         function openMayoristaPdfModal(){
             if(!allProducts.length){showAdminToast('No hay productos','error');return;}
             const visibles=allProducts.filter(p=>p.oculto!==true&&p.nombre&&(p.costo||0)>0);
             if(!visibles.length){showAdminToast('No hay productos con costo','error');return;}
             /* Agrupar por porcentaje actual */
-            const counts={};
+            const buckets={};
             visibles.forEach(p=>{
                 const pct=Math.round(Number(p.porcentaje||0)*100)/100;
-                counts[pct]=(counts[pct]||0)+1;
+                if(!buckets[pct])buckets[pct]=[];
+                buckets[pct].push(p);
             });
-            mayoristaGroups=Object.keys(counts).map(k=>({oldPct:Number(k),count:counts[k],newPct:Number(k)})).sort((a,b)=>a.oldPct-b.oldPct);
+            mayoristaGroups=Object.keys(buckets).map(k=>{
+                const prods=buckets[k].slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+                return {oldPct:Number(k),count:prods.length,newPct:Number(k),products:prods,expanded:false,search:'',page:0};
+            }).sort((a,b)=>a.oldPct-b.oldPct);
             renderMayoristaGroups();
             document.getElementById('mayoristaModal').classList.add('show');
         }
@@ -859,12 +882,72 @@
         function renderMayoristaGroups(){
             const c=document.getElementById('mayoristaGroupsList');
             if(!c)return;
-            c.innerHTML=mayoristaGroups.map((g,i)=>'<div class="mayo-row"><span class="mayo-count">'+g.count+' producto'+(g.count===1?'':'s')+'</span><span class="mayo-pct-old">'+g.oldPct+'%</span><span class="mayo-arrow">&rarr;</span><div class="mayo-input-wrap"><input type="number" min="0" max="500" step="0.5" value="'+g.newPct+'" onchange="updateMayoristaPct('+i+',this.value)" class="mayo-pct-input"><span class="mayo-pct-suf">%</span></div></div>').join('');
+            c.innerHTML=mayoristaGroups.map((g,i)=>{
+                const head='<div class="mayo-row"><button class="mayo-toggle" onclick="toggleMayoristaGroup('+i+')" title="'+(g.expanded?'Ocultar productos':'Ver productos')+'"><i class="bi bi-chevron-'+(g.expanded?'down':'right')+'"></i></button><span class="mayo-count">'+g.count+' producto'+(g.count===1?'':'s')+'</span><span class="mayo-pct-old">'+g.oldPct+'%</span><span class="mayo-arrow">&rarr;</span><div class="mayo-input-wrap"><input type="number" min="0" max="500" step="0.5" value="'+g.newPct+'" onchange="updateMayoristaPct('+i+',this.value)" oninput="updateMayoristaPct('+i+',this.value)" class="mayo-pct-input"><span class="mayo-pct-suf">%</span></div></div>';
+                const body=g.expanded?renderMayoristaGroupBody(g,i):'';
+                return '<div class="mayo-block">'+head+body+'</div>';
+            }).join('');
+        }
+
+        function renderMayoristaGroupBody(g,i){
+            const q=(g.search||'').toLowerCase().trim();
+            const filtered=q?g.products.filter(p=>(p.nombre||'').toLowerCase().includes(q)):g.products;
+            const perPage=20;
+            const pages=Math.max(1,Math.ceil(filtered.length/perPage));
+            if(g.page>=pages)g.page=pages-1;
+            if(g.page<0)g.page=0;
+            const slice=filtered.slice(g.page*perPage,(g.page+1)*perPage);
+            const newPct=Number(g.newPct||0);
+            const list=slice.length?slice.map(p=>{
+                const costo=Number(p.costo||0);
+                const newPrecio=Math.round(costo*(1+newPct/100));
+                return '<div class="mayo-prod"><span class="mayo-prod-name">'+esc(p.nombre)+'</span><span class="mayo-prod-cost">C: $'+costo.toLocaleString('es-AR')+'</span><span class="mayo-prod-arrow">&rarr;</span><span class="mayo-prod-price">$'+newPrecio.toLocaleString('es-AR')+'</span></div>';
+            }).join(''):'<div class="mayo-empty">Sin resultados</div>';
+            const pager=pages>1?'<div class="mayo-pager"><button onclick="changeMayoristaPage('+i+',-1)"'+(g.page===0?' disabled':'')+'><i class="bi bi-chevron-left"></i></button><span>'+(g.page+1)+' / '+pages+'</span><button onclick="changeMayoristaPage('+i+',1)"'+(g.page>=pages-1?' disabled':'')+'><i class="bi bi-chevron-right"></i></button></div>':'';
+            return '<div class="mayo-body"><div class="mayo-search-row"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." value="'+esc(g.search||'')+'" oninput="updateMayoristaSearch('+i+',this.value)"></div><div class="mayo-prod-list">'+list+'</div>'+pager+'</div>';
+        }
+
+        function toggleMayoristaGroup(i){
+            mayoristaGroups[i].expanded=!mayoristaGroups[i].expanded;
+            renderMayoristaGroups();
         }
 
         function updateMayoristaPct(i,val){
             const v=parseFloat(val);
             mayoristaGroups[i].newPct=isNaN(v)?0:Math.max(0,v);
+            /* Si el grupo esta expandido, refresco los precios mostrados */
+            if(mayoristaGroups[i].expanded)renderMayoristaGroups();
+        }
+
+        function updateMayoristaSearch(i,val){
+            mayoristaGroups[i].search=val;
+            mayoristaGroups[i].page=0;
+            /* Re-render solo el body de ese grupo, manteniendo el foco en el input */
+            const inputAntes=document.activeElement;
+            const cursorPos=inputAntes&&inputAntes.tagName==='INPUT'?inputAntes.selectionStart:null;
+            renderMayoristaGroups();
+            /* Restaurar foco */
+            const allSearches=document.querySelectorAll('.mayo-search-row input');
+            const idx=Array.from(allSearches).findIndex((_,k)=>{
+                const blocks=document.querySelectorAll('.mayo-block');
+                let count=0;
+                for(let j=0;j<=i;j++){
+                    if(mayoristaGroups[j].expanded){
+                        if(j===i)return count===k;
+                        count++;
+                    }
+                }
+                return false;
+            });
+            if(idx>=0&&allSearches[idx]){
+                allSearches[idx].focus();
+                if(cursorPos!=null)allSearches[idx].setSelectionRange(cursorPos,cursorPos);
+            }
+        }
+
+        function changeMayoristaPage(i,delta){
+            mayoristaGroups[i].page+=delta;
+            renderMayoristaGroups();
         }
 
         function exportMayoristaPDF(){
@@ -1099,7 +1182,7 @@
     <div class="modal-overlay" id="catManagerModal"><div class="modal-box" style="max-width:900px;width:96vw;max-height:92vh"><div class="modal-header"><h3><i class="bi bi-gear"></i> Administrar Categorias</h3><button class="modal-close" onclick="document.getElementById('catManagerModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1.25rem;overflow-y:auto;max-height:calc(92vh - 80px)"><div style="display:flex;gap:0.5rem;margin-bottom:1.25rem"><input type="text" id="newCatInput" placeholder="Nueva categoria..." style="flex:1;min-width:0;font-size:1.1rem;padding:12px 16px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><button class="btn btn-primary" onclick="addNewCategory()" style="white-space:nowrap;width:auto;padding:12px 24px;font-size:1.05rem"><i class="bi bi-plus-lg"></i> Agregar</button></div><div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;align-items:center"><select id="newSubCatParent" style="flex:1;min-width:0;font-size:1rem;padding:10px 14px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><option value="">(seleccionar categoria)</option></select><input type="text" id="newSubCatInput" placeholder="Nueva subcategoria..." style="flex:1;min-width:0;font-size:1rem;padding:10px 14px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><button class="btn btn-secondary" onclick="addNewSubcategory()" style="white-space:nowrap;width:auto;padding:10px 20px;font-size:1rem"><i class="bi bi-plus-lg"></i> Sub</button></div><div id="catManagerList" style="font-size:1.05rem"></div></div></div></div>
     <div class="modal-overlay" id="insumoModal"><div class="modal-box" style="max-width:480px;width:96vw"><div class="modal-header"><h3 id="insumoModalTitle"><i class="bi bi-tools"></i> Nuevo insumo</h3><button class="modal-close" onclick="closeInsumoModal()"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem"><div><label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:4px">Nombre</label><input type="text" id="insumoNombre" class="form-input" placeholder="Ej: Caja chica, Cinta 50cm..." maxlength="80"></div><div style="display:flex;gap:0.5rem"><div style="flex:1"><label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:4px">Stock actual</label><input type="number" id="insumoStock" class="form-input" min="0" value="0"></div><div style="flex:1"><label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:4px">Stock mínimo</label><input type="number" id="insumoStockMin" class="form-input" min="0" value="5"></div></div><div style="display:flex;gap:0.5rem;margin-top:0.5rem"><button class="btn btn-secondary" style="flex:1" onclick="closeInsumoModal()">Cancelar</button><button class="btn btn-primary" style="flex:1" id="saveInsumoBtn" onclick="saveInsumo()"><i class="bi bi-check-lg"></i> Guardar</button></div></div></div></div>
     <div class="modal-overlay" id="linkResenaModal"><div class="modal-box" style="max-width:560px;width:96vw"><div class="modal-header"><h3><i class="bi bi-link-45deg"></i> Link de reseña generado</h3><button class="modal-close" onclick="document.getElementById('linkResenaModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem"><div style="background:#2a1a3a;border:1px solid #5a2a7a;padding:0.75rem;border-radius:var(--radius);margin-bottom:1rem;font-size:0.85rem;color:#c084fc"><i class="bi bi-info-circle"></i> Link anónimo único. Cualquier persona con este link puede dejar una reseña (una sola vez).</div><div style="display:flex;gap:6px;align-items:stretch"><input type="text" id="linkResenaInput" class="form-input" readonly style="flex:1;font-family:var(--mono);font-size:0.88rem" onclick="this.select()"><button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="copiarLinkResena()"><i class="bi bi-clipboard"></i> Copiar</button></div><div style="margin-top:0.75rem;font-size:0.78rem;color:var(--text-dim)"><i class="bi bi-lightbulb"></i> Compartilo por WhatsApp, email, o donde quieras. Cuando alguien lo use, aparece en la sección Reseñas.</div></div></div></div>
-    <div class="modal-overlay" id="mayoristaModal"><div class="modal-box" style="max-width:560px;width:96vw;max-height:90vh;display:flex;flex-direction:column"><div class="modal-header"><h3><i class="bi bi-file-earmark-pdf"></i> PDF mayorista</h3><button class="modal-close" onclick="closeMayoristaModal()"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;flex:1"><div style="background:#2a1a3a;border:1px solid #5a2a7a;padding:0.75rem;border-radius:var(--radius);margin-bottom:1rem;font-size:0.85rem;color:#c084fc"><i class="bi bi-info-circle"></i> Modificá el % de margen para cada grupo. El PDF se genera con esos precios pero <strong>no toca la BDD</strong>: los precios reales en la web siguen iguales.</div><div id="mayoristaGroupsList" style="display:flex;flex-direction:column;gap:0.5rem"></div></div><div style="padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-shrink:0"><button class="btn btn-secondary" style="flex:1" onclick="closeMayoristaModal()">Cancelar</button><button class="btn btn-primary" style="flex:2;background:#5b2d8a;border-color:#5b2d8a" onclick="exportMayoristaPDF()"><i class="bi bi-file-earmark-pdf"></i> Generar PDF mayorista</button></div></div></div>
+    <div class="modal-overlay" id="mayoristaModal"><div class="modal-box" style="max-width:560px;width:96vw;max-height:90vh;display:flex;flex-direction:column"><div class="modal-header"><h3><i class="bi bi-file-earmark-pdf"></i> PDF mayorista</h3><button class="modal-close" onclick="closeMayoristaModal()"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;flex:1"><div id="mayoristaGroupsList" style="display:flex;flex-direction:column;gap:0.5rem"></div></div><div style="padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-shrink:0"><button class="btn btn-secondary" style="flex:1" onclick="closeMayoristaModal()">Cancelar</button><button class="btn btn-primary" style="flex:2;background:#5b2d8a;border-color:#5b2d8a" onclick="exportMayoristaPDF()"><i class="bi bi-file-earmark-pdf"></i> Generar PDF mayorista</button></div></div></div>
     <div class="modal-overlay" id="weeklyPdfModal"><div class="modal-box" style="max-width:960px;width:96vw;max-height:94vh"><div class="modal-header"><h3><i class="bi bi-calendar-week"></i> PDF Semanal</h3><button class="modal-close" onclick="document.getElementById('weeklyPdfModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;max-height:calc(94vh - 80px)"><div class="drop-zone" id="dropZoneWeekly" style="padding:1.5rem"><i class="bi bi-file-earmark-pdf" style="font-size:2rem"></i><p>Arrastra el PDF semanal del proveedor</p><p class="hint">.pdf</p></div><input type="file" class="file-input-hidden" id="weeklyPdfInput" accept=".pdf"><div class="upload-progress" id="wpProgress" style="display:none"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="wpBar"></div></div><p class="progress-text" id="wpText">Analizando PDF...</p></div><div id="wpResults" style="display:none"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:140px;background:#3a3a1a;border:1px solid #5a5a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecRemoved')"><strong style="color:#f0c040;font-size:1.1rem" id="wpRemovedCount">0</strong><span style="font-size:0.82rem;color:#f0c040;display:block">Ocultar del catalogo</span></div><div style="flex:1;min-width:140px;background:#3a2a1a;border:1px solid #5a4a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecPrices')"><strong style="color:#f0a040;font-size:1.1rem" id="wpPriceCount">0</strong><span style="font-size:0.82rem;color:#f0a040;display:block">Cambio precio</span></div><div style="flex:1;min-width:140px;background:#1a3a1a;border:1px solid #2d5a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecNew')"><strong style="color:#67c23a;font-size:1.1rem" id="wpNewCount">0</strong><span style="font-size:0.82rem;color:#67c23a;display:block">Nuevos</span></div><div style="flex:1;min-width:140px;background:#1a2a3a;border:1px solid #2d4a5a;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecReappeared')"><strong style="color:#60a5fa;font-size:1.1rem" id="wpReappearedCount">0</strong><span style="font-size:0.82rem;color:#60a5fa;display:block">Volvieron al PDF</span></div></div><div id="wpSecRemoved" style="margin-bottom:1.5rem"><h4 style="color:#f0c040;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-eye-slash"></i> Productos a ocultar del catalogo (no estan en el PDF de esta semana)</h4><div id="wpRemovedList" style="font-size:0.88rem"></div></div><div id="wpSecReappeared" style="margin-bottom:1.5rem"><h4 style="color:#60a5fa;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-eye"></i> Volvieron al PDF (estaban ocultos)</h4><div id="wpReappearedList" style="font-size:0.88rem"></div></div><div id="wpSecPrices" style="margin-bottom:1.5rem"><h4 style="color:#f0a040;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-arrow-repeat"></i> Cambios de precio</h4><div id="wpPricesList" style="font-size:0.88rem"></div></div><div id="wpSecNew" style="margin-bottom:1.5rem"><h4 style="color:#67c23a;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-plus-circle"></i> Productos nuevos (no estan en la BDD)</h4><div id="wpNewList" style="font-size:0.88rem"></div></div></div></div></div></div>
     </body>
 </html>
