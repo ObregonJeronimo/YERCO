@@ -1076,9 +1076,9 @@
                 const pdfNames=new Set(uniquePdf.map(p=>p.nombre));
                 const bddByName={};allProducts.forEach(p=>{bddByName[p.nombre]=p;});
                 /* Factor 1: Removed - products in BDD not in PDF (solo los no ocultos - los ya ocultos no hace falta re-procesar) */
-                wpRemoved=[];allProducts.forEach(p=>{if(!pdfNames.has(p.nombre)&&p.oculto!==true){wpRemoved.push({id:p.id,nombre:p.nombre,categoria:p.categoria||'',subcategoria:p.subcategoria||'',costo:p.costo||0});}});
+                wpRemoved=[];allProducts.forEach(p=>{if(!pdfNames.has(p.nombre)&&p.oculto!==true&&p.envasadoPropio!==true){wpRemoved.push({id:p.id,nombre:p.nombre,categoria:p.categoria||'',subcategoria:p.subcategoria||'',costo:p.costo||0});}});
                 /* Factor 2: Price changes - cualquier producto del PDF con costo distinto al de la BDD, excluyendo los ocultos (esos los maneja Factor 4) */
-                wpPriceChanges=[];uniquePdf.forEach(pp=>{const bdd=bddByName[pp.nombre];if(bdd&&bdd.oculto!==true){const oldCost=bdd.costo||0;const newCost=Math.round(pp.precio);if(oldCost!==newCost){wpPriceChanges.push({id:bdd.id,nombre:bdd.nombre,oldCost,newCost,diff:newCost-oldCost,pct:oldCost>0?Math.round((newCost-oldCost)/oldCost*100):0,porcentaje:bdd.porcentaje||0});}}});
+                wpPriceChanges=[];uniquePdf.forEach(pp=>{const bdd=bddByName[pp.nombre];if(bdd&&bdd.oculto!==true&&bdd.envasadoPropio!==true){const oldCost=bdd.costo||0;const newCost=Math.round(pp.precio);if(oldCost!==newCost){wpPriceChanges.push({id:bdd.id,nombre:bdd.nombre,oldCost,newCost,diff:newCost-oldCost,pct:oldCost>0?Math.round((newCost-oldCost)/oldCost*100):0,porcentaje:bdd.porcentaje||0});}}});
                 /* Factor 3: New products - cualquier producto del PDF que no este en la BDD (no depende de highlights verdes del proveedor) */
                 wpNewProds=[];uniquePdf.forEach(pp=>{const bdd=bddByName[pp.nombre];if(!bdd){wpNewProds.push({nombre:pp.nombre,costo:Math.round(pp.precio)});}});
                 /* Factor 4: Reappeared - productos ocultos que volvieron al PDF */
