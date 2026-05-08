@@ -133,13 +133,13 @@ img { max-width: 100%; height: auto; }
 .products-loading.show { display: block; }
 .products-loading p { margin-top: 1rem; color: var(--color-text-light); }
 .product-card { background: white; border-radius: var(--border-radius-lg); overflow: hidden; transition: all var(--transition-normal); position: relative; display: flex; flex-direction: column; }
-@media(hover:hover){.product-card:hover { transform: translateY(-10px); box-shadow: var(--shadow-lg); }}
+@media (hover: hover){.product-card:hover { transform: translateY(-10px); box-shadow: var(--shadow-lg); }}
 .product-image { position: relative; height: 200px; overflow: hidden; }
 .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow); pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .product-image::after { content: ''; position: absolute; inset: 0; z-index: 1; }
 .img-skeleton { position: absolute; inset: 0; background: linear-gradient(90deg, #e8e0d5 25%, #f0ebe4 50%, #e8e0d5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-@media(hover:hover){.product-card:hover .product-image img { transform: scale(1.1); }}
+@media (hover: hover){.product-card:hover .product-image img { transform: scale(1.1); }}
 .product-category { position: absolute; top: 15px; left: 15px; background: white; color: var(--color-primary); padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
 .product-stock { position: absolute; top: 15px; right: 15px; background: var(--color-success); color: white; padding: 0.3rem 0.6rem; border-radius: 50px; font-size: 0.7rem; font-weight: 600; }
 .product-stock.low { background: var(--color-warning); }
@@ -155,7 +155,7 @@ img { max-width: 100%; height: auto; }
 .qty-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .qty-value { font-weight: 600; min-width: 30px; text-align: center; }
 .add-to-cart-btn { width: 100%; margin-top: auto; background: var(--color-primary); color: white; border: none; padding: 0.8rem; border-radius: var(--border-radius); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all var(--transition-normal); }
-@media(hover:hover){.add-to-cart-btn:hover:not(:disabled) { background: #3d6230; transform: translateY(-2px); }}
+@media (hover: hover){.add-to-cart-btn:hover:not(:disabled) { background: #3d6230; transform: translateY(-2px); }}
 .add-to-cart-btn:active:not(:disabled) { background: #3d6230; }
 .add-to-cart-btn:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; }
 .add-to-cart-btn.added { background: var(--color-success); }
@@ -202,14 +202,14 @@ img { max-width: 100%; height: auto; }
 .pdm-no-info { color: var(--color-text-light); font-style: italic; font-size: 0.88rem; }
 .pdm-no-info i { margin-right: 6px; }
 .pdm-add-btn { width: 100%; margin-top: 1.25rem; background: var(--color-primary); color: white; border: none; padding: 0.9rem; border-radius: 12px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: background 0.15s; }
-@media(hover:hover){.pdm-add-btn:hover:not(:disabled) { background: #3d6230; }}
+@media (hover: hover){.pdm-add-btn:hover:not(:disabled) { background: #3d6230; }}
 .pdm-add-btn:active:not(:disabled) { background: #3d6230; }
 .pdm-add-btn:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; }
 .pdm-add-btn.added { background: var(--color-success); }
-@media(hover:hover){.pdm-add-btn.added:hover:not(:disabled) { background: var(--color-success); }}
+@media (hover: hover){.pdm-add-btn.added:hover:not(:disabled) { background: var(--color-success); }}
 .pdm-qty-wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
 .pdm-qty-btn { background: rgba(255,255,255,0.25); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
-@media(hover:hover){.pdm-qty-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }}
+@media (hover: hover){.pdm-qty-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }}
 .pdm-qty-btn:active:not(:disabled) { background: rgba(255,255,255,0.45); }
 .pdm-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .pdm-qty-num { font-size: 1.15rem; font-weight: 700; min-width: 30px; text-align: center; }
