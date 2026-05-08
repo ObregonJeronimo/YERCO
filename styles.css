@@ -177,8 +177,8 @@ img { max-width: 100%; height: auto; }
 .pdm-close { background: transparent; border: none; color: var(--color-text-light); font-size: 1.2rem; padding: 4px 8px; cursor: pointer; border-radius: 6px; }
 .pdm-close:hover { background: #f3f3f3; color: #333; }
 .pdm-body { overflow-y: auto; flex: 1; }
-.pdm-carousel { position: relative; background: #f8f4ec; height: 360px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.pdm-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.3s; padding: 20px; }
+.pdm-carousel { position: relative; background: #fff; height: 380px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.pdm-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
 .pdm-img.active { opacity: 1; }
 .pdm-img-placeholder { color: #aaa; font-size: 2rem; display: flex; align-items: center; gap: 0.5rem; }
 .pdm-carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
@@ -190,7 +190,7 @@ img { max-width: 100%; height: auto; }
 .pdm-dot.active { background: var(--color-primary); transform: scale(1.3); }
 .pdm-info { padding: 1.25rem 1.5rem 1.5rem; }
 .pdm-cat { font-size: 0.78rem; color: var(--color-text-light); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.pdm-name { font-size: 1.4rem; font-weight: 700; color: var(--color-text); margin: 0 0 0.75rem; line-height: 1.25; }
+.pdm-name { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--color-primary-dark); margin: 0 0 0.75rem; line-height: 1.25; }
 .pdm-price-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
 .pdm-price { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
 .pdm-stock-tag { background: #f56c6c; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 500; }
