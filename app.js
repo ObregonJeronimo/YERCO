@@ -289,11 +289,27 @@ function openProductDetailModal(id){
     document.body.style.overflow='hidden';
 }
 function refreshProductDetailModal(id){
-    /* Re-renderiza el modal manteniendo imagen actual */
-    const idxBackup=_pdmCurrentImgIdx;
-    openProductDetailModal(id);
-    _pdmCurrentImgIdx=idxBackup;
-    pdmCarouselGoTo(idxBackup);
+    /* Solo actualizar el boton (no re-renderizar todo el modal para evitar bugs y perder handlers) */
+    const p=productos.find(x=>x.id===id);if(!p)return;
+    const btnEl=document.getElementById('pdmAddBtn-'+id);
+    if(!btnEl)return;
+    const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
+    const noStock=p.stock===0;
+    const maxOut=qty>=p.stock;
+    btnEl.classList.toggle('added',qty>0);
+    btnEl.disabled=noStock;
+    let btnContent;
+    if(noStock){
+        btnContent='<i class="bi bi-x-circle"></i> Sin stock';
+        btnEl.setAttribute('onclick','event.stopPropagation()');
+    }else if(qty===0){
+        btnContent='<i class="bi bi-cart-plus"></i> Agregar al carrito';
+        btnEl.setAttribute('onclick',"addToCart('"+id+"');refreshProductDetailModal('"+id+"')");
+    }else{
+        btnContent='<span class="pdm-qty-wrap"><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',-1);refreshProductDetailModal(\''+id+'\')"><i class="bi bi-dash"></i></button><span class="pdm-qty-num">'+qty+'</span><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',1);refreshProductDetailModal(\''+id+'\')"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
+        btnEl.setAttribute('onclick','event.stopPropagation()');
+    }
+    btnEl.innerHTML=btnContent;
 }
 function closeProductDetailModal(){
     document.getElementById('productDetailModal')?.classList.remove('show');
