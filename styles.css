@@ -155,7 +155,8 @@ img { max-width: 100%; height: auto; }
 .qty-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .qty-value { font-weight: 600; min-width: 30px; text-align: center; }
 .add-to-cart-btn { width: 100%; margin-top: auto; background: var(--color-primary); color: white; border: none; padding: 0.8rem; border-radius: var(--border-radius); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all var(--transition-normal); }
-.add-to-cart-btn:hover:not(:disabled) { background: var(--color-primary-dark); transform: translateY(-2px); }
+@media(hover:hover){.add-to-cart-btn:hover:not(:disabled) { background: #3d6230; transform: translateY(-2px); }}
+.add-to-cart-btn:active:not(:disabled) { background: #3d6230; }
 .add-to-cart-btn:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; }
 .add-to-cart-btn.added { background: var(--color-success); }
 .add-to-cart-btn.added:hover:not(:disabled) { background: var(--color-success); transform: none; }
@@ -200,13 +201,16 @@ img { max-width: 100%; height: auto; }
 .pdm-nutritional { background: #f9f6f0; padding: 0.85rem 1rem; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
 .pdm-no-info { color: var(--color-text-light); font-style: italic; font-size: 0.88rem; }
 .pdm-no-info i { margin-right: 6px; }
-.pdm-add-btn { width: 100%; margin-top: 1.25rem; background: var(--color-primary); color: white; border: none; padding: 0.9rem; border-radius: 12px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: all 0.15s; }
-.pdm-add-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
+.pdm-add-btn { width: 100%; margin-top: 1.25rem; background: var(--color-primary); color: white; border: none; padding: 0.9rem; border-radius: 12px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: background 0.15s; }
+@media(hover:hover){.pdm-add-btn:hover:not(:disabled) { background: #3d6230; }}
+.pdm-add-btn:active:not(:disabled) { background: #3d6230; }
 .pdm-add-btn:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; }
 .pdm-add-btn.added { background: var(--color-success); }
+@media(hover:hover){.pdm-add-btn.added:hover:not(:disabled) { background: var(--color-success); }}
 .pdm-qty-wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
 .pdm-qty-btn { background: rgba(255,255,255,0.25); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
-.pdm-qty-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }
+@media(hover:hover){.pdm-qty-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }}
+.pdm-qty-btn:active:not(:disabled) { background: rgba(255,255,255,0.45); }
 .pdm-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .pdm-qty-num { font-size: 1.15rem; font-weight: 700; min-width: 30px; text-align: center; }
 @media(max-width:600px){
