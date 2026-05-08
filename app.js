@@ -181,10 +181,11 @@ function renderProducts(list) {
             '<h3 class="product-name" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">'+esc(p.nombre)+'</h3>' +
             '<div class="product-footer">' +
             '<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>' +
+            '</div>' +
             '<button class="add-to-cart-btn'+(qty>0?' added':'')+'" onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"'+(noStock?' disabled':'')+'>' +
             btnContent +
             '</button>' +
-            '</div></div></article>';
+            '</div></article>';
     }).join('');
 }
 
