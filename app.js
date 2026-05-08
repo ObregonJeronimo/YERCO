@@ -253,8 +253,13 @@ let _pdmCurrentImgIdx=0;
 let _pdmImages=[];
 function openProductDetailModal(id){
     const p=productos.find(x=>x.id===id);if(!p)return;
-    /* Construir lista de imagenes: imagenes[] si existe, sino [imagen] */
-    _pdmImages=Array.isArray(p.imagenes)&&p.imagenes.length?p.imagenes.filter(Boolean):(p.imagen?[p.imagen]:[]);
+    /* Construir lista de imagenes: imagen principal + imagenesExtra (del admin) */
+    const imgsArr=[];
+    if(p.imagen)imgsArr.push(p.imagen);
+    if(Array.isArray(p.imagenesExtra))p.imagenesExtra.forEach(u=>{if(u&&!imgsArr.includes(u))imgsArr.push(u);});
+    /* Compat con campo viejo "imagenes" si existiera */
+    if(Array.isArray(p.imagenes))p.imagenes.forEach(u=>{if(u&&!imgsArr.includes(u))imgsArr.push(u);});
+    _pdmImages=imgsArr;
     _pdmCurrentImgIdx=0;
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;
