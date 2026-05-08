@@ -170,6 +170,10 @@ function renderProducts(list) {
         }else{
             btnContent='<span class="atc-qty-wrap"><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+p.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="atc-qty-num">'+qty+'</span><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+p.id+'\',1)"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
         }
+        const atcTag=qty>0?'div':'button';
+        const atcAttrs=qty>0
+            ?'class="add-to-cart-btn added"'
+            :'class="add-to-cart-btn"'+(noStock?' disabled':'')+' onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"';
         return '<article class="product-card" data-id="'+p.id+'">' +
             '<div class="product-image" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">' +
             '<div class="img-skeleton"></div>' +
@@ -182,9 +186,9 @@ function renderProducts(list) {
             '<div class="product-footer">' +
             '<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>' +
             '</div>' +
-            '<button class="add-to-cart-btn'+(qty>0?' added':'')+'" onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"'+(noStock?' disabled':'')+'>' +
+            '<'+atcTag+' '+atcAttrs+'>' +
             btnContent +
-            '</button>' +
+            '</'+atcTag+'>' +
             '</div></article>';
     }).join('');
 }
@@ -228,22 +232,22 @@ function updateProductCard(id) {
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;
     const maxOut=qty>=p.stock;
-    const btnEl=card.querySelector('.add-to-cart-btn');
-    if(!btnEl)return;
-    btnEl.classList.toggle('added',qty>0);
-    btnEl.disabled=noStock;
+    const oldEl=card.querySelector('.add-to-cart-btn');
+    if(!oldEl)return;
     let btnContent;
     if(noStock){
         btnContent='<span class="atc-text"><i class="bi bi-x-circle"></i> Sin stock</span>';
-        btnEl.setAttribute('onclick','event.stopPropagation()');
     }else if(qty===0){
         btnContent='<span class="atc-text"><i class="bi bi-cart-plus"></i> Agregar</span>';
-        btnEl.setAttribute('onclick','addToCart(\''+id+'\')');
     }else{
         btnContent='<span class="atc-qty-wrap"><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',-1)"><i class="bi bi-dash"></i></button><span class="atc-qty-num">'+qty+'</span><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',1)"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
-        btnEl.setAttribute('onclick','event.stopPropagation()');
     }
-    btnEl.innerHTML=btnContent;
+    const newTag=qty>0?'div':'button';
+    const newEl=document.createElement(newTag);
+    newEl.className='add-to-cart-btn'+(qty>0?' added':'');
+    if(newTag==='button'){newEl.disabled=noStock;newEl.setAttribute('onclick',qty===0?'addToCart(\''+id+'\')':'event.stopPropagation()');}
+    newEl.innerHTML=btnContent;
+    oldEl.parentNode.replaceChild(newEl,oldEl);
 }
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=p.stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+p.stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
