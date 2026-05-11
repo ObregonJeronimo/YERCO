@@ -484,12 +484,12 @@ async function confirmCheckout(){
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
         msg+='\nGracias!';
-        /* Limpiar carrito */
+        /* Limpiar carrito y resetear las cards de productos */
+        const idsAResetear=carrito.map(i=>i.id);
         carrito=[];saveCart();updateCartUI();
+        idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
-        /* Re-renderizar productos para resetear los botones */
-        if(typeof renderProductos==='function')renderProductos();
         /* Abrir WhatsApp con el mensaje preparado */
         setTimeout(()=>{window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');},300);
     }catch(e){
