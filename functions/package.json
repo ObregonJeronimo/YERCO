@@ -2,7 +2,7 @@
   "name": "yerco-functions",
   "description": "Cloud Functions para YERCO - notificaciones Telegram",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "dependencies": {

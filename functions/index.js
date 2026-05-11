@@ -57,7 +57,7 @@ function escHtml(s) {
 exports.notifyTelegramOnNewOrder = onDocumentCreated(
   {
     document: 'pedidos/{pedidoId}',
-    region: 'us-central1',
+    region: 'southamerica-east1',
     memory: '256MiB',
     timeoutSeconds: 30
   },
