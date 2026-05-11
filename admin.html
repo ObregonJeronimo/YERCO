@@ -196,7 +196,7 @@
         function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
         const auth=firebase.auth(),storage=firebase.storage();let allProducts=[],editingId=null,selectedImageFile=null,existingImageUrl=null;
         const _AH=['709d846e9eaf6521','688a669cc7cc6b3f','930b13191a8630b8','7a7f8cbeb22e2015','499c08fa78dcee0e'];async function _ch(e){const d=new TextEncoder().encode(e);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,16);}async function isAllowedEmail(email){const h=await _ch(email);return _AH.includes(h);}
-        auth.onAuthStateChanged(async u=>{if(u){const allowed=await isAllowedEmail(u.email);if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;loadProducts();loadFacturaConfig();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
+        auth.onAuthStateChanged(async u=>{if(u){const allowed=await isAllowedEmail(u.email);if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;loadProducts();loadFacturaConfig();loadTelegramConfig();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
         async function loginWithGoogle(){const btn=document.getElementById('googleLoginBtn');const err=document.getElementById('loginError');btn.disabled=true;err.style.display='none';try{const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithPopup(provider);}catch(er){if(er.code!=='auth/popup-closed-by-user'){err.textContent='Error al iniciar sesión. Intentá de nuevo.';err.style.display='block';}btn.disabled=false;}}
         function logout(){auth.signOut();}
         function switchSection(sec){document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));const el=document.getElementById('sec-'+sec);if(el)el.classList.add('active');document.querySelectorAll('.sidebar-item').forEach(i=>{if(i.getAttribute('onclick')&&i.getAttribute('onclick').includes("'"+sec+"'"))i.classList.add('active');});if(sec==='stock')renderStockList();if(sec==='historial')loadHistorial();if(sec==='ventas')loadVentas();if(sec==='pedidos')loadPedidos();if(sec==='clientes')loadClientes();if(sec==='editor')loadSiteContent();if(sec==='resenas')loadAdminReviews();if(sec==='factura')loadFceEditor();if(sec==='insumos')loadInsumos();document.getElementById('adminSidebar').classList.remove('open');}
@@ -659,9 +659,51 @@
         // ============================================================
         // === PEDIDOS ===
         // ============================================================
-        const TELEGRAM_BOT_TOKEN='__TG_BOT_TOKEN__';
-        const TELEGRAM_CHAT_ID='__TG_CHAT_ID__';
-        async function sendTelegramMsg(text){try{await fetch('https://api.telegram.org/bot'+TELEGRAM_BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TELEGRAM_CHAT_ID,text:text,parse_mode:'HTML'})});}catch(e){console.warn('Telegram error:',e);}}
+        let TELEGRAM_BOT_TOKEN=null;
+        let TELEGRAM_CHAT_ID=null;
+        async function loadTelegramConfig(){
+            try{
+                const snap=await db.collection('config').doc('telegram').get();
+                if(snap.exists){
+                    const data=snap.data();
+                    TELEGRAM_BOT_TOKEN=data.token||null;
+                    TELEGRAM_CHAT_ID=data.chatId||null;
+                }
+            }catch(e){console.warn('No se pudo cargar config Telegram:',e);}
+            /* Escuchar pedidos nuevos desde la web para notificar a Telegram */
+            iniciarListenerPedidosWeb();
+        }
+        let _pedidosWebListenerInitialized=false;
+        function iniciarListenerPedidosWeb(){
+            if(_pedidosWebListenerInitialized)return;
+            _pedidosWebListenerInitialized=true;
+            /* Solo escuchamos pedidos creados DESPUES del momento actual (no historicos) */
+            const ahora=firebase.firestore.Timestamp.now();
+            db.collection('pedidos')
+                .where('origen','==','web')
+                .where('creadoEn','>',ahora)
+                .onSnapshot(snap=>{
+                    snap.docChanges().forEach(change=>{
+                        if(change.type==='added'){
+                            const p=change.doc.data();
+                            const num=String(p.numero||0).padStart(5,'0');
+                            const msg='<b>🛒 Nuevo pedido WEB #'+num+'</b>\n'+
+                                '<b>Cliente:</b> '+(p.cliente||'-')+'\n'+
+                                '<b>Tel:</b> '+(p.telefono||'-')+'\n'+
+                                '<b>Entrega:</b> '+(p.tipoEntrega==='retiro'?'Retiro en local':'Envio a domicilio')+'\n'+
+                                (p.direccion?'<b>Direccion:</b> '+p.direccion+'\n':'')+
+                                (p.notas?'<b>Notas:</b> '+p.notas+'\n':'')+
+                                '<b>Items:</b> '+(p.items||[]).map(i=>i.nombre+' x'+i.cantidad).join(', ')+'\n'+
+                                '<b>Total:</b> $'+(p.total||0).toLocaleString('es-AR');
+                            sendTelegramMsg(msg);
+                        }
+                    });
+                },err=>console.warn('Listener pedidos web error:',err));
+        }
+        async function sendTelegramMsg(text){
+            if(!TELEGRAM_BOT_TOKEN||!TELEGRAM_CHAT_ID){console.warn('Telegram no configurado');return;}
+            try{await fetch('https://api.telegram.org/bot'+TELEGRAM_BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TELEGRAM_CHAT_ID,text:text,parse_mode:'HTML'})});}catch(e){console.warn('Telegram error:',e);}
+        }
 
         let pedidosData=[],pedidosFiltered=[],pedidosPage=0,pedidoFiltroEstado='';
         let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;

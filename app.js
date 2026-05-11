@@ -450,36 +450,17 @@ async function confirmCheckout(){
         const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
         const total=subtotal+envio;
         const clienteNombreCompleto=nombre+' '+apellido;
-        /* Buscar cliente existente por telefono */
-        let clienteId=null;
-        try{
-            const snap=await db.collection('clientes').where('telefono','==',telefonoLimpio).limit(1).get();
-            if(!snap.empty){
-                clienteId=snap.docs[0].id;
-                /* Actualizar datos por si cambió algo */
-                const updateData={nombre:clienteNombreCompleto,telefono:telefonoLimpio};
-                if(direccion)updateData.direccion=direccion;
-                await db.collection('clientes').doc(clienteId).update(updateData);
-            }else{
-                /* Crear cliente nuevo */
-                const nuevoCliente={nombre:clienteNombreCompleto,telefono:telefonoLimpio,creadoEn:firebase.firestore.FieldValue.serverTimestamp(),origen:'web'};
-                if(direccion)nuevoCliente.direccion=direccion;
-                const ref=await db.collection('clientes').add(nuevoCliente);
-                clienteId=ref.id;
-            }
-        }catch(e){console.warn('Error con cliente:',e);}
         /* Obtener numero de pedido secuencial */
         let pedidoNum=1;
         try{
             const cfgSnap=await db.collection('config').doc('pedidosCount').get();
             if(cfgSnap.exists)pedidoNum=(cfgSnap.data().count||0)+1;
         }catch(e){}
-        /* Crear pedido en BDD */
+        /* Crear pedido en BDD (NO se toca la coleccion clientes desde la web) */
         const pedido={
             numero:pedidoNum,
             estado:'pendiente',
             cliente:clienteNombreCompleto,
-            clienteId:clienteId,
             telefono:telefonoLimpio,
             direccion:tipoEntrega==='envio'?direccion:null,
             notas:notas||null,
