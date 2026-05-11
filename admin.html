@@ -101,6 +101,17 @@
         .padre-sugerencia-row.selected{border-color:var(--accent-light);background:rgba(91,45,138,0.18);box-shadow:0 0 0 1px var(--accent-light) inset}
         .padre-sug-name{font-size:0.92rem;font-weight:500;color:var(--text-main);margin-bottom:3px;line-height:1.3}
         .padre-sug-meta{font-size:0.74rem;color:var(--text-dim);font-family:var(--mono)}
+        .estado-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius);padding:0.75rem 0.95rem;cursor:pointer;transition:all 0.15s;color:var(--text-main);font-family:inherit}
+        .estado-opt:not(:disabled):hover{border-color:var(--accent-light);background:rgba(91,45,138,0.10)}
+        .estado-opt.current{border-color:#67c23a;background:rgba(103,194,58,0.10)}
+        .estado-opt:disabled{opacity:0.55;cursor:not-allowed}
+        .estado-opt-icon{font-size:1.5rem;flex-shrink:0;width:32px;text-align:center}
+        .estado-opt-info{flex:1;display:flex;flex-direction:column;gap:2px}
+        .estado-opt-label{font-weight:600;font-size:0.95rem;color:var(--text-main)}
+        .estado-opt-desc{font-size:0.78rem;color:var(--text-dim)}
+        .pedido-card-clickable:hover{border-color:var(--accent-light);background:rgba(91,45,138,0.04)}
+        .p-items-toggle{cursor:pointer}
+        .p-items-toggle:hover{color:var(--accent-light)}
         .venta-card{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}.venta-card:hover{background:var(--bg-input)}.venta-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.venta-card-num{font-family:var(--mono);font-size:0.75rem;color:var(--accent-light)}.venta-card-total{font-family:var(--mono);font-weight:700;color:var(--accent-light)}.venta-card-mid{font-size:0.82rem;margin-bottom:3px}.venta-card-bot{display:flex;gap:10px;font-size:0.72rem;color:var(--text-dim)}.venta-card-actions{display:flex;gap:6px;margin-top:6px}.venta-card-actions button{font-size:0.75rem;padding:3px 8px}.v-items{display:none}.v-items.show{display:block}
         .cliente-card{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);transition:background 0.15s;gap:12px}.cliente-card:hover{background:var(--bg-input)}.cliente-info{flex:1;min-width:0}.cliente-name{font-weight:600;font-size:0.9rem;margin-bottom:2px}.cliente-detail{font-size:0.75rem;color:var(--text-dim);display:flex;gap:12px;flex-wrap:wrap}.cliente-actions{display:flex;gap:6px;flex-shrink:0}.cliente-actions button{font-size:0.75rem;padding:3px 8px}
         .ch-items.show{display:block!important}
@@ -752,43 +763,68 @@
                 const color=estadoColor[est]||'#aaa';
                 const icon=estadoIcon[est]||'bi-question';
                 const items=(p.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78rem;color:var(--text-dim)"><span>'+esc(i.nombre)+'</span><span style="font-family:var(--mono)">'+i.cantidad+' x $'+i.precio.toLocaleString('es-AR')+'</span></div>').join('');
-                const acciones=est==='entregado'?
-                    '<button class="btn btn-sm btn-secondary" onclick="openPedidoModal(\''+p.docId+'\')"><i class="bi bi-eye"></i> Ver</button>':
-                    '<button class="btn btn-sm btn-secondary" onclick="openPedidoModal(\''+p.docId+'\')"><i class="bi bi-pencil"></i> Editar</button>'+(est!=='entregado'?'<button class="btn btn-sm btn-secondary" onclick="cambiarEstadoPedido(\''+p.docId+'\',\''+est+'\')" title="Avanzar estado"><i class="bi bi-arrow-right-circle"></i> Estado</button>':'')+
-                    (est!=='entregado'?'<button class="btn btn-sm" style="background:#2d6b4a;border-color:#2d6b4a;color:#fff" onclick="convertirPedidoEnVenta(\''+p.docId+'\')"><i class="bi bi-cart-check"></i> Venta</button>':'');
-                return'<div class="venta-card" onclick="this.querySelector(\'.p-items\').classList.toggle(\'show\')">'+
+                const accionesBtns=(est!=='entregado'?'<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openEstadoPedidoModal(\''+p.docId+'\')" title="Cambiar estado"><i class="bi bi-arrow-right-circle"></i> Estado</button>':'')+
+                    '<button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="event.stopPropagation();deletePedido(\''+p.docId+'\','+p.numero+')" title="Eliminar"><i class="bi bi-trash"></i></button>';
+                return'<div class="venta-card pedido-card-clickable" onclick="openPedidoModal(\''+p.docId+'\')" style="cursor:pointer">'+
                     '<div class="venta-card-top"><span class="venta-card-num">#'+nro+'</span><span style="font-size:0.78rem;color:'+color+'"><i class="bi '+icon+'"></i> '+est.charAt(0).toUpperCase()+est.slice(1)+'</span><span class="venta-card-total">$'+(p.total||0).toLocaleString('es-AR')+'</span></div>'+
-                    '<div class="venta-card-mid">'+esc(p.cliente||'Sin cliente')+(p.tipoEntrega==='retiro'?'<span style="margin-left:8px;font-size:0.7rem;background:#3a2818;color:#e6a817;padding:1px 6px;border-radius:8px"><i class="bi bi-shop"></i> Retiro</span>':'<span style="margin-left:8px;font-size:0.7rem;background:#1a3a2a;color:#67c23a;padding:1px 6px;border-radius:8px"><i class="bi bi-truck"></i> Envio</span>')+'</div>'+
-                    '<div class="venta-card-bot"><span>'+fecha+'</span><span>'+(p.medioPago||'')+'</span><span>'+(p.items||[]).length+' items <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div>'+
+                    '<div class="venta-card-mid">'+esc(p.cliente||'Sin cliente')+(p.tipoEntrega==='retiro'?'<span style="margin-left:8px;font-size:0.7rem;background:#3a2818;color:#e6a817;padding:1px 6px;border-radius:8px"><i class="bi bi-shop"></i> Retiro</span>':'<span style="margin-left:8px;font-size:0.7rem;background:#1a3a2a;color:#67c23a;padding:1px 6px;border-radius:8px"><i class="bi bi-truck"></i> Envio</span>')+(p.origen==='web'?'<span style="margin-left:6px;font-size:0.68rem;background:#1a2a3a;color:#80b3ff;padding:1px 6px;border-radius:8px"><i class="bi bi-globe"></i> Web</span>':'')+'</div>'+
+                    '<div class="venta-card-bot"><span>'+fecha+'</span><span>'+(p.medioPago||'')+'</span><span class="p-items-toggle" onclick="event.stopPropagation();this.closest(\'.venta-card\').querySelector(\'.p-items\').classList.toggle(\'show\')">'+(p.items||[]).length+' items <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div>'+
                     '<div class="p-items" style="display:none;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">'+items+'</div>'+
-                    '<div class="venta-card-actions" onclick="event.stopPropagation()">'+acciones+'<button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="deletePedido(\''+p.docId+'\','+p.numero+')"><i class="bi bi-trash"></i></button></div>'+
+                    '<div class="venta-card-actions">'+accionesBtns+'</div>'+
                     '</div>';
             }).join('');
             const pg=document.getElementById('pedidosPager');
             if(pages>1){pg.innerHTML='<button onclick="pedidosPage=Math.max(0,pedidosPage-1);renderPedidos()"'+(pedidosPage===0?' disabled':'')+'>Ant</button><span>'+(pedidosPage+1)+'/'+pages+'</span><button onclick="pedidosPage=Math.min('+(pages-1)+',pedidosPage+1);renderPedidos()"'+(pedidosPage>=pages-1?' disabled':'')+'>Sig</button>';}
             else pg.innerHTML='';
         }
-        async function cambiarEstadoPedido(docId,estadoActual){
-            const siguiente={pendiente:'confirmado',confirmado:'entregado'};
-            const nuevoEstado=siguiente[estadoActual];
-            if(!nuevoEstado)return;
-            const labels={confirmado:'Confirmado',entregado:'Entregado'};
-            if(!confirm('Cambiar pedido a "'+labels[nuevoEstado]+'"?'))return;
+        function openEstadoPedidoModal(docId){
+            const p=pedidosData.find(x=>x.docId===docId);
+            if(!p)return;
+            window._estadoPedidoId=docId;
+            const est=p.estado||'pendiente';
+            const nro=String(p.numero||0).padStart(5,'0');
+            const titEl=document.getElementById('estadoPedidoTitulo');
+            if(titEl)titEl.textContent='Pedido #'+nro;
+            const infoEl=document.getElementById('estadoPedidoInfo');
+            if(infoEl)infoEl.innerHTML='<div style="font-size:0.88rem;color:var(--text-dim)">Cliente: <strong style="color:var(--text-main)">'+esc(p.cliente||'-')+'</strong></div><div style="font-size:0.88rem;color:var(--text-dim);margin-top:3px">Estado actual: <strong style="color:var(--text-main);text-transform:capitalize">'+est+'</strong></div>';
+            /* Marcar el estado actual como seleccionado y deshabilitarlo */
+            document.querySelectorAll('.estado-opt').forEach(b=>{
+                const val=b.getAttribute('data-estado');
+                b.classList.toggle('current',val===est);
+                b.disabled=(val===est);
+            });
+            document.getElementById('estadoPedidoModal').classList.add('show');
+        }
+        function closeEstadoPedidoModal(){
+            document.getElementById('estadoPedidoModal').classList.remove('show');
+            window._estadoPedidoId=null;
+        }
+        async function aplicarEstadoPedido(nuevoEstado){
+            const docId=window._estadoPedidoId;
+            if(!docId)return;
+            const labels={pendiente:'Pendiente',confirmado:'Confirmado',entregado:'Entregado'};
             try{
                 await db.collection('pedidos').doc(docId).update({estado:nuevoEstado,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()});
                 showAdminToast('Estado actualizado: '+labels[nuevoEstado],'success');
+                closeEstadoPedidoModal();
                 loadPedidos();
             }catch(e){showAdminToast('Error: '+e.message,'error');}
+        }
+        async function cambiarEstadoPedido(docId,estadoActual){
+            /* Compat: redirige al modal nuevo */
+            openEstadoPedidoModal(docId);
         }
         async function deletePedido(docId,num){
             if(!confirm('Eliminar pedido #'+String(num||0).padStart(5,'0')+'?'))return;
             try{await db.collection('pedidos').doc(docId).delete();showAdminToast('Pedido eliminado','info');loadPedidos();}
             catch(e){showAdminToast('Error: '+e.message,'error');}
         }
-        async function convertirPedidoEnVenta(docId){
+        async function convertirPedidoEnVentaDesdeModal(){
+            const docId=editingPedidoId;
+            if(!docId){showAdminToast('Sin pedido activo','error');return;}
             const p=pedidosData.find(x=>x.docId===docId);
-            if(!p)return;
-            if(!confirm('Convertir pedido #'+String(p.numero||0).padStart(5,'0')+' en venta? Se abrira el modal de nueva venta con los datos del pedido.'))return;
+            if(!p){showAdminToast('Pedido no encontrado','error');return;}
+            closePedidoModal();
             if(!allProducts.length)await loadProducts();
             if(!insumosData.length){try{const s=await db.collection('insumos').orderBy('nombre').get();insumosData=s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){}}
             if(!allClientes.length)await loadClientes();
@@ -796,18 +832,23 @@
             ventaItems=(p.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1}));
             ventaInsumosUsados=(p.insumosUsados||[]).map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:0}));
             ventaTipoEntrega=p.tipoEntrega||'envio';
-            ventaClienteSelected=true;
+            ventaClienteSelected=!!p.clienteId;
             document.getElementById('ventaCliente').value=p.cliente||'Consumidor Final';
             document.getElementById('ventaClienteId').value=p.clienteId||'';
             document.getElementById('ventaMedio').value=p.medioPago||'Efectivo';
             document.getElementById('ventaFecha').value=new Date().toISOString().split('T')[0];
             document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')===ventaTipoEntrega));
             const tituloEl=document.querySelector('#ventaModal .modal-header h3');
-            if(tituloEl)tituloEl.innerHTML='<i class="bi bi-cart-check"></i> Nueva Venta (desde pedido #'+String(p.numero||0).padStart(5,'0')+')';
-            renderVentaItems();renderVentaInsumosUsados();refreshVentaInsumosSelect();filterVentaProducts();
-            /* Marcar pedido como entregado al guardar */
-            const origSaveVenta=window._onAfterSaveVenta;
-            window._pedidoOrigenId=docId;
+            if(tituloEl)tituloEl.innerHTML='<i class="bi bi-cart-check"></i> Convertir pedido #'+String(p.numero||0).padStart(5,'0')+' en venta';
+            renderVentaItems();renderVentaInsumosUsados();filterVentaProducts();refreshVentaInsumosSelect();
+            /* Guardar referencia para luego marcar el pedido como entregado */
+            window._pedidoOrigenVentaId=docId;
+            showAdminToast('Completa los datos y guarda la venta. El pedido se marcara como entregado.','info');
+        }
+        async function convertirPedidoEnVenta(docId){
+            /* Compat: redirige a la version del modal */
+            openPedidoModal(docId);
+            setTimeout(()=>convertirPedidoEnVentaDesdeModal(),300);
         }
 
         // Modal pedido
@@ -833,10 +874,15 @@
                     pedTipoEntrega=p.tipoEntrega||'envio';
                     document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===pedTipoEntrega));
                     document.getElementById('savePedidoBtn').innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';
+                    /* Mostrar boton Convertir a venta si no esta entregado */
+                    const convBtn=document.getElementById('convertirVentaBtn');
+                    if(convBtn)convBtn.style.display=(p.estado!=='entregado')?'inline-flex':'none';
                 }
             } else {
                 document.getElementById('pedidoModalTitle').innerHTML='<i class="bi bi-bag-check"></i> Nuevo Pedido';
                 document.getElementById('savePedidoBtn').innerHTML='<i class="bi bi-check-lg"></i> Guardar pedido';
+                const convBtn=document.getElementById('convertirVentaBtn');
+                if(convBtn)convBtn.style.display='none';
             }
             if(!allProducts.length)loadProducts();
             if(!allClientes.length)loadClientes();
@@ -938,9 +984,74 @@
         function toggleClienteSort(){if(!clSortDir)clSortDir='desc';else if(clSortDir==='desc')clSortDir='asc';else clSortDir=null;const btn=document.getElementById('clSortBtn');if(clSortDir==='desc')btn.innerHTML='<i class="bi bi-sort-numeric-down"></i> Mayor ventas';else if(clSortDir==='asc')btn.innerHTML='<i class="bi bi-sort-numeric-up"></i> Menor ventas';else btn.innerHTML='<i class="bi bi-sort-numeric-down"></i> Ventas';filterClientes();}
         function updateClienteStats(){document.getElementById('clStatTotal').textContent=allClientes.length;const conVentas=allClientes.filter(c=>c.ventasCount>0);document.getElementById('clStatConVentas').textContent=conVentas.length;const totalFact=allClientes.reduce((s,c)=>s+c.ventasTotal,0);document.getElementById('clStatFacturado').textContent='$'+totalFact.toLocaleString('es-AR');const prom=conVentas.length?Math.round(totalFact/conVentas.length):0;document.getElementById('clStatPromedio').textContent='$'+prom.toLocaleString('es-AR');}
         function filterClientes(){const c=document.getElementById('clientesList');const q=(document.getElementById('clienteSearch')?.value||'').toLowerCase();let f=[...allClientes];if(q)f=f.filter(cl=>(cl.nombre||'').toLowerCase().includes(q)||(cl.identificacion||'').toLowerCase().includes(q)||(cl.telefono||'').toLowerCase().includes(q)||(cl.email||'').toLowerCase().includes(q));if(clSortDir==='desc')f.sort((a,b)=>b.ventasCount-a.ventasCount);else if(clSortDir==='asc')f.sort((a,b)=>a.ventasCount-b.ventasCount);if(!f.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin clientes</p></div>';return;}c.innerHTML=f.map(cl=>{const det=[(cl.identificacion?'DNI: '+cl.identificacion:''),(cl.telefono?'Tel: '+cl.telefono:''),(cl.email||'')].filter(Boolean).join(' | ');const ventasInfo=cl.ventasCount>0?'<span style="font-size:0.72rem;color:var(--accent-light);margin-left:8px">'+cl.ventasCount+' venta'+(cl.ventasCount!==1?'s':'')+' | $'+cl.ventasTotal.toLocaleString('es-AR')+'</span>':'';return'<div class="cliente-card"><div class="cliente-info"><div class="cliente-name">'+cl.nombre+ventasInfo+'</div><div class="cliente-detail">'+det+'</div></div><div class="cliente-actions"><button class="btn btn-sm btn-secondary" onclick="showClienteHist(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Historial"><i class="bi bi-clock-history"></i></button><button class="btn btn-sm btn-secondary" onclick="openClienteModal(\''+cl.id+'\')" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-secondary" onclick="deleteCliente(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Eliminar" style="color:var(--danger)"><i class="bi bi-trash"></i></button></div></div>';}).join('');}
-        function openClienteModal(id){editingClienteId=id||null;document.getElementById('clienteForm').reset();if(id){document.getElementById('clienteModalTitle').textContent='Editar Cliente';const cl=allClientes.find(x=>x.id===id);if(cl){document.getElementById('cNombre').value=cl.nombre||'';document.getElementById('cIdentificacion').value=cl.identificacion||'';document.getElementById('cTelefono').value=cl.telefono||'';document.getElementById('cEmail').value=cl.email||'';document.getElementById('cDireccion').value=cl.direccion||'';}}else{document.getElementById('clienteModalTitle').textContent='Nuevo Cliente';}document.getElementById('clienteModal').classList.add('show');}
-        function closeClienteModal(){document.getElementById('clienteModal').classList.remove('show');editingClienteId=null;}
-        async function saveCliente(e){e.preventDefault();const btn=document.getElementById('saveClienteBtn');btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Guardando...';try{const data={nombre:document.getElementById('cNombre').value.trim(),identificacion:document.getElementById('cIdentificacion').value.trim()||null,telefono:document.getElementById('cTelefono').value.trim()||null,email:document.getElementById('cEmail').value.trim()||null,direccion:document.getElementById('cDireccion').value.trim()||null};if(editingClienteId){await db.collection('clientes').doc(editingClienteId).update(data);logAction('editar','Cliente editado: '+data.nombre,'');showAdminToast('Cliente actualizado','success');}else{await db.collection('clientes').add(data);logAction('crear','Cliente creado: '+data.nombre,'');showAdminToast('Cliente creado','success');}closeClienteModal();loadClientes().then?loadClientes().then(()=>{if(_clienteDesde==='pedido'){const nuevo=allClientes[allClientes.length-1];if(nuevo){pickPedCliente(nuevo.id,nuevo.nombre);}_clienteDesde=null;}}):loadClientes();if(_clienteDesde==='pedido'){setTimeout(()=>{const nuevo=allClientes[allClientes.length-1];if(nuevo){pickPedCliente(nuevo.id,nuevo.nombre);}_clienteDesde=null;},800);}}catch(er){showAdminToast('Error: '+er.message,'error');}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Guardar';}}
+        function openClienteModal(id){
+            editingClienteId=id||null;
+            document.getElementById('clienteForm').reset();
+            if(id){
+                document.getElementById('clienteModalTitle').textContent='Editar Cliente';
+                const cl=allClientes.find(x=>x.id===id);
+                if(cl){document.getElementById('cNombre').value=cl.nombre||'';document.getElementById('cIdentificacion').value=cl.identificacion||'';document.getElementById('cTelefono').value=cl.telefono||'';document.getElementById('cEmail').value=cl.email||'';document.getElementById('cDireccion').value=cl.direccion||'';}
+            }else{
+                document.getElementById('clienteModalTitle').textContent='Nuevo Cliente';
+            }
+            const modal=document.getElementById('clienteModal');
+            /* Si se abre desde el modal de pedido/venta, subir z-index para que quede por encima */
+            if(_clienteDesde==='pedido'||_clienteDesde==='venta'){
+                modal.style.zIndex='2000';
+            }else{
+                modal.style.zIndex='';
+            }
+            modal.classList.add('show');
+        }
+        function closeClienteModal(){
+            const modal=document.getElementById('clienteModal');
+            modal.classList.remove('show');
+            modal.style.zIndex='';
+            editingClienteId=null;
+        }
+        async function saveCliente(e){
+            e.preventDefault();
+            const btn=document.getElementById('saveClienteBtn');
+            btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Guardando...';
+            try{
+                const data={
+                    nombre:document.getElementById('cNombre').value.trim(),
+                    identificacion:document.getElementById('cIdentificacion').value.trim()||null,
+                    telefono:document.getElementById('cTelefono').value.trim()||null,
+                    email:document.getElementById('cEmail').value.trim()||null,
+                    direccion:document.getElementById('cDireccion').value.trim()||null
+                };
+                let nuevoId=editingClienteId;
+                if(editingClienteId){
+                    await db.collection('clientes').doc(editingClienteId).update(data);
+                    logAction('editar','Cliente editado: '+data.nombre,'');
+                    showAdminToast('Cliente actualizado','success');
+                }else{
+                    const ref=await db.collection('clientes').add(data);
+                    nuevoId=ref.id;
+                    logAction('crear','Cliente creado: '+data.nombre,'');
+                    showAdminToast('Cliente creado','success');
+                }
+                /* Si se creó desde pedido o venta: agregar a allClientes local Y autoseleccionar */
+                if(nuevoId&&!editingClienteId){
+                    const nuevoCliente={id:nuevoId,...data};
+                    allClientes.push(nuevoCliente);
+                    if(_clienteDesde==='pedido'){
+                        pickPedCliente(nuevoId,data.nombre);
+                    }else if(_clienteDesde==='venta'){
+                        if(typeof pickVentaCliente==='function')pickVentaCliente(nuevoId,data.nombre);
+                    }
+                }
+                _clienteDesde=null;
+                closeClienteModal();
+                /* Refrescar lista si estamos en la seccion clientes */
+                if(document.getElementById('sec-clientes')?.classList.contains('active')){loadClientes();}
+            }catch(er){
+                showAdminToast('Error: '+er.message,'error');
+            }finally{
+                btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Guardar';
+            }
+        }
         async function deleteCliente(id,name){if(!confirm('Eliminar cliente "'+name+'"?'))return;try{await db.collection('clientes').doc(id).delete();logAction('eliminar','Cliente eliminado: '+name,'');showAdminToast('"'+name+'" eliminado','info');loadClientes();}catch(e){showAdminToast('Error: '+e.message,'error');}}
         async function showClienteHist(id,nombre){document.getElementById('clienteHistTitle').textContent='Ventas de '+nombre;const c=document.getElementById('clienteHistList');c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';document.getElementById('clienteHistModal').classList.add('show');try{const snap=await db.collection('ventas').where('clienteId','==',id).get();const ventas=snap.docs.map(d=>{const r=d.data();return{...r,fecha:r.fecha?r.fecha.toDate?r.fecha.toDate():new Date(r.fecha):new Date()};}).sort((a,b)=>b.fecha-a.fecha);if(!ventas.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin ventas registradas para este cliente</p></div>';return;}c.innerHTML=ventas.map((v,idx)=>{const fecha=v.fecha.toLocaleDateString('es-AR');const nro=String(v.numero||0).padStart(6,'0');const items=(v.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78rem;color:var(--text-dim)"><span>'+esc(i.nombre)+'</span><span style="font-family:var(--mono);white-space:nowrap">'+i.cantidad+' x $'+i.precio.toLocaleString('es-AR')+' = $'+i.subtotal.toLocaleString('es-AR')+'</span></div>').join('');return'<div class="venta-card" style="cursor:pointer" onclick="this.querySelector(\'.ch-items\').classList.toggle(\'show\')"><div class="venta-card-top"><span class="venta-card-num">#'+nro+'</span><span class="venta-card-total">$'+(v.total||0).toLocaleString('es-AR')+'</span></div><div class="venta-card-bot"><span>'+fecha+'</span><span>'+v.medioPago+'</span><span title="'+(v.tipoEntrega==='retiro'?'Retiro en local':'Envio a domicilio')+'" style="background:'+(v.tipoEntrega==='retiro'?'#3a2818':'#1a3a2a')+';color:'+(v.tipoEntrega==='retiro'?'#e6a817':'#67c23a')+';padding:2px 8px;border-radius:10px;font-size:0.72rem"><i class="bi bi-'+(v.tipoEntrega==='retiro'?'shop':'truck')+'"></i> '+(v.tipoEntrega==='retiro'?'Retiro':'Envío')+'</span><span>'+(v.items||[]).length+' items <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div><div class="ch-items" style="display:none;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">'+items+'</div></div>';}).join('');}catch(e){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
 
@@ -1516,6 +1627,25 @@
     <div class="modal-overlay" id="weeklyPdfModal"><div class="modal-box" style="max-width:960px;width:96vw;max-height:94vh"><div class="modal-header"><h3><i class="bi bi-calendar-week"></i> PDF Semanal</h3><button class="modal-close" onclick="document.getElementById('weeklyPdfModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;max-height:calc(94vh - 80px)"><div class="drop-zone" id="dropZoneWeekly" style="padding:1.5rem"><i class="bi bi-file-earmark-pdf" style="font-size:2rem"></i><p>Arrastra el PDF semanal del proveedor</p><p class="hint">.pdf</p></div><input type="file" class="file-input-hidden" id="weeklyPdfInput" accept=".pdf"><div class="upload-progress" id="wpProgress" style="display:none"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="wpBar"></div></div><p class="progress-text" id="wpText">Analizando PDF...</p></div><div id="wpResults" style="display:none"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:140px;background:#3a3a1a;border:1px solid #5a5a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecRemoved')"><strong style="color:#f0c040;font-size:1.1rem" id="wpRemovedCount">0</strong><span style="font-size:0.82rem;color:#f0c040;display:block">Ocultar del catalogo</span></div><div style="flex:1;min-width:140px;background:#3a2a1a;border:1px solid #5a4a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecPrices')"><strong style="color:#f0a040;font-size:1.1rem" id="wpPriceCount">0</strong><span style="font-size:0.82rem;color:#f0a040;display:block">Cambio precio</span></div><div style="flex:1;min-width:140px;background:#1a3a1a;border:1px solid #2d5a2d;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecNew')"><strong style="color:#67c23a;font-size:1.1rem" id="wpNewCount">0</strong><span style="font-size:0.82rem;color:#67c23a;display:block">Nuevos</span></div><div style="flex:1;min-width:140px;background:#1a2a3a;border:1px solid #2d4a5a;padding:0.75rem;border-radius:var(--radius);cursor:pointer" onclick="wpScrollTo('wpSecReappeared')"><strong style="color:#60a5fa;font-size:1.1rem" id="wpReappearedCount">0</strong><span style="font-size:0.82rem;color:#60a5fa;display:block">Volvieron al PDF</span></div></div><div id="wpSecRemoved" style="margin-bottom:1.5rem"><h4 style="color:#f0c040;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-eye-slash"></i> Productos a ocultar del catalogo (no estan en el PDF de esta semana)</h4><div id="wpRemovedList" style="font-size:0.88rem"></div></div><div id="wpSecReappeared" style="margin-bottom:1.5rem"><h4 style="color:#60a5fa;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-eye"></i> Volvieron al PDF (estaban ocultos)</h4><div id="wpReappearedList" style="font-size:0.88rem"></div></div><div id="wpSecPrices" style="margin-bottom:1.5rem"><h4 style="color:#f0a040;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-arrow-repeat"></i> Cambios de precio</h4><div id="wpPricesList" style="font-size:0.88rem"></div></div><div id="wpSecNew" style="margin-bottom:1.5rem"><h4 style="color:#67c23a;margin:0 0 0.5rem;font-size:1rem"><i class="bi bi-plus-circle"></i> Productos nuevos (no estan en la BDD)</h4><div id="wpNewList" style="font-size:0.88rem"></div></div></div></div></div></div>
 
     <!-- === MODAL PEDIDO === -->
+    <div class="modal-overlay" id="estadoPedidoModal">
+      <div class="modal-box" style="max-width:440px;width:96vw">
+        <div class="modal-header">
+          <h3><i class="bi bi-arrow-right-circle"></i> Cambiar estado · <span id="estadoPedidoTitulo"></span></h3>
+          <button class="modal-close" onclick="closeEstadoPedidoModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div style="padding:1rem">
+          <div id="estadoPedidoInfo" style="background:var(--bg-input);padding:0.75rem 0.95rem;border-radius:var(--radius);margin-bottom:1rem"></div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <button class="estado-opt" data-estado="pendiente" onclick="aplicarEstadoPedido('pendiente')"><span class="estado-opt-icon" style="color:#e6a23c"><i class="bi bi-clock-fill"></i></span><div class="estado-opt-info"><div class="estado-opt-label">Pendiente</div><div class="estado-opt-desc">Recién recibido, sin confirmar</div></div></button>
+            <button class="estado-opt" data-estado="confirmado" onclick="aplicarEstadoPedido('confirmado')"><span class="estado-opt-icon" style="color:#409eff"><i class="bi bi-check-circle-fill"></i></span><div class="estado-opt-info"><div class="estado-opt-label">Confirmado</div><div class="estado-opt-desc">Stock verificado, en preparación</div></div></button>
+            <button class="estado-opt" data-estado="entregado" onclick="aplicarEstadoPedido('entregado')"><span class="estado-opt-icon" style="color:#67c23a"><i class="bi bi-bag-check-fill"></i></span><div class="estado-opt-info"><div class="estado-opt-label">Entregado</div><div class="estado-opt-desc">Cliente recibió el pedido</div></div></button>
+          </div>
+        </div>
+        <div class="form-actions" style="padding:0.75rem 1rem;border-top:1px solid var(--border)">
+          <button class="btn btn-secondary" style="width:100%" onclick="closeEstadoPedidoModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
     <div class="modal-overlay" id="pedidoModal">
       <div class="modal-box" style="max-width:720px">
         <div class="modal-header">
@@ -1573,6 +1703,7 @@
           </div>
           <div class="form-actions">
             <button class="btn btn-secondary" onclick="closePedidoModal()">Cancelar</button>
+            <button class="btn btn-sm" id="convertirVentaBtn" style="display:none;background:#2d6b4a;border-color:#2d6b4a;color:#fff" onclick="convertirPedidoEnVentaDesdeModal()"><i class="bi bi-cart-check"></i> Convertir a venta</button>
             <button class="btn btn-primary" onclick="savePedidoDesdeModal()" id="savePedidoBtn"><i class="bi bi-check-lg"></i> Guardar pedido</button>
           </div>
         </div>
