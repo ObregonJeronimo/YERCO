@@ -241,6 +241,9 @@ img { max-width: 100%; height: auto; }
 @media(hover:hover){.chk-entrega-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }}
 .chk-entrega-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: white; font-weight: 600; }
 .chk-retiro-info { font-size: 0.82rem; color: var(--color-text-light); margin: 0.25rem 0 0; padding: 0.5rem 0.75rem; background: #f9f6f0; border-radius: 8px; }
+.chk-mapa-link { color: var(--color-primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; transition: color 0.15s; }
+.chk-mapa-link:active { color: var(--color-primary-dark); text-decoration: underline; }
+@media(hover:hover){.chk-mapa-link:hover { color: var(--color-primary-dark); text-decoration: underline; }}
 .chk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 .chk-field { display: flex; flex-direction: column; gap: 4px; }
 .chk-field label { font-size: 0.82rem; color: var(--color-text); font-weight: 500; }
