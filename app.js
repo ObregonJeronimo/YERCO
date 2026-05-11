@@ -286,7 +286,7 @@ function openProductDetailModal(id){
         (desc?'<div class="pdm-section"><h4>Descripción</h4><p>'+esc(desc).replace(/\n/g,'<br>')+'</p></div>':'')+
         (vn?'<div class="pdm-section"><h4>Información nutricional</h4><div class="pdm-nutritional">'+esc(vn).replace(/\n/g,'<br>')+'</div></div>':'')+
         (!desc&&!vn?'<div class="pdm-section pdm-no-info"><i class="bi bi-info-circle"></i> Próximamente más información sobre este producto</div>':'')+
-        '<button class="pdm-add-btn'+(qty>0?' added':'')+'" id="pdmAddBtn-'+id+'" onclick="'+(qty===0?'addToCart(\''+id+'\');refreshProductDetailModal(\''+id+'\')':'event.stopPropagation()')+'"'+(noStock?' disabled':'')+'>'+btnContent+'</button>'+
+        (qty===0||noStock?'<button class="pdm-add-btn'+(noStock?' disabled':'')+'" id="pdmAddBtn-'+id+'" onclick="'+(qty===0&&!noStock?'addToCart(\''+id+'\');refreshProductDetailModal(\''+id+'\')'  :'event.stopPropagation()')+'"'+(noStock?' disabled':'')+'>'+btnContent+'</button>':'<div class="pdm-add-btn added" id="pdmAddBtn-'+id+'">'+btnContent+'</div>')+
         '</div>';
     document.getElementById('productDetailModal').classList.add('show');
     document.getElementById('productDetailOverlay').classList.add('show');
@@ -300,20 +300,18 @@ function refreshProductDetailModal(id){
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;
     const maxOut=qty>=p.stock;
-    btnEl.classList.toggle('added',qty>0);
-    btnEl.disabled=noStock;
-    let btnContent;
+    let btnContent,newEl;
     if(noStock){
         btnContent='<i class="bi bi-x-circle"></i> Sin stock';
-        btnEl.setAttribute('onclick','event.stopPropagation()');
+        newEl='<button class="pdm-add-btn" id="pdmAddBtn-'+id+'" onclick="event.stopPropagation()" disabled>'+btnContent+'</button>';
     }else if(qty===0){
         btnContent='<i class="bi bi-cart-plus"></i> Agregar al carrito';
-        btnEl.setAttribute('onclick',"addToCart('"+id+"');refreshProductDetailModal('"+id+"')");
+        newEl='<button class="pdm-add-btn" id="pdmAddBtn-'+id+'" onclick="addToCart(\''+id+'\');refreshProductDetailModal(\''+id+'\')">' +btnContent+'</button>';
     }else{
         btnContent='<span class="pdm-qty-wrap"><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',-1);refreshProductDetailModal(\''+id+'\')"><i class="bi bi-dash"></i></button><span class="pdm-qty-num">'+qty+'</span><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',1);refreshProductDetailModal(\''+id+'\')"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
-        btnEl.setAttribute('onclick','event.stopPropagation()');
+        newEl='<div class="pdm-add-btn added" id="pdmAddBtn-'+id+'">'+btnContent+'</div>';
     }
-    btnEl.innerHTML=btnContent;
+    btnEl.outerHTML=newEl;
 }
 function closeProductDetailModal(){
     document.getElementById('productDetailModal')?.classList.remove('show');
