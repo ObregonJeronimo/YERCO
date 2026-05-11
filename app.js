@@ -483,14 +483,7 @@ async function confirmCheckout(){
         msg+='*Entrega:* '+(tipoEntrega==='retiro'?'Retiro en local':'Envío a domicilio')+'\n';
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
-        msg+='\n*DETALLE DEL PEDIDO*\n--------------------\n';
-        carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;msg+=(i+1)+'. '+item.nombre+'\n   '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
-        msg+='--------------------\n*Subtotal:* $'+formatPrice(subtotal)+'\n';
-        if(tipoEntrega==='envio'){
-            if(envio===0)msg+='*Envío:* GRATIS (compra mayor a $100.000)\n';
-            else msg+='*Envío:* $'+formatPrice(envio)+'\n';
-        }
-        msg+='*TOTAL: $'+formatPrice(total)+'*\n\nGracias!';
+        msg+='\nGracias!';
         /* Limpiar carrito */
         carrito=[];saveCart();updateCartUI();
         closeCheckoutModal();closeCart();
