@@ -694,6 +694,9 @@
         // ============================================================
         // === PEDIDOS ===
         // ============================================================
+        // Telegram: notificaciones web automaticas via Cloud Function (functions/index.js)
+        // Solo mantenemos sendTelegramMsg para notificar pedidos creados desde el admin (no desde web)
+        // ============================================================
         let TELEGRAM_BOT_TOKEN=null;
         let TELEGRAM_CHAT_ID=null;
         async function loadTelegramConfig(){
@@ -705,35 +708,6 @@
                     TELEGRAM_CHAT_ID=data.chatId||null;
                 }
             }catch(e){console.warn('No se pudo cargar config Telegram:',e);}
-            /* Escuchar pedidos nuevos desde la web para notificar a Telegram */
-            iniciarListenerPedidosWeb();
-        }
-        let _pedidosWebListenerInitialized=false;
-        function iniciarListenerPedidosWeb(){
-            if(_pedidosWebListenerInitialized)return;
-            _pedidosWebListenerInitialized=true;
-            /* Solo escuchamos pedidos creados DESPUES del momento actual (no historicos) */
-            const ahora=firebase.firestore.Timestamp.now();
-            db.collection('pedidos')
-                .where('origen','==','web')
-                .where('creadoEn','>',ahora)
-                .onSnapshot(snap=>{
-                    snap.docChanges().forEach(change=>{
-                        if(change.type==='added'){
-                            const p=change.doc.data();
-                            const num=String(p.numero||0).padStart(5,'0');
-                            const msg='<b>🛒 Nuevo pedido WEB #'+num+'</b>\n'+
-                                '<b>Cliente:</b> '+(p.cliente||'-')+'\n'+
-                                '<b>Tel:</b> '+(p.telefono||'-')+'\n'+
-                                '<b>Entrega:</b> '+(p.tipoEntrega==='retiro'?'Retiro en local':'Envio a domicilio')+'\n'+
-                                (p.direccion?'<b>Direccion:</b> '+p.direccion+'\n':'')+
-                                (p.notas?'<b>Notas:</b> '+p.notas+'\n':'')+
-                                '<b>Items:</b> '+(p.items||[]).map(i=>i.nombre+' x'+i.cantidad).join(', ')+'\n'+
-                                '<b>Total:</b> $'+(p.total||0).toLocaleString('es-AR');
-                            sendTelegramMsg(msg);
-                        }
-                    });
-                },err=>console.warn('Listener pedidos web error:',err));
         }
         async function sendTelegramMsg(text){
             if(!TELEGRAM_BOT_TOKEN||!TELEGRAM_CHAT_ID){console.warn('Telegram no configurado');return;}

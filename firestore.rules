@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && 
+        request.auth.token.email in [
+          'yerco.cba@gmail.com',
+          'agustinmarqez2@gmail.com',
+          'genaro077caromaggi@gmail.com',
+          'jeroobregon03@gmail.com',
+          'joacobrarda06@gmail.com'
+        ];
+    }
+    match /productos/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /historial/{doc} {
+      allow read, write: if isAdmin();
+    }
+    match /ventas/{doc} {
+      allow read, write: if isAdmin();
+    }
+    match /pedidos/{doc} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+    match /config/telegram {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /clientes/{doc} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update: if isAdmin() || (resource.data.origen == 'web');
+      allow delete: if isAdmin();
+    }
+    match /resenas/{doc} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if resource.data.usado == false;
+      allow delete: if isAdmin();
+    }
+    match /_categorias/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /packs/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /insumos/{doc} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
