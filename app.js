@@ -364,13 +364,165 @@ function updateShippingBar(total) {
 
 function checkout() {
     if(carrito.length===0){showToast('Carrito vacío','error');return;}
-    let msg='Hola! Quiero realizar el siguiente pedido:\n\n*DETALLE DEL PEDIDO*\n--------------------\n';let total=0;
-    carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;total+=sub;msg+=''+(i+1)+'. '+item.nombre+'\n   Cantidad: '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
-    msg+='--------------------\n*TOTAL: $'+formatPrice(total)+'*\n';
-    if(total>=100000){msg+='*ENVIO GRATIS* (compra mayor a $100.000)\n';}
-    else{msg+='Envio: $2.000\n*TOTAL CON ENVIO: $'+formatPrice(total+2000)+'*\n';}
-    msg+='\nGracias!';
-    window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');showToast('Redirigiendo a WhatsApp...','success');closeCart();
+    openCheckoutModal();
+}
+
+function openCheckoutModal(){
+    /* Precargar datos guardados si existen */
+    try{
+        const saved=JSON.parse(localStorage.getItem('yerco_checkout_data')||'{}');
+        if(saved.nombre)document.getElementById('chkNombre').value=saved.nombre;
+        if(saved.apellido)document.getElementById('chkApellido').value=saved.apellido;
+        if(saved.telefono)document.getElementById('chkTelefono').value=saved.telefono;
+        if(saved.direccion)document.getElementById('chkDireccion').value=saved.direccion;
+        if(saved.notas)document.getElementById('chkNotas').value=saved.notas;
+        if(saved.tipoEntrega)setCheckoutEntrega(saved.tipoEntrega);
+        else setCheckoutEntrega('envio');
+    }catch(e){setCheckoutEntrega('envio');}
+    updateCheckoutResumen();
+    document.getElementById('checkoutOverlay').classList.add('show');
+    document.getElementById('checkoutModal').classList.add('show');
+    document.body.style.overflow='hidden';
+    setTimeout(()=>document.getElementById('chkNombre')?.focus(),150);
+}
+
+function closeCheckoutModal(){
+    document.getElementById('checkoutOverlay')?.classList.remove('show');
+    document.getElementById('checkoutModal')?.classList.remove('show');
+    document.body.style.overflow='';
+}
+
+function setCheckoutEntrega(tipo){
+    window._chkTipoEntrega=tipo==='retiro'?'retiro':'envio';
+    document.querySelectorAll('.chk-entrega-btn').forEach(b=>{
+        b.classList.toggle('active',b.getAttribute('data-tipo')===window._chkTipoEntrega);
+    });
+    /* Mostrar/ocultar campo direccion segun tipo */
+    const dirGroup=document.getElementById('chkDireccionGroup');
+    const dirInput=document.getElementById('chkDireccion');
+    if(window._chkTipoEntrega==='retiro'){
+        if(dirGroup)dirGroup.style.display='none';
+        if(dirInput)dirInput.removeAttribute('required');
+    }else{
+        if(dirGroup)dirGroup.style.display='';
+        if(dirInput)dirInput.setAttribute('required','required');
+    }
+    updateCheckoutResumen();
+}
+
+function updateCheckoutResumen(){
+    const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+    const tipoEntrega=window._chkTipoEntrega||'envio';
+    const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
+    const total=subtotal+envio;
+    const el=document.getElementById('chkResumen');
+    if(!el)return;
+    const envioRow=tipoEntrega==='retiro'
+        ?'<div class="chk-resumen-row"><span><i class="bi bi-shop"></i> Retiro en local</span><span style="color:#2d4a22">sin cargo</span></div>'
+        :('<div class="chk-resumen-row"><span><i class="bi bi-truck"></i> Envío</span><span'+(envio===0?' style="color:#2d4a22;font-weight:600"':'')+'>'+(envio===0?'GRATIS':'$'+formatPrice(envio))+'</span></div>');
+    el.innerHTML='<div class="chk-resumen-row"><span>Subtotal ('+carrito.length+' '+(carrito.length===1?'producto':'productos')+')</span><span>$'+formatPrice(subtotal)+'</span></div>'+
+        envioRow+
+        '<div class="chk-resumen-total"><span>TOTAL</span><span>$'+formatPrice(total)+'</span></div>';
+}
+
+async function confirmCheckout(){
+    const nombre=document.getElementById('chkNombre').value.trim();
+    const apellido=document.getElementById('chkApellido').value.trim();
+    const telefono=document.getElementById('chkTelefono').value.trim();
+    const direccion=document.getElementById('chkDireccion').value.trim();
+    const notas=document.getElementById('chkNotas').value.trim();
+    const tipoEntrega=window._chkTipoEntrega||'envio';
+    /* Validaciones */
+    if(!nombre){showToast('Ingresá tu nombre','error');document.getElementById('chkNombre').focus();return;}
+    if(!apellido){showToast('Ingresá tu apellido','error');document.getElementById('chkApellido').focus();return;}
+    if(!telefono){showToast('Ingresá tu teléfono','error');document.getElementById('chkTelefono').focus();return;}
+    const telefonoLimpio=telefono.replace(/\D/g,'');
+    if(telefonoLimpio.length<8){showToast('El teléfono debe tener al menos 8 dígitos','error');document.getElementById('chkTelefono').focus();return;}
+    if(tipoEntrega==='envio'&&!direccion){showToast('Para envío necesitamos tu dirección','error');document.getElementById('chkDireccion').focus();return;}
+    /* Guardar datos en localStorage para próxima vez */
+    try{localStorage.setItem('yerco_checkout_data',JSON.stringify({nombre,apellido,telefono,direccion,notas,tipoEntrega}));}catch(e){}
+    const btn=document.getElementById('chkConfirmBtn');
+    btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Confirmando...';
+    try{
+        if(!firebase||!firebase.firestore){throw new Error('Firebase no inicializado');}
+        const db=firebase.firestore();
+        const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
+        const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
+        const total=subtotal+envio;
+        const clienteNombreCompleto=nombre+' '+apellido;
+        /* Buscar cliente existente por telefono */
+        let clienteId=null;
+        try{
+            const snap=await db.collection('clientes').where('telefono','==',telefonoLimpio).limit(1).get();
+            if(!snap.empty){
+                clienteId=snap.docs[0].id;
+                /* Actualizar datos por si cambió algo */
+                const updateData={nombre:clienteNombreCompleto,telefono:telefonoLimpio};
+                if(direccion)updateData.direccion=direccion;
+                await db.collection('clientes').doc(clienteId).update(updateData);
+            }else{
+                /* Crear cliente nuevo */
+                const nuevoCliente={nombre:clienteNombreCompleto,telefono:telefonoLimpio,creadoEn:firebase.firestore.FieldValue.serverTimestamp(),origen:'web'};
+                if(direccion)nuevoCliente.direccion=direccion;
+                const ref=await db.collection('clientes').add(nuevoCliente);
+                clienteId=ref.id;
+            }
+        }catch(e){console.warn('Error con cliente:',e);}
+        /* Obtener numero de pedido secuencial */
+        let pedidoNum=1;
+        try{
+            const cfgSnap=await db.collection('config').doc('pedidosCount').get();
+            if(cfgSnap.exists)pedidoNum=(cfgSnap.data().count||0)+1;
+        }catch(e){}
+        /* Crear pedido en BDD */
+        const pedido={
+            numero:pedidoNum,
+            estado:'pendiente',
+            cliente:clienteNombreCompleto,
+            clienteId:clienteId,
+            telefono:telefonoLimpio,
+            direccion:tipoEntrega==='envio'?direccion:null,
+            notas:notas||null,
+            tipoEntrega:tipoEntrega,
+            items:carrito.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,cantidad:i.cantidad,subtotal:i.precio*i.cantidad})),
+            subtotalProductos:subtotal,
+            envio:envio,
+            envioGratis:tipoEntrega==='envio'&&envio===0,
+            total:total,
+            origen:'web',
+            creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('pedidos').add(pedido);
+        try{await db.collection('config').doc('pedidosCount').set({count:pedidoNum});}catch(e){}
+        /* Construir mensaje de WhatsApp con el numero de pedido */
+        const numeroFmt=String(pedidoNum).padStart(3,'0');
+        let msg='Hola! *Pedido confirmado N°'+numeroFmt+'*\n\n';
+        msg+='*Cliente:* '+clienteNombreCompleto+'\n';
+        msg+='*Tel:* '+telefonoLimpio+'\n';
+        msg+='*Entrega:* '+(tipoEntrega==='retiro'?'Retiro en local':'Envío a domicilio')+'\n';
+        if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
+        if(notas)msg+='*Notas:* '+notas+'\n';
+        msg+='\n*DETALLE DEL PEDIDO*\n--------------------\n';
+        carrito.forEach((item,i)=>{const sub=item.precio*item.cantidad;msg+=(i+1)+'. '+item.nombre+'\n   '+item.cantidad+' x $'+formatPrice(item.precio)+' = $'+formatPrice(sub)+'\n\n';});
+        msg+='--------------------\n*Subtotal:* $'+formatPrice(subtotal)+'\n';
+        if(tipoEntrega==='envio'){
+            if(envio===0)msg+='*Envío:* GRATIS (compra mayor a $100.000)\n';
+            else msg+='*Envío:* $'+formatPrice(envio)+'\n';
+        }
+        msg+='*TOTAL: $'+formatPrice(total)+'*\n\nGracias!';
+        /* Limpiar carrito */
+        carrito=[];saveCart();updateCartUI();
+        closeCheckoutModal();closeCart();
+        showToast('Pedido N°'+numeroFmt+' confirmado','success');
+        /* Re-renderizar productos para resetear los botones */
+        if(typeof renderProductos==='function')renderProductos();
+        /* Abrir WhatsApp con el mensaje preparado */
+        setTimeout(()=>{window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');},300);
+    }catch(e){
+        console.error('Error en checkout:',e);
+        showToast('Error: '+(e.message||'No se pudo confirmar'),'error');
+        btn.disabled=false;btn.innerHTML='<i class="bi bi-whatsapp"></i> Confirmar pedido y enviar por WhatsApp';
+    }
 }
 
 function showToast(message,type){type=type||'info';const c=document.getElementById('toastContainer');if(!c)return;const icons={success:'bi-check-circle-fill',error:'bi-exclamation-circle-fill',info:'bi-info-circle-fill'};const t=document.createElement('div');t.className='toast '+type;t.innerHTML='<i class="toast-icon bi '+(icons[type]||icons.info)+'"></i><span class="toast-message">'+message+'</span>';c.appendChild(t);setTimeout(()=>{t.classList.add('removing');setTimeout(()=>t.remove(),300);},3000);}
@@ -379,7 +531,7 @@ function initScrollAnimations(){if(window.innerWidth<768||window.matchMedia('(pr
 
 function toggleCategoryFilters(){const f=document.getElementById('categoryFilters');const btn=document.getElementById('toggleCatsBtn');f.classList.toggle('cat-hidden');if(f.classList.contains('cat-hidden')){btn.innerHTML='<i class="bi bi-funnel"></i> Categorias';}else{btn.innerHTML='<i class="bi bi-funnel-fill"></i> Categorias';}}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;
 
 // Cargar contenido editable desde Firestore
 async function loadSiteContent(){try{const snap=await db.collection('config').doc('siteContent').get();if(!snap.exists)return;const d=snap.data();const s=(id,val)=>{const el=document.querySelector(id);if(el&&val)el.textContent=val;};s('.hero-badge span',d.heroBadge);const tl=document.querySelectorAll('.title-line');if(tl[0]&&d.heroTitle1)tl[0].textContent=d.heroTitle1;const th=document.querySelectorAll('.title-highlight');if(th[0]&&d.heroTitle2)th[0].textContent=d.heroTitle2;s('.hero-subtitle',d.heroSubtitle);const stats=document.querySelectorAll('.stat-item');if(stats[0]&&d.stat1Num){stats[0].querySelector('.stat-number').textContent=d.stat1Num;stats[0].querySelector('.stat-label').textContent=d.stat1Label||'';}if(stats[1]&&d.stat2Num){stats[1].querySelector('.stat-number').textContent=d.stat2Num;stats[1].querySelector('.stat-label').textContent=d.stat2Label||'';}s('.why-us-section .section-tag',d.nosotrosTag);s('.why-us-section .section-title',d.nosotrosTitulo);s('.why-us-text',d.nosotrosTexto);const badges=document.querySelectorAll('.trust-badge span');if(badges[0]&&d.badge1)badges[0].textContent=d.badge1;if(badges[1]&&d.badge2)badges[1].textContent=d.badge2;const cards=document.querySelectorAll('.feature-card');if(cards[0]){if(d.card1t)cards[0].querySelector('h4').textContent=d.card1t;if(d.card1p)cards[0].querySelector('p').textContent=d.card1p;}if(cards[1]){if(d.card2t)cards[1].querySelector('h4').textContent=d.card2t;if(d.card2p)cards[1].querySelector('p').textContent=d.card2p;}if(cards[2]){if(d.card3t)cards[2].querySelector('h4').textContent=d.card3t;if(d.card3p)cards[2].querySelector('p').textContent=d.card3p;}if(cards[3]){if(d.card4t)cards[3].querySelector('h4').textContent=d.card4t;if(d.card4p)cards[3].querySelector('p').textContent=d.card4p;}s('.cta-title',d.ctaTitulo);s('.cta-text',d.ctaTexto);s('.footer-description',d.footerDesc);if(d.instagram){const ig=document.querySelector('.social-links a[aria-label="Instagram"]');if(ig)ig.href=d.instagram;}if(d.whatsapp){const wa=document.querySelectorAll('a[href*="wa.me"]:not(.wa-dev)');wa.forEach(a=>{const oldHref=a.href;a.href=a.href.replace(/wa\.me\/[0-9]+/,'wa.me/'+d.whatsapp);});}if(d.email){const em=document.querySelector('.social-links a[aria-label="Email"]');if(em)em.href='mailto:'+d.email;}if(d.heroImg&&d.heroImg.startsWith('http')){const ho=document.querySelector('.hero-overlay');if(ho){ho.style.backgroundImage='url('+d.heroImg+')';ho.style.backgroundSize='cover';ho.style.backgroundPosition='center';ho.style.opacity='0.35';}}else{const ho=document.querySelector('.hero-overlay');if(ho)ho.style.opacity='0.35';}if(d.ctaImg&&d.ctaImg.startsWith('http')){const cta=document.querySelector('.cta-background');if(cta){const st=document.createElement('style');st.textContent='.cta-background::before{background-image:url('+d.ctaImg+')!important}';document.head.appendChild(st);}}if(d.logoIcon&&d.logoIcon.startsWith('http')){const li=document.querySelector('.logo-img');if(li)li.src=d.logoIcon;}if(d.logoText&&d.logoText.startsWith('http')){const lt=document.querySelector('.brand-text-img');if(lt)lt.src=d.logoText;}if(d.logoFooter&&d.logoFooter.startsWith('http')){const lf=document.querySelector('.footer-brand img');if(lf)lf.src=d.logoFooter;}}catch(e){console.log('Site content not loaded:',e);}}

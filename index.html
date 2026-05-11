@@ -57,6 +57,65 @@
     <div class="chat-float" id="chatFloat"><button class="chat-float-btn" id="chatFloatBtn" onclick="toggleChatFloat()"><i class="bi bi-chat-dots-fill"></i></button><div class="chat-float-box" id="chatFloatBox"><div class="chat-float-header"><h4><i class="bi bi-chat-text"></i> ¿Tenés consultas?</h4><button onclick="toggleChatFloat()"><i class="bi bi-x-lg"></i></button></div><div class="chat-float-body"><p>Escribinos y te respondemos a la brevedad</p><form id="contactForm"><input type="text" id="nombre" placeholder="Tu nombre" required><input type="email" id="email" placeholder="Tu email" required><textarea id="mensaje" placeholder="Tu mensaje..." rows="3" required></textarea><button type="submit"><i class="bi bi-send"></i> Enviar por WhatsApp</button></form></div></div></div>
 
     <div class="cart-overlay" id="cartOverlay"></div>
+    <div class="checkout-overlay" id="checkoutOverlay" onclick="closeCheckoutModal()"></div>
+    <aside class="checkout-modal" id="checkoutModal">
+        <div class="chk-header">
+            <h3><i class="bi bi-bag-check"></i> Confirmar pedido</h3>
+            <button class="chk-close" onclick="closeCheckoutModal()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="chk-body">
+            <div class="chk-section">
+                <label class="chk-section-label">¿Cómo querés recibir tu pedido?</label>
+                <div class="chk-entrega-toggle">
+                    <button type="button" class="chk-entrega-btn active" data-tipo="envio" onclick="setCheckoutEntrega('envio')">
+                        <i class="bi bi-truck"></i> Envío a domicilio
+                    </button>
+                    <button type="button" class="chk-entrega-btn" data-tipo="retiro" onclick="setCheckoutEntrega('retiro')">
+                        <i class="bi bi-shop"></i> Retiro en local
+                    </button>
+                </div>
+                <p class="chk-retiro-info" id="chkRetiroInfo">Dirección de retiro: <strong>Tablada 16, Villa Allende</strong></p>
+            </div>
+            <div class="chk-section">
+                <label class="chk-section-label">Datos de contacto</label>
+                <div class="chk-row">
+                    <div class="chk-field">
+                        <label for="chkNombre">Nombre *</label>
+                        <input type="text" id="chkNombre" placeholder="Juan" autocomplete="given-name" required>
+                    </div>
+                    <div class="chk-field">
+                        <label for="chkApellido">Apellido *</label>
+                        <input type="text" id="chkApellido" placeholder="Pérez" autocomplete="family-name" required>
+                    </div>
+                </div>
+                <div class="chk-field">
+                    <label for="chkTelefono">Teléfono *</label>
+                    <input type="tel" id="chkTelefono" placeholder="Ej: 351 5314675" autocomplete="tel" inputmode="tel" required>
+                </div>
+                <div class="chk-field" id="chkDireccionGroup">
+                    <label for="chkDireccion">Dirección de envío *</label>
+                    <input type="text" id="chkDireccion" placeholder="Calle, número, barrio" autocomplete="street-address">
+                </div>
+                <div class="chk-field">
+                    <label for="chkNotas">Notas (opcional)</label>
+                    <textarea id="chkNotas" rows="2" placeholder="Comentarios sobre el pedido o entrega"></textarea>
+                </div>
+            </div>
+            <div class="chk-section">
+                <div id="chkResumen" class="chk-resumen"></div>
+            </div>
+            <div class="chk-info-wa">
+                <i class="bi bi-info-circle"></i>
+                Ayudanos a contactarnos contigo enviando el mensaje por WhatsApp con este botón. Así nos aseguramos de tener tu número correcto.
+            </div>
+        </div>
+        <div class="chk-footer">
+            <button class="chk-cancel-btn" onclick="closeCheckoutModal()">Volver al carrito</button>
+            <button class="chk-confirm-btn" id="chkConfirmBtn" onclick="confirmCheckout()">
+                <i class="bi bi-whatsapp"></i> Confirmar pedido y enviar por WhatsApp
+            </button>
+        </div>
+    </aside>
     <div class="product-detail-overlay" id="productDetailOverlay" onclick="closeProductDetailModal()"></div>
     <aside class="product-detail-modal" id="productDetailModal">
         <div class="pdm-header">
