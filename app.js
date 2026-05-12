@@ -450,12 +450,17 @@ async function confirmCheckout(){
         const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
         const total=subtotal+envio;
         const clienteNombreCompleto=nombre+' '+apellido;
-        /* Obtener numero de pedido secuencial */
+        /* Obtener numero de pedido secuencial con transaction atomica */
         let pedidoNum=1;
+        const cntRef=db.collection('config').doc('pedidosCount');
         try{
-            const cfgSnap=await db.collection('config').doc('pedidosCount').get();
-            if(cfgSnap.exists)pedidoNum=(cfgSnap.data().count||0)+1;
-        }catch(e){}
+            pedidoNum=await db.runTransaction(async t=>{
+                const snap=await t.get(cntRef);
+                const next=(snap.exists?(snap.data().count||0):0)+1;
+                t.set(cntRef,{count:next});
+                return next;
+            });
+        }catch(e){console.warn('Transaction pedidosCount falló:',e);}
         /* Crear pedido en BDD (NO se toca la coleccion clientes desde la web) */
         const pedido={
             numero:pedidoNum,
@@ -474,7 +479,6 @@ async function confirmCheckout(){
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
         await db.collection('pedidos').add(pedido);
-        try{await db.collection('config').doc('pedidosCount').set({count:pedidoNum});}catch(e){}
         /* Construir mensaje de WhatsApp con el numero de pedido */
         const numeroFmt=String(pedidoNum).padStart(3,'0');
         let msg='Hola! *Pedido confirmado N°'+numeroFmt+'*\n\n';

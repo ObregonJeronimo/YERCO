@@ -30,6 +30,10 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if isAdmin();
     }
+    match /config/pedidosCount {
+      allow read: if true;
+      allow write: if true;
+    }
     match /config/{doc} {
       allow read: if true;
       allow write: if isAdmin();
