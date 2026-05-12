@@ -714,7 +714,7 @@
         }
 
         let pedidosData=[],pedidosFiltered=[],pedidosPage=0,pedidoFiltroEstado='';
-        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;
+        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;pedidoDirty=false;
 
         // Filtros
         function setPedidoFiltro(estado){
@@ -851,7 +851,7 @@
         // Modal pedido
         function openPedidoModal(docId){
             editingPedidoId=docId||null;
-            pedItems=[];pedInsumosUsados=[];pedTipoEntrega='envio';pedClienteSelected=false;
+            pedItems=[];pedInsumosUsados=[];pedTipoEntrega='envio';pedClienteSelected=false;pedidoDirty=false;
             document.getElementById('pedFecha').value=new Date().toISOString().split('T')[0];
             document.getElementById('pedCliente').value='';
             document.getElementById('pedClienteId').value='';
@@ -873,7 +873,7 @@
                     document.getElementById('savePedidoBtn').innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';
                     /* Mostrar boton Convertir a venta si no esta entregado */
                     const convBtn=document.getElementById('convertirVentaBtn');
-                    if(convBtn)convBtn.style.display=(p.estado!=='entregado')?'inline-flex':'none';
+                    if(convBtn){convBtn.style.display=(p.estado!=='entregado')?'inline-flex':'none';convBtn.disabled=false;}
                 }
             } else {
                 document.getElementById('pedidoModalTitle').innerHTML='<i class="bi bi-bag-check"></i> Nuevo Pedido';
@@ -887,8 +887,9 @@
             renderPedItems();renderPedInsumosUsados();filterPedProducts();
             document.getElementById('pedidoModal').classList.add('show');
         }
-        function closePedidoModal(){document.getElementById('pedidoModal').classList.remove('show');editingPedidoId=null;}
-        function setPedEntrega(tipo){pedTipoEntrega=tipo;document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===tipo));renderPedItems();}
+        function closePedidoModal(){document.getElementById('pedidoModal').classList.remove('show');editingPedidoId=null;pedidoDirty=false;}
+        function markPedidoDirty(){if(!pedidoDirty){pedidoDirty=true;const b=document.getElementById('convertirVentaBtn');if(b){b.disabled=true;b.title='Guardá los cambios antes de convertir a venta';}}}
+        function setPedEntrega(tipo){markPedidoDirty();pedTipoEntrega=tipo;document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===tipo));renderPedItems();}
         function calcPedTotales(){const sub=pedItems.reduce((s,i)=>s+i.precio*i.cantidad,0);const envio=pedTipoEntrega==='envio'&&sub<50000?3000:0;return{subtotal:sub,envio:envio,total:sub+envio};}
         function filterPedProducts(){
             const c=document.getElementById('pedProdList');
@@ -898,9 +899,9 @@
             if(!f.length){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Sin resultados</div>';return;}
             c.innerHTML=f.slice(0,20).map(p=>'<div class="venta-prod-item" onclick="addPedItem(\''+p.id+'\')"><span>'+p.nombre+'</span><span style="color:var(--accent-light);font-family:var(--mono)">$'+(p.precio||0).toLocaleString('es-AR')+'</span></div>').join('');
         }
-        function addPedItem(id){const ex=pedItems.find(i=>i.id===id);if(ex){ex.cantidad++;renderPedItems();return;}const p=allProducts.find(x=>x.id===id);if(!p)return;pedItems.push({id:p.id,nombre:p.nombre,precio:p.precio,costo:p.costo||0,cantidad:1});renderPedItems();}
-        function removePedItem(id){pedItems=pedItems.filter(i=>i.id!==id);renderPedItems();}
-        function updatePedQty(id,val){const it=pedItems.find(i=>i.id===id);if(it){it.cantidad=Math.max(1,parseInt(val)||1);}renderPedItems();}
+        function addPedItem(id){markPedidoDirty();const ex=pedItems.find(i=>i.id===id);if(ex){ex.cantidad++;renderPedItems();return;}const p=allProducts.find(x=>x.id===id);if(!p)return;pedItems.push({id:p.id,nombre:p.nombre,precio:p.precio,costo:p.costo||0,cantidad:1});renderPedItems();}
+        function removePedItem(id){markPedidoDirty();pedItems=pedItems.filter(i=>i.id!==id);renderPedItems();}
+        function updatePedQty(id,val){markPedidoDirty();const it=pedItems.find(i=>i.id===id);if(it){it.cantidad=Math.max(1,parseInt(val)||1);}renderPedItems();}
         function renderPedItems(){
             const c=document.getElementById('pedItems');
             const bd=document.getElementById('pedTotalBreakdown');
@@ -911,9 +912,9 @@
             document.getElementById('pedTotal').textContent='$'+t.total.toLocaleString('es-AR');
         }
         function refreshPedInsumosSelect(){const s=document.getElementById('pedInsumoSelect');if(!s)return;const usados=new Set(pedInsumosUsados.map(u=>u.id));s.innerHTML='<option value="">+ Agregar insumo...</option>'+insumosData.filter(i=>!usados.has(i.id)).map(i=>'<option value="'+i.id+'">'+i.nombre+' (stock: '+(i.stockActual||0)+')</option>').join('');}
-        function addPedInsumoFromSelect(){const s=document.getElementById('pedInsumoSelect');const id=s.value;if(!id)return;const i=insumosData.find(x=>x.id===id);if(!i)return;pedInsumosUsados.push({id:i.id,nombre:i.nombre,cantidad:1,stockActual:i.stockActual||0});renderPedInsumosUsados();refreshPedInsumosSelect();s.value='';}
-        function removePedInsumo(id){pedInsumosUsados=pedInsumosUsados.filter(x=>x.id!==id);renderPedInsumosUsados();refreshPedInsumosSelect();}
-        function updatePedInsumoQty(id,val){const u=pedInsumosUsados.find(x=>x.id===id);if(u){const n=Math.max(1,parseInt(val)||1);if(n>u.stockActual){showAdminToast('Stock max: '+u.stockActual,'error');return;}u.cantidad=n;}renderPedInsumosUsados();}
+        function addPedInsumoFromSelect(){markPedidoDirty();const s=document.getElementById('pedInsumoSelect');const id=s.value;if(!id)return;const i=insumosData.find(x=>x.id===id);if(!i)return;pedInsumosUsados.push({id:i.id,nombre:i.nombre,cantidad:1,stockActual:i.stockActual||0});renderPedInsumosUsados();refreshPedInsumosSelect();s.value='';}
+        function removePedInsumo(id){markPedidoDirty();pedInsumosUsados=pedInsumosUsados.filter(x=>x.id!==id);renderPedInsumosUsados();refreshPedInsumosSelect();}
+        function updatePedInsumoQty(id,val){markPedidoDirty();const u=pedInsumosUsados.find(x=>x.id===id);if(u){const n=Math.max(1,parseInt(val)||1);if(n>u.stockActual){showAdminToast('Stock max: '+u.stockActual,'error');return;}u.cantidad=n;}renderPedInsumosUsados();}
         function renderPedInsumosUsados(){const c=document.getElementById('pedInsumosList');if(!pedInsumosUsados.length){c.innerHTML='';return;}c.innerHTML=pedInsumosUsados.map(u=>'<div class="venta-item"><span class="vi-name">'+u.nombre+'</span><span style="font-size:0.75rem;color:var(--text-dim)">stock: '+u.stockActual+'</span><span style="color:var(--text-dim)">x</span><input class="vi-qty" type="number" value="'+u.cantidad+'" min="1" max="'+u.stockActual+'" onchange="updatePedInsumoQty(\''+u.id+'\',this.value)"><button class="vi-remove" onclick="removePedInsumo(\''+u.id+'\')"><i class="bi bi-x"></i></button></div>').join('');}
         async function savePedidoDesdeModal(){
             if(!pedClienteSelected||!document.getElementById('pedClienteId').value){showAdminToast('Selecciona un cliente','error');document.getElementById('pedCliente').focus();return;}
@@ -937,7 +938,7 @@
                 };
                 if(editingPedidoId){
                     await db.collection('pedidos').doc(editingPedidoId).update(data);
-                    showAdminToast('Pedido actualizado','success');
+                    showAdminToast('Pedido actualizado','success');pedidoDirty=false;const cvb=document.getElementById('convertirVentaBtn');if(cvb){cvb.disabled=false;cvb.title='';}
                 } else {
                     const cSnap=await db.collection('config').doc('pedidosCount').get();
                     const num=cSnap.exists?(cSnap.data().count||0)+1:1;
