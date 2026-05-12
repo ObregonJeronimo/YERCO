@@ -388,6 +388,8 @@ function closeCheckoutModal(){
     document.getElementById('checkoutOverlay')?.classList.remove('show');
     document.getElementById('checkoutModal')?.classList.remove('show');
     document.body.style.overflow='';
+    const btn=document.getElementById('chkConfirmBtn');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="bi bi-whatsapp"></i> Comprar por WhatsApp';}
 }
 
 function setCheckoutEntrega(tipo){
