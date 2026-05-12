@@ -54,6 +54,77 @@
         </div>
     </footer>
 
+
+
+<aside class="checkout-modal" id="checkoutModal">
+        <div class="chk-header">
+            <h3><i class="bi bi-bag-check"></i> Confirmar pedido</h3>
+            <button class="chk-close" onclick="closeCheckoutModal()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="chk-body">
+            <div class="chk-section">
+                <label class="chk-section-label">¿Cómo querés recibir tu pedido?</label>
+                <div class="chk-entrega-toggle">
+                    <button type="button" class="chk-entrega-btn active" data-tipo="envio" onclick="setCheckoutEntrega('envio')">
+                        <i class="bi bi-truck"></i> Envío a domicilio
+                    </button>
+                    <button type="button" class="chk-entrega-btn" data-tipo="retiro" onclick="setCheckoutEntrega('retiro')">
+                        <i class="bi bi-shop"></i> Retiro en local
+                    </button>
+                </div>
+                <p class="chk-retiro-info" id="chkRetiroInfo">Dirección de retiro: <strong>Tablada 16, Villa Allende</strong> · <a href="https://www.google.com/maps/place/Maxi+Kiosco+Dof/@-31.2922992,-64.3001027,17z/data=!3m1!4b1!4m6!3m5!1s0x94329d19667bbe3f:0x39cd168bd783ea1e!8m2!3d-31.2922992!4d-64.2975278!16s%2Fg%2F11bw68crnw?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" class="chk-mapa-link"><i class="bi bi-geo-alt-fill"></i> Ubicación</a></p>
+            </div>
+            <div class="chk-section">
+                <label class="chk-section-label">Datos de contacto</label>
+                <div class="chk-row">
+                    <div class="chk-field">
+                        <label for="chkNombre">Nombre *</label>
+                        <input type="text" id="chkNombre" placeholder="Juan" autocomplete="given-name" required>
+                    </div>
+                    <div class="chk-field">
+                        <label for="chkApellido">Apellido *</label>
+                        <input type="text" id="chkApellido" placeholder="Pérez" autocomplete="family-name" required>
+                    </div>
+                </div>
+                <div class="chk-field">
+                    <label for="chkTelefono">Teléfono *</label>
+                    <input type="tel" id="chkTelefono" placeholder="Ej: 351 5314675" autocomplete="tel" inputmode="tel" required>
+                </div>
+                <div class="chk-field" id="chkDireccionGroup">
+                    <label for="chkDireccion">Dirección de envío *</label>
+                    <input type="text" id="chkDireccion" placeholder="Calle, número, barrio" autocomplete="street-address">
+                </div>
+                <div class="chk-field">
+                    <label for="chkNotas">Notas (opcional)</label>
+                    <textarea id="chkNotas" rows="2" placeholder="Comentarios sobre el pedido o entrega"></textarea>
+                </div>
+            </div>
+            <div class="chk-section">
+                <div id="chkResumen" class="chk-resumen"></div>
+            </div>
+            <div class="chk-info-wa">
+                <i class="bi bi-info-circle"></i>
+                Ayudanos a contactarnos contigo enviando el mensaje por WhatsApp con este botón. Así nos aseguramos de tener tu número correcto.
+            </div>
+        </div>
+        <div class="chk-footer">
+            <button class="chk-cancel-btn" onclick="closeCheckoutModal()">Volver al carrito</button>
+            <button class="chk-confirm-btn" id="chkConfirmBtn" onclick="confirmCheckout()">
+                <i class="bi bi-whatsapp"></i> Confirmar pedido y enviar por WhatsApp
+            </button>
+        </div>
+    </aside>
+    <div class="product-detail-overlay" id="productDetailOverlay" onclick="closeProductDetailModal()"></div>
+    <aside class="product-detail-modal" id="productDetailModal">
+        <div class="pdm-header">
+            <button class="pdm-back" onclick="closeProductDetailModal()"><i class="bi bi-arrow-left"></i> Volver</button>
+            <button class="pdm-close" onclick="closeProductDetailModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="pdm-body" id="productDetailBody"></div>
+    </aside>
+    <aside class="cart-sidebar" id="cartSidebar"><div class="cart-header"><h3><i class="bi bi-cart3"></i> Tu Carrito</h3><div class="cart-header-actions"><button class="btn-clear-cart" id="clearCartBtn" onclick="clearCart()" title="Vaciar carrito"><i class="bi bi-trash3"></i> Vaciar</button><button class="cart-close" id="cartClose"><i class="bi bi-x-lg"></i></button></div></div><div class="cart-body" id="cartBody"><div class="cart-empty" id="cartEmpty"><i class="bi bi-cart-x"></i><p>Tu carrito está vacío</p><a href="#productos" class="btn btn-outline-success" id="browseProductsBtn">Ver productos</a></div></div><div class="cart-footer" id="cartFooter"><div class="shipping-progress" id="shippingProgress"><div class="shipping-msg" id="shippingMsg"></div><div class="shipping-bar"><div class="shipping-bar-fill" id="shippingBarFill"></div><div class="shipping-marker" style="left:30%">30k</div><div class="shipping-marker" style="left:100%">100k</div></div></div><div class="cart-total"><span>Total:</span><span class="total-amount" id="cartTotal">$0</span></div><button class="btn btn-whatsapp" id="checkoutBtn"><i class="bi bi-whatsapp"></i> Comprar por WhatsApp</button></div></aside>
+    <div class="toast-container" id="toastContainer"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
