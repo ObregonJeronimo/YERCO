@@ -61,5 +61,9 @@ service cloud.firestore {
     match /insumos/{doc} {
       allow read, write: if isAdmin();
     }
+    match /listas/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
