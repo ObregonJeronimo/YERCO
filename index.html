@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="footer-dev.min.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li><li class="nav-item"><a class="nav-link nav-mayorista" href="#mayoristas"><i class="bi bi-file-earmark-pdf"></i> Mayoristas</a></li></ul></div><button class="cart-btn" id="cartToggle" aria-label="Ver carrito"><i class="bi bi-cart3"></i><span class="cart-count" id="cartCount">0</span></button></div></nav>
+    <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li></ul></div><button class="cart-btn" id="cartToggle" aria-label="Ver carrito"><i class="bi bi-cart3"></i><span class="cart-count" id="cartCount">0</span></button></div></nav>
 
     <section id="inicio" class="hero-section"><div class="hero-overlay"></div><div class="hero-particles" id="particles"></div><div class="container hero-content"><div class="row align-items-center min-vh-100"><div class="col-lg-8 hero-text"><div class="hero-badge"><i class="bi bi-leaf"></i><span>100% Natural</span></div><h1 class="hero-title"><span class="title-line">Tu dietética</span><span class="title-highlight">de confianza</span></h1><p class="hero-subtitle">Productos naturales y de calidad a la puerta de tu casa. Envíos rápidos a todo Villa Allende y Mendiolaza.</p><div class="hero-buttons"><a href="#productos" class="btn btn-primary-custom"><i class="bi bi-basket"></i> Ver Productos</a><a href="https://wa.me/5493515314675" target="_blank" class="btn btn-outline-custom"><i class="bi bi-whatsapp"></i> WhatsApp</a></div><div class="hero-stats"><div class="stat-item"><span class="stat-number">+600</span><span class="stat-label">Productos</span></div><div class="stat-item"><span class="stat-number">24h</span><span class="stat-label">Envío rápido</span></div></div></div></div></div><a href="#productos" class="scroll-indicator" style="text-decoration:none;cursor:pointer"><span>Descubrí más</span><i class="bi bi-chevron-double-down"></i></a></section>
 
@@ -55,24 +55,6 @@
     </footer>
 
     <!-- SECCION MAYORISTAS -->
-    <section class="mayoristas-section" id="mayoristas">
-      <div class="mayoristas-inner">
-        <div class="mayoristas-icon"><i class="bi bi-buildings"></i></div>
-        <div class="mayoristas-text">
-          <h3>¿Sos distribuidor o revendedor?</h3>
-          <p>Tenemos lista de precios mayoristas disponible para descarga. El pedido mínimo para compras mayoristas es de <strong>$400.000</strong>.</p>
-          <p class="mayoristas-sub">Consultanos por WhatsApp o descargá la lista actualizada.</p>
-        </div>
-        <div class="mayoristas-actions">
-          <button class="btn-mayorista-pdf" id="btnMayoristaPdf" onclick="exportMayoristaPDFIndex()">
-            <i class="bi bi-file-earmark-arrow-down"></i> Descargar lista de precios
-          </button>
-          <a class="btn-mayorista-wa" href="https://wa.me/5493515314675?text=Hola!%20Quiero%20consultar%20sobre%20precios%20mayoristas" target="_blank">
-            <i class="bi bi-whatsapp"></i> Consultar por WhatsApp
-          </a>
-        </div>
-      </div>
-    </section>
 
     <div class="chat-float" id="chatFloat"><button class="chat-float-btn" id="chatFloatBtn" onclick="toggleChatFloat()"><i class="bi bi-chat-dots-fill"></i></button><div class="chat-float-box" id="chatFloatBox"><div class="chat-float-header"><h4><i class="bi bi-chat-text"></i> ¿Tenés consultas?</h4><button onclick="toggleChatFloat()"><i class="bi bi-x-lg"></i></button></div><div class="chat-float-body"><p>Escribinos y te respondemos a la brevedad</p><form id="contactForm"><input type="text" id="nombre" placeholder="Tu nombre" required><input type="email" id="email" placeholder="Tu email" required><textarea id="mensaje" placeholder="Tu mensaje..." rows="3" required></textarea><button type="submit"><i class="bi bi-send"></i> Enviar por WhatsApp</button></form></div></div></div>
 
@@ -159,152 +141,5 @@
 
     
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-    const _catalogoOrdenIdx=[
-        {keywords:['MIX DE FRUTOS SECOS','MIX DE FRUTOS','FRUTOS SECOS MIX']},
-        {keywords:['CEREALES','CEREAL']},
-        {keywords:['FRUTAS SECAS','FRUTOS SECOS']},
-        {keywords:['FRUTAS DESECADAS','DESECADAS','DESHIDRATADAS']},
-        {keywords:['FRUTAS TROPICALES','TROPICALES']},
-        {keywords:['SEMILLAS','SEMILLA']},
-        {keywords:['ARROZ','ARROCES']},
-        {keywords:['SNACK']},
-        {keywords:['HARINA','FECULA','TEXTURIZAD']},
-        {keywords:['SUPLEMENTO','SUPLEMENTOS']},
-        {keywords:['ACEITE']},
-        {keywords:['CONDIMENTO','ESPECIA']},
-        {keywords:['LEGUMBRE']},
-        {keywords:['FIDEO','PREMEZCLA','PASTA']},
-        {keywords:['REPOSTERIA','REPOSTER']},
-        {keywords:['YERBA','TE','INFUSION','CAFE','MATE']},
-        {keywords:['REGIONAL','OTROS','MIEL','MERMELADA','DULCE']}
-    ];
-    function _catMatchIdx(cat){
-        if(!cat)return 999;
-        const up=cat.toUpperCase().trim();
-        for(let i=0;i<_catalogoOrdenIdx.length;i++){
-            for(const kw of _catalogoOrdenIdx[i].keywords){if(up===kw.toUpperCase())return i;}
-        }
-        for(let i=0;i<_catalogoOrdenIdx.length;i++){
-            for(const kw of _catalogoOrdenIdx[i].keywords){if(up.includes(kw.toUpperCase()))return i;}
-        }
-        return 999;
-    }
-    function exportMayoristaPDFIndex(){
-        if(!window.productos||!window.productos.length){alert('Cargando productos, intentá en un momento.');return;}
-        if(!window.jspdf||!window.jspdf.jsPDF){alert('Error al cargar librería PDF. Recargá la página.');return;}
-        const btn=document.getElementById('btnMayoristaPdf');
-        if(btn){btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat"></i> Generando...';}
-        setTimeout(()=>{
-        try{
-        const visibles=window.productos.filter(p=>p.oculto!==true&&p.nombre&&(p.precio||0)>0);
-        if(!visibles.length){alert('No hay productos disponibles.');return;}
-        const grupos={};
-        visibles.forEach(p=>{
-            const cat=p.categoria||'Sin categoria';
-            const sub=p.subcategoria||'__sin__';
-            if(!grupos[cat])grupos[cat]={};
-            if(!grupos[cat][sub])grupos[cat][sub]=[];
-            grupos[cat][sub].push(p);
-        });
-        const catNames=Object.keys(grupos).sort((a,b)=>{
-            const ia=_catMatchIdx(a),ib=_catMatchIdx(b);
-            if(ia!==ib)return ia-ib;
-            return a.localeCompare(b,'es');
-        });
-        const {jsPDF}=window.jspdf;
-        const doc=new jsPDF({unit:'mm',format:'a4'});
-        const pageW=doc.internal.pageSize.getWidth();
-        const pageH=doc.internal.pageSize.getHeight();
-        const marginX=12,marginTop=16,marginBottom=14,colGap=6;
-        const colW=(pageW-marginX*2-colGap)/2;
-        let col=0,y=marginTop;
-        const today=new Date().toLocaleDateString('es-AR');
-        function drawHeader(){
-            doc.setFillColor(91,45,138);
-            doc.rect(0,0,pageW,10,'F');
-            doc.setTextColor(255,255,255);
-            doc.setFont('helvetica','bold');
-            doc.setFontSize(11);
-            doc.text('YERCO  -  Lista de precios MAYORISTA',marginX,6.8);
-            doc.setFont('helvetica','normal');
-            doc.setFontSize(8);
-            doc.text('Pedido minimo: $400.000  |  Actualizado: '+today,pageW-marginX,6.8,{align:'right'});
-            doc.setTextColor(0,0,0);
-        }
-        function newPage(){doc.addPage();col=0;y=marginTop;drawHeader();}
-        function nextCol(){if(col===0){col=1;y=marginTop;}else{newPage();}}
-        function ensureSpace(need){if(y+need>pageH-marginBottom)nextCol();}
-        function colX(){return marginX+col*(colW+colGap);}
-        drawHeader();
-        catNames.forEach(catName=>{
-            const catGroup=grupos[catName];
-            ensureSpace(15);
-            const x=colX();
-            doc.setFillColor(91,45,138);
-            doc.rect(x,y,colW,9,'F');
-            doc.setTextColor(255,255,255);
-            doc.setFont('helvetica','bold');
-            doc.setFontSize(11);
-            doc.text(catName.toUpperCase(),x+2.5,y+6);
-            doc.setTextColor(0,0,0);
-            y+=11;
-            const subNames=Object.keys(catGroup).sort((a,b)=>{
-                if(a==='__sin__')return -1;
-                if(b==='__sin__')return 1;
-                return a.localeCompare(b,'es');
-            });
-            subNames.forEach(subName=>{
-                const prods=catGroup[subName].slice().sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
-                if(subName!=='__sin__'){
-                    ensureSpace(9);
-                    const sx=colX();
-                    doc.setFillColor(225,210,235);
-                    doc.rect(sx,y,colW,5.5,'F');
-                    doc.setTextColor(60,30,100);
-                    doc.setFont('helvetica','bold');
-                    doc.setFontSize(8.5);
-                    doc.text(subName,sx+2,y+3.9);
-                    doc.setTextColor(0,0,0);
-                    y+=6.5;
-                }
-                doc.setFont('helvetica','normal');
-                doc.setFontSize(8);
-                prods.forEach(p=>{
-                    ensureSpace(4.3);
-                    const px=colX();
-                    const precio='$'+Number(p.precio).toLocaleString('es-AR');
-                    const precioW=doc.getTextWidth(precio);
-                    const maxNameW=colW-precioW-4;
-                    let nombre=p.nombre||'';
-                    while(doc.getTextWidth(nombre)>maxNameW&&nombre.length>4)nombre=nombre.slice(0,-1);
-                    if(nombre!==(p.nombre||''))nombre=nombre.slice(0,-1)+'…';
-                    doc.text(nombre,px,y+3);
-                    doc.setFont('helvetica','bold');
-                    doc.text(precio,px+colW,y+3,{align:'right'});
-                    doc.setFont('helvetica','normal');
-                    y+=4.3;
-                });
-                y+=1.5;
-            });
-            y+=2;
-        });
-        const totalPages=doc.internal.getNumberOfPages();
-        for(let i=1;i<=totalPages;i++){
-            doc.setPage(i);
-            doc.setFont('helvetica','normal');
-            doc.setFontSize(7.5);
-            doc.setTextColor(120,120,120);
-            doc.text('Pagina '+i+' de '+totalPages,pageW/2,pageH-5,{align:'center'});
-            doc.setTextColor(0,0,0);
-        }
-        const fn='YERCO_mayorista_'+new Date().toISOString().split('T')[0]+'.pdf';
-        doc.save(fn);
-        }catch(e){alert('Error al generar PDF: '+e.message);}
-        finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="bi bi-file-earmark-arrow-down"></i> Descargar lista de precios';}}
-        },100);
-    }
-    </script>
 </body>
 </html>
