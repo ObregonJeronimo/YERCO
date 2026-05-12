@@ -449,24 +449,3 @@ img { max-width: 100%; height: auto; }
     .review-card { padding: 1.25rem; }
     .reviews-grid { gap: 1rem; }
 }
-
-/* === SECCION MAYORISTAS === */
-.mayoristas-section { background: #f7f4fb; border-top: 2px solid #e8dff5; padding: 2.5rem 1.5rem; }
-.mayoristas-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-.mayoristas-icon { font-size: 2.2rem; color: #5b2d8a; flex-shrink: 0; }
-.mayoristas-text { flex: 1; min-width: 220px; }
-.mayoristas-text h3 { font-family: var(--font-body); font-size: 1.1rem; font-weight: 700; color: #3a1a60; margin: 0 0 0.4rem; }
-.mayoristas-text p { font-size: 0.9rem; color: #555; margin: 0 0 0.2rem; }
-.mayoristas-text strong { color: #3a1a60; }
-.mayoristas-sub { font-size: 0.82rem !important; color: #888 !important; }
-.mayoristas-actions { display: flex; flex-direction: column; gap: 0.6rem; flex-shrink: 0; }
-.btn-mayorista-pdf { display: inline-flex; align-items: center; gap: 0.5rem; background: #5b2d8a; color: #fff; border: none; border-radius: 8px; padding: 0.65rem 1.2rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
-@media (hover: hover) { .btn-mayorista-pdf:hover { background: #3a1a60; } }
-.btn-mayorista-pdf:disabled { opacity: 0.7; cursor: wait; }
-.btn-mayorista-wa { display: inline-flex; align-items: center; gap: 0.5rem; background: #25d366; color: #fff; border-radius: 8px; padding: 0.65rem 1.2rem; font-size: 0.88rem; font-weight: 600; text-decoration: none; transition: background 0.15s; white-space: nowrap; text-align: center; justify-content: center; }
-@media (hover: hover) { .btn-mayorista-wa:hover { background: #1da851; } }
-@media (max-width: 600px) { .mayoristas-inner { flex-direction: column; align-items: flex-start; gap: 1rem; } .mayoristas-actions { width: 100%; } .btn-mayorista-pdf, .btn-mayorista-wa { width: 100%; justify-content: center; } }
-
-/* nav mayoristas link */
-.nav-mayorista { color: #5b2d8a !important; font-weight: 600; }
-@media (hover: hover) { .nav-mayorista:hover { color: #3a1a60 !important; } }
