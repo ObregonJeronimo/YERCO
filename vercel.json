@@ -1,7 +1,8 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/politicas", "destination": "/politicas.html" }
+    { "source": "/politicas", "destination": "/politicas.html" },
+    { "source": "/mayoristas", "destination": "/mayoristas.html" }
   ],
   "headers": [
     {
