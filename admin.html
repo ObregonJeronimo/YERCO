@@ -1002,7 +1002,12 @@
                     document.getElementById('savePedidoBtn').innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';
                     /* Mostrar boton Convertir a venta si no esta entregado */
                     const convBtn=document.getElementById('convertirVentaBtn');
-                    if(convBtn){convBtn.style.display=(p.estado!=='entregado')?'inline-flex':'none';convBtn.disabled=false;}
+                    if(convBtn){
+                        convBtn.style.display=(p.estado!=='entregado')?'inline-flex':'none';
+                        const tieneCliente=!!(p.clienteId);
+                        convBtn.disabled=!tieneCliente;
+                        convBtn.title=tieneCliente?'':'Guardá el pedido con un cliente seleccionado para poder convertir a venta';
+                    }
                 }
             } else {
                 document.getElementById('pedidoModalTitle').innerHTML='<i class="bi bi-bag-check"></i> Nuevo Pedido';
@@ -1017,7 +1022,7 @@
             document.getElementById('pedidoModal').classList.add('show');
         }
         function closePedidoModal(){document.getElementById('pedidoModal').classList.remove('show');editingPedidoId=null;pedidoDirty=false;}
-        function markPedidoDirty(){if(!pedidoDirty){pedidoDirty=true;const b=document.getElementById('convertirVentaBtn');if(b){b.disabled=true;b.title='Guardá los cambios antes de convertir a venta';}}}
+        function markPedidoDirty(){pedidoDirty=true;const b=document.getElementById('convertirVentaBtn');if(b){b.disabled=true;b.title='Guardá los cambios antes de convertir a venta';}}
         function setPedEntrega(tipo){markPedidoDirty();pedTipoEntrega=tipo;document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===tipo));renderPedItems();}
         function calcPedTotales(){const sub=pedItems.reduce((s,i)=>s+i.precio*i.cantidad,0);const envio=pedTipoEntrega==='envio'&&sub<50000?3000:0;return{subtotal:sub,envio:envio,total:sub+envio};}
         function filterPedProducts(){
@@ -1067,14 +1072,26 @@
                 };
                 if(editingPedidoId){
                     await db.collection('pedidos').doc(editingPedidoId).update(data);
-                    showAdminToast('Pedido actualizado','success');pedidoDirty=false;const cvb=document.getElementById('convertirVentaBtn');if(cvb){cvb.disabled=false;cvb.title='';}
+                    /* Actualizar en memoria */
+                    const pMem=pedidosData.find(x=>x.docId===editingPedidoId);
+                    if(pMem)Object.assign(pMem,data);
+                    pedidoDirty=false;
+                    /* NO cerrar modal - habilitar Convertir a venta si hay cliente */
+                    const cvb=document.getElementById('convertirVentaBtn');
+                    if(cvb){
+                        const tieneCliente=pedClienteSelected&&document.getElementById('pedClienteId').value;
+                        cvb.disabled=!tieneCliente;
+                        cvb.title=tieneCliente?'':'Seleccioná un cliente para poder convertir a venta';
+                    }
+                    const saveBtn=document.getElementById('savePedidoBtn');
+                    if(saveBtn)saveBtn.innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';
+                    showAdminToast('Pedido actualizado','success');
                 } else {
                     const cSnap=await db.collection('config').doc('pedidosCount').get();
-                    const num=cSnap.exists?(cSnap.data().count||0)+1:1;
+                    const num=cSnap.exists?(parseInt(cSnap.data().count)||0)+1:1;
                     data.numero=num;data.estado='pendiente';data.creadoEn=firebase.firestore.FieldValue.serverTimestamp();data.fecha=fecha;
                     await db.collection('pedidos').add(data);
                     await db.collection('config').doc('pedidosCount').set({count:num});
-                    /* Notificar Telegram */
                     const msg='<b>Nuevo pedido #'+String(num).padStart(5,'0')+'</b>\n'+
                         'Cliente: '+data.cliente+'\n'+
                         'Total: $'+t.total.toLocaleString('es-AR')+'\n'+
@@ -1082,8 +1099,8 @@
                         'Items: '+pedItems.map(i=>i.nombre+' x'+i.cantidad).join(', ');
                     sendTelegramMsg(msg);
                     showAdminToast('Pedido #'+num+' creado','success');
+                    closePedidoModal();
                 }
-                closePedidoModal();loadPedidos();
             }catch(e){showAdminToast('Error: '+e.message,'error');}
             finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Guardar pedido';}
         }
@@ -1098,7 +1115,7 @@
             list.innerHTML=items.map(cl=>'<div class="cliente-select-item" onmousedown="pickPedCliente(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\\'")+'\')"><span>'+cl.nombre+'</span>'+(cl.telefono?'<small>'+cl.telefono+'</small>':'')+'</div>').join('');
             list.classList.add('open');
         }
-        function pickPedCliente(id,nombre){document.getElementById('pedCliente').value=nombre;document.getElementById('pedClienteId').value=id;pedClienteSelected=true;document.getElementById('pedClienteSelectList').classList.remove('open');}
+        function pickPedCliente(id,nombre){document.getElementById('pedCliente').value=nombre;document.getElementById('pedClienteId').value=id;pedClienteSelected=true;document.getElementById('pedClienteSelectList').classList.remove('open');if(!pedidoDirty){const cvb=document.getElementById('convertirVentaBtn');if(cvb&&cvb.style.display!=='none'){cvb.disabled=false;cvb.title='';}}}
         function onBlurPedCliente(){setTimeout(()=>{const list=document.getElementById('pedClienteSelectList');if(list)list.classList.remove('open');},150);}
         document.addEventListener('click',function(e){if(!e.target.closest('#pedidoModal .cliente-select-wrap'))document.getElementById('pedClienteSelectList')?.classList.remove('open');});
 
