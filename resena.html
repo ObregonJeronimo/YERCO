@@ -72,6 +72,10 @@
                 <label>Tu comentario</label>
                 <textarea id="rComentario" placeholder="¿Qué te pareció? ¿Qué podemos mejorar?" maxlength="500"></textarea>
             </div>
+            <div class="field" id="campoExtraWrap" style="display:none">
+                <label id="campoExtraLabel">Pregunta extra</label>
+                <textarea id="rExtra" placeholder="Tu respuesta..." maxlength="300"></textarea>
+            </div>
             <button class="btn-submit" id="submitBtn" onclick="submitReview()">Enviar opinión</button>
         </div>
 
@@ -130,9 +134,19 @@
             tokenId=params.get('id');
             if(!tokenId){showView('invalidArea');return;}
             try{
-                const doc=await db.collection('resenas').doc(tokenId).get();
+                const [doc,cfgDoc]=await Promise.all([
+                    db.collection('resenas').doc(tokenId).get(),
+                    db.collection('config').doc('resenasConfig').get()
+                ]);
                 if(!doc.exists){showView('invalidArea');return;}
                 if(doc.data().usado){showView('usedArea');return;}
+                if(cfgDoc.exists){
+                    const cfg=cfgDoc.data();
+                    if(cfg.preguntaExtraActiva&&cfg.preguntaExtra){
+                        document.getElementById('campoExtraLabel').textContent=cfg.preguntaExtra;
+                        document.getElementById('campoExtraWrap').style.display='block';
+                    }
+                }
                 showView('formArea');
             }catch(e){
                 console.error(e);
@@ -149,14 +163,17 @@
             const btn=document.getElementById('submitBtn');
             btn.disabled=true;btn.textContent='Enviando...';
             try{
-                await db.collection('resenas').doc(tokenId).update({
+                const extra=document.getElementById('rExtra').value.trim();
+                const updateData={
                     nombre:nombre,
                     estrellas:selectedStars,
                     comentario:comentario,
                     fecha:new Date(),
                     visible:true,
                     usado:true
-                });
+                };
+                if(extra)updateData.respuestaExtra=extra;
+                await db.collection('resenas').doc(tokenId).update(updateData);
                 showView('successArea');
             }catch(e){
                 console.error(e);
