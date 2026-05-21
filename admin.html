@@ -927,7 +927,8 @@
                 showAdminToast('Seleccioná un cliente de la BDD antes de convertir','error');return;}
             const p=pedidosData.find(x=>x.docId===docId);
             if(!p){showAdminToast('Pedido no encontrado','error');return;}
-            /* Actualizar nombre cliente con el seleccionado */
+            /* Actualizar nombre cliente con el seleccionado, preservar nombre web original */
+            if(p.origen==='web'&&!p.clienteWeb)p.clienteWeb=p.cliente;
             p.cliente=document.getElementById('pedCliente').value;
             p.clienteId=document.getElementById('pedClienteId').value;
             closePedidoModal();
@@ -975,10 +976,10 @@
                     const webWrap=document.getElementById('pedClienteWebWrap');
                     if(webWrap)webWrap.style.display=esWeb?'block':'none';
                     if(esWeb){
-                        document.getElementById('pedClienteNombreWeb').value=p.cliente||'';
-                        document.getElementById('pedCliente').value='';
-                        document.getElementById('pedClienteId').value='';
-                        pedClienteSelected=false;
+                        document.getElementById('pedClienteNombreWeb').value=p.clienteWeb||p.cliente||'';
+                        document.getElementById('pedCliente').value=p.clienteId?(p.cliente||''):'';
+                        document.getElementById('pedClienteId').value=p.clienteId||'';
+                        pedClienteSelected=!!(p.clienteId);
                     }else{
                         document.getElementById('pedCliente').value=p.cliente||'';
                         document.getElementById('pedClienteId').value=p.clienteId||'';
