@@ -456,7 +456,7 @@ async function confirmCheckout(){
         try{
             pedidoNum=await db.runTransaction(async t=>{
                 const snap=await t.get(cntRef);
-                const next=(snap.exists?(snap.data().count||0):0)+1;
+                const next=(snap.exists?(parseInt(snap.data().count)||0):0)+1;
                 t.set(cntRef,{count:next});
                 return next;
             });
