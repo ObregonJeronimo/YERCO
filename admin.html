@@ -121,6 +121,27 @@
         .cliente-select-wrap{position:relative}.cliente-select-list{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:210;box-shadow:0 4px 12px rgba(0,0,0,0.3)}.cliente-select-list.open{display:block}.cliente-select-item{padding:8px 12px;cursor:pointer;font-size:0.82rem;transition:background 0.15s;display:flex;justify-content:space-between}.cliente-select-item:hover{background:var(--bg-hover)}.cliente-select-item small{color:var(--text-dim)}
         .factura-line{border-bottom:1px dashed #ccc;padding:2px 0}.factura-header{text-align:center;margin-bottom:12px}.factura-total{font-size:1.1rem;font-weight:700;border-top:2px solid #111;padding-top:6px;margin-top:8px}
         @media print{.no-print{display:none!important}}
+        /* === KANBAN PEDIDOS === */
+        .kanban-col { background: var(--bg-card); border-radius: 10px; overflow: hidden; }
+        .kanban-col-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem; font-size: 0.82rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.06em; }
+        .kanban-count { margin-left: auto; background: rgba(255,255,255,0.25); border-radius: 20px; padding: 1px 8px; font-size: 0.75rem; }
+        .kanban-drop-zone { min-height: 60px; padding: 0.4rem; transition: background 0.15s; }
+        .kanban-drop-zone.drag-over { background: rgba(255,255,255,0.06); outline: 2px dashed rgba(255,255,255,0.3); outline-offset: -4px; border-radius: 6px; }
+        .kanban-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.65rem; margin-bottom: 0.4rem; cursor: grab; user-select: none; transition: box-shadow 0.15s, opacity 0.15s; }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card.dragging { opacity: 0.4; }
+        .kanban-card:hover { border-color: var(--accent-light); }
+        .kcard-top { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; }
+        .kcard-nro { font-size: 0.72rem; color: var(--accent-light); font-family: var(--mono); font-weight: 700; }
+        .kcard-cliente { font-size: 0.82rem; font-weight: 600; color: var(--text-main); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kcard-total { font-size: 0.82rem; color: #67c23a; font-family: var(--mono); font-weight: 700; margin-left: auto; }
+        .kcard-bottom { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .kcard-date { font-size: 0.72rem; color: var(--text-dim); }
+        .kcard-items { font-size: 0.72rem; color: var(--text-dim); }
+        .kcard-badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+        .kcard-badge.envio { background: rgba(91,45,138,0.3); color: #c8a8f0; }
+        .kcard-badge.retiro { background: rgba(45,107,74,0.3); color: #7dcca0; }
+        @media (max-width: 700px) { #pedidosKanban { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -154,18 +175,33 @@
     <div class="section-content" id="sec-ventas"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Ventas</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Facturado Total</div><strong style="font-size:1.2rem;color:#67c23a" id="vtStatTotal$">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Este Mes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatMes">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Ticket Promedio</div><strong style="font-size:1.2rem;color:#e6a817" id="vtStatProm">$0</strong></div></div><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openVentaModal()"><i class="bi bi-plus-lg"></i> Nueva Venta</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar venta..." id="ventaSearch" oninput="filterVentas()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadVentas()"><i class="bi bi-arrow-clockwise"></i></button><button class="btn btn-secondary" style="width:auto;background:#5a2a7a;border-color:#5a2a7a;color:#fff;margin-left:auto" onclick="generarLinkResena()" title="Generar link de reseña anónima"><i class="bi bi-link-45deg"></i> Link de reseña</button></div><div id="ventasList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando ventas...</p></div></div><div class="price-pager" id="ventasPager"></div></div>
     <div class="section-content" id="sec-clientes"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Clientes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Con Ventas</div><strong style="font-size:1.2rem;color:#67c23a" id="clStatConVentas">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Facturado</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatFacturado">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Promedio x Cliente</div><strong style="font-size:1.2rem;color:#e6a817" id="clStatPromedio">$0</strong></div></div><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openClienteModal()"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar cliente..." id="clienteSearch" oninput="filterClientes()"></div><button class="btn btn-secondary" style="width:auto" id="clSortBtn" onclick="toggleClienteSort()"><i class="bi bi-sort-numeric-down"></i> Ventas</button></div><div id="clientesList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando clientes...</p></div></div></div>
     <div class="section-content" id="sec-pedidos">
-      <div class="toolbar" style="flex-wrap:wrap;gap:0.4rem">
-        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-sm" id="pedFiltTodos" style="width:auto;background:var(--accent);color:#fff" onclick="setPedidoFiltro('')">Todos</button>
-          <button class="btn btn-sm btn-secondary" id="pedFiltPendiente" style="width:auto" onclick="setPedidoFiltro('pendiente')"><i class="bi bi-clock"></i> Pendientes</button>
-          <button class="btn btn-sm btn-secondary" id="pedFiltConfirmado" style="width:auto" onclick="setPedidoFiltro('confirmado')"><i class="bi bi-check-circle"></i> Confirmados</button>
-          <button class="btn btn-sm btn-secondary" id="pedFiltEntregado" style="width:auto" onclick="setPedidoFiltro('entregado')"><i class="bi bi-bag-check"></i> Entregados</button>
-        </div>
-        <div class="search-box" style="flex:1;min-width:160px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar pedido..." id="pedidoSearch" oninput="filterPedidos()"></div>
+      <div class="toolbar" style="flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem">
+        <div class="search-box" style="flex:1;min-width:160px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar pedido..." id="pedidoSearch" oninput="renderPedidos()"></div>
         <button class="btn btn-secondary" style="width:auto" onclick="loadPedidos()"><i class="bi bi-arrow-clockwise"></i></button>
       </div>
-      <div id="pedidosList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando pedidos...</p></div></div>
-      <div class="price-pager" id="pedidosPager"></div>
+      <div id="pedidosKanban" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;align-items:start">
+        <div class="kanban-col" id="kanban-pendiente">
+          <div class="kanban-col-header" style="background:#e6a817">
+            <i class="bi bi-clock"></i> Pendiente
+            <span class="kanban-count" id="kcount-pendiente">0</span>
+          </div>
+          <div class="kanban-drop-zone" id="kdrop-pendiente" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'pendiente')" ondragleave="kanbanDragLeave(event)"></div>
+        </div>
+        <div class="kanban-col" id="kanban-confirmado">
+          <div class="kanban-col-header" style="background:#2d6b4a">
+            <i class="bi bi-check-circle"></i> Confirmado
+            <span class="kanban-count" id="kcount-confirmado">0</span>
+          </div>
+          <div class="kanban-drop-zone" id="kdrop-confirmado" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'confirmado')" ondragleave="kanbanDragLeave(event)"></div>
+        </div>
+        <div class="kanban-col" id="kanban-entregado">
+          <div class="kanban-col-header" style="background:#5b2d8a">
+            <i class="bi bi-bag-check"></i> Entregado
+            <span class="kanban-count" id="kcount-entregado">0</span>
+          </div>
+          <div class="kanban-drop-zone" id="kdrop-entregado" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'entregado')" ondragleave="kanbanDragLeave(event)"></div>
+        </div>
+      </div>
     </div>
     <div class="section-content" id="sec-excel"><div class="toolbar" style="margin-bottom:1rem"><button class="btn btn-secondary" style="width:auto" onclick="switchSection('products')"><i class="bi bi-arrow-left"></i> Volver</button></div><div class="drop-zone" id="dropZone"><i class="bi bi-cloud-arrow-up"></i><p>Arrastra tu Excel aca o hace clic</p><p class="hint">.xlsx</p></div><input type="file" class="file-input-hidden" id="excelInput" accept=".xlsx,.xls"><div class="upload-progress" id="uploadProgress"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div><p class="progress-text" id="progressText">Procesando...</p></div><div class="format-info"><h4><i class="bi bi-info-circle"></i> Importar Costos</h4><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Este Excel actualiza costo y porcentaje de productos <strong>existentes</strong> (matchea por nombre).</p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Columnas: <strong>NOMBRE, COSTO, PORCENTAJE</strong></p><p style="font-size:0.78rem;color:var(--text-dim)">El precio se recalcula automaticamente. No modifica imagen, stock ni categoria.</p></div></div>
     <div class="section-content" id="sec-excelNew"><div class="toolbar" style="margin-bottom:1rem"><button class="btn btn-secondary" style="width:auto" onclick="switchSection('products')"><i class="bi bi-arrow-left"></i> Volver</button></div><div class="drop-zone" id="dropZoneNew"><i class="bi bi-cloud-arrow-up"></i><p>Arrastra tu Excel aca o hace clic</p><p class="hint">.xlsx</p></div><input type="file" class="file-input-hidden" id="excelInputNew" accept=".xlsx,.xls"><div class="upload-progress" id="uploadProgressNew" style="display:none"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBarNew"></div></div><p class="progress-text" id="progressTextNew">Procesando...</p></div><div class="format-info"><h4><i class="bi bi-info-circle"></i> Importar Nuevos Productos</h4><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Este Excel <strong>agrega productos nuevos</strong> a la base de datos.</p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Columnas obligatorias: <strong>NOMBRE, CATEGORIA</strong></p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Columnas opcionales: <strong>SUBCATEGORIA, COSTO, PORCENTAJE, STOCK, DESCRIPCION</strong></p><p style="font-size:0.78rem;color:var(--text-dim)">El precio se calcula: COSTO x (1 + PORCENTAJE/100). Si no hay costo, el precio queda en $0.</p></div></div>
@@ -745,35 +781,96 @@
             pedidosPage=0;
             renderPedidos();
         }
+        let kanbanDraggingId=null;
         function renderPedidos(){
-            const c=document.getElementById('pedidosList');
-            const perPage=15,total=pedidosFiltered.length,pages=Math.ceil(total/perPage)||1;
-            if(pedidosPage>=pages)pedidosPage=pages-1;
-            const shown=pedidosFiltered.slice(pedidosPage*perPage,(pedidosPage+1)*perPage);
-            if(!shown.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin pedidos</p></div>';document.getElementById('pedidosPager').innerHTML='';return;}
-            const estadoColor={pendiente:'#e6a23c',confirmado:'#409eff',entregado:'#67c23a'};
-            const estadoIcon={pendiente:'bi-clock',confirmado:'bi-check-circle',entregado:'bi-bag-check'};
-            c.innerHTML=shown.map(p=>{
-                const fecha=p.creadoEn.toLocaleDateString('es-AR');
-                const nro=String(p.numero||0).padStart(5,'0');
-                const est=p.estado||'pendiente';
-                const color=estadoColor[est]||'#aaa';
-                const icon=estadoIcon[est]||'bi-question';
-                const items=(p.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78rem;color:var(--text-dim)"><span>'+esc(i.nombre)+'</span><span style="font-family:var(--mono)">'+i.cantidad+' x $'+i.precio.toLocaleString('es-AR')+'</span></div>').join('');
-                const accionesBtns=(est!=='entregado'?'<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openEstadoPedidoModal(\''+p.docId+'\')" title="Cambiar estado"><i class="bi bi-arrow-right-circle"></i> Estado</button>':'')+
-                    '<button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="event.stopPropagation();deletePedido(\''+p.docId+'\','+p.numero+')" title="Eliminar"><i class="bi bi-trash"></i></button>';
-                return'<div class="venta-card pedido-card-clickable" onclick="openPedidoModal(\''+p.docId+'\')" style="cursor:pointer">'+
-                    '<div class="venta-card-top"><span class="venta-card-num">#'+nro+'</span><span style="font-size:0.78rem;color:'+color+'"><i class="bi '+icon+'"></i> '+est.charAt(0).toUpperCase()+est.slice(1)+'</span><span class="venta-card-total">$'+(p.total||0).toLocaleString('es-AR')+'</span></div>'+
-                    '<div class="venta-card-mid">'+esc(p.cliente||'Sin cliente')+(p.tipoEntrega==='retiro'?'<span style="margin-left:8px;font-size:0.7rem;background:#3a2818;color:#e6a817;padding:1px 6px;border-radius:8px"><i class="bi bi-shop"></i> Retiro</span>':'<span style="margin-left:8px;font-size:0.7rem;background:#1a3a2a;color:#67c23a;padding:1px 6px;border-radius:8px"><i class="bi bi-truck"></i> Envio</span>')+(p.origen==='web'?'<span style="margin-left:6px;font-size:0.68rem;background:#1a2a3a;color:#80b3ff;padding:1px 6px;border-radius:8px"><i class="bi bi-globe"></i> Web</span>':'')+'</div>'+
-                    '<div class="venta-card-bot"><span>'+fecha+'</span><span>'+(p.medioPago||'')+'</span><span class="p-items-toggle" onclick="event.stopPropagation();this.closest(\'.venta-card\').querySelector(\'.p-items\').classList.toggle(\'show\')">'+(p.items||[]).length+' items <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div>'+
-                    '<div class="p-items" style="display:none;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">'+items+'</div>'+
-                    '<div class="venta-card-actions">'+accionesBtns+'</div>'+
-                    '</div>';
-            }).join('');
-            const pg=document.getElementById('pedidosPager');
-            if(pages>1){pg.innerHTML='<button onclick="pedidosPage=Math.max(0,pedidosPage-1);renderPedidos()"'+(pedidosPage===0?' disabled':'')+'>Ant</button><span>'+(pedidosPage+1)+'/'+pages+'</span><button onclick="pedidosPage=Math.min('+(pages-1)+',pedidosPage+1);renderPedidos()"'+(pedidosPage>=pages-1?' disabled':'')+'>Sig</button>';}
-            else pg.innerHTML='';
+            const q=(document.getElementById('pedidoSearch')?.value||'').toLowerCase();
+            const grupos={pendiente:[],confirmado:[],entregado:[]};
+            pedidosData.forEach(function(p){
+                if(q&&!(p.cliente||'').toLowerCase().includes(q)&&!String(p.numero||'').includes(q))return;
+                var est=p.estado||'pendiente';
+                if(grupos[est])grupos[est].push(p);
+            });
+            ['pendiente','confirmado','entregado'].forEach(function(est){
+                var zone=document.getElementById('kdrop-'+est);
+                var count=document.getElementById('kcount-'+est);
+                if(!zone)return;
+                if(count)count.textContent=grupos[est].length;
+                if(!grupos[est].length){zone.innerHTML='<div style="padding:1rem;text-align:center;color:var(--text-dim);font-size:0.78rem">Sin pedidos</div>';return;}
+                var cards='';
+                grupos[est].forEach(function(p){
+                    var nro='#'+String(p.numero||0).padStart(6,'0');
+                    var fecha=p.creadoEn?p.creadoEn.toLocaleDateString('es-AR'):'';
+                    var total='$'+(p.total||0).toLocaleString('es-AR');
+                    var nitems=(p.items||[]).length;
+                    var itemsTxt=nitems+' item'+(nitems!==1?'s':'');
+                    var badge=p.tipoEntrega==='retiro'?'<span class="kcard-badge retiro">Retiro</span>':'<span class="kcard-badge envio">Envio</span>';
+                    cards+='<div class="kanban-card" draggable="true" data-id="'+p.docId+'">';
+                    cards+='<div class="kcard-top">';
+                    cards+='<span class="kcard-nro">'+nro+'</span>';
+                    cards+='<span class="kcard-cliente">'+p.cliente+'</span>';
+                    cards+='<span class="kcard-total">'+total+'</span>';
+                    cards+='</div>';
+                    cards+='<div class="kcard-bottom">';
+                    cards+='<span class="kcard-date">'+fecha+'</span>';
+                    cards+='<span class="kcard-items">'+itemsTxt+'</span>';
+                    cards+=badge;
+                    cards+='</div>';
+                    cards+='</div>';
+                });
+                zone.innerHTML=cards;
+                zone.querySelectorAll('.kanban-card').forEach(function(card){
+                    card.addEventListener('click',function(){openPedidoModal(card.dataset.id);});
+                    card.addEventListener('dragstart',function(e){
+                        kanbanDraggingId=card.dataset.id;
+                        card.classList.add('dragging');
+                        e.dataTransfer.effectAllowed='move';
+                    });
+                    card.addEventListener('dragend',function(){
+                        card.classList.remove('dragging');
+                        kanbanDraggingId=null;
+                        document.querySelectorAll('.kanban-drop-zone').forEach(function(z){z.classList.remove('drag-over');});
+                    });
+                });
+            });
         }
+        function kanbanDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+        function kanbanDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+        async function kanbanDrop(e,nuevoEstado){
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            var docId=kanbanDraggingId;
+            if(!docId)return;
+            var p=pedidosData.find(function(x){return x.docId===docId;});
+            if(!p||p.estado===nuevoEstado)return;
+            var estadoActual=p.estado||'pendiente';
+            if(estadoActual==='pendiente'&&nuevoEstado==='confirmado'){
+                openPedidoModal(docId);
+                showAdminToast('Selecciona el cliente y hace click en "Convertir a venta"','info');
+                return;
+            }
+            if(nuevoEstado==='pendiente'&&(estadoActual==='confirmado'||estadoActual==='entregado')){
+                var nro=String(p.numero||0).padStart(6,'0');
+                var eliminar=p.ventaId&&confirm('Pedido #'+nro+': queres eliminar la venta asociada?');
+                if(eliminar&&p.ventaId){
+                    await db.collection('ventas').doc(p.ventaId).delete().catch(function(){});
+                    await db.collection('pedidos').doc(docId).update({ventaId:firebase.firestore.FieldValue.delete()}).catch(function(){});
+                    delete p.ventaId;
+                }
+                await actualizarEstadoPedido(docId,nuevoEstado);
+                return;
+            }
+            await actualizarEstadoPedido(docId,nuevoEstado);
+        }
+        async function actualizarEstadoPedido(docId,nuevoEstado){
+            try{
+                await db.collection('pedidos').doc(docId).update({estado:nuevoEstado});
+                var p=pedidosData.find(function(x){return x.docId===docId;});
+                if(p)p.estado=nuevoEstado;
+                renderPedidos();
+                showAdminToast('Estado actualizado a '+nuevoEstado,'success');
+            }catch(e){showAdminToast('Error: '+e.message,'error');}
+        }
+
         function openEstadoPedidoModal(docId){
             const p=pedidosData.find(x=>x.docId===docId);
             if(!p)return;
@@ -819,8 +916,15 @@
         async function convertirPedidoEnVentaDesdeModal(){
             const docId=editingPedidoId;
             if(!docId){showAdminToast('Sin pedido activo','error');return;}
+            if(!pedClienteSelected||!document.getElementById('pedClienteId').value){
+                const campo=document.getElementById('pedCliente');
+                if(campo){campo.style.borderColor='var(--danger)';campo.focus();setTimeout(()=>campo.style.borderColor='',2000);}
+                showAdminToast('Seleccioná un cliente de la BDD antes de convertir','error');return;}
             const p=pedidosData.find(x=>x.docId===docId);
             if(!p){showAdminToast('Pedido no encontrado','error');return;}
+            /* Actualizar nombre cliente con el seleccionado */
+            p.cliente=document.getElementById('pedCliente').value;
+            p.clienteId=document.getElementById('pedClienteId').value;
             closePedidoModal();
             if(!allProducts.length)await loadProducts();
             if(!insumosData.length){try{const s=await db.collection('insumos').orderBy('nombre').get();insumosData=s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){}}
@@ -861,8 +965,20 @@
                 const p=pedidosData.find(x=>x.docId===docId);
                 if(p){
                     document.getElementById('pedidoModalTitle').innerHTML='<i class="bi bi-bag-check"></i> Pedido #'+String(p.numero||0).padStart(5,'0');
-                    document.getElementById('pedCliente').value=p.cliente||'';
-                    document.getElementById('pedClienteId').value=p.clienteId||'';
+                    /* Si vino de la web, mostrar nombre web readonly y limpiar búsqueda BDD */
+                    const esWeb=p.origen==='web';
+                    const webWrap=document.getElementById('pedClienteWebWrap');
+                    if(webWrap)webWrap.style.display=esWeb?'block':'none';
+                    if(esWeb){
+                        document.getElementById('pedClienteNombreWeb').value=p.cliente||'';
+                        document.getElementById('pedCliente').value='';
+                        document.getElementById('pedClienteId').value='';
+                        pedClienteSelected=false;
+                    }else{
+                        document.getElementById('pedCliente').value=p.cliente||'';
+                        document.getElementById('pedClienteId').value=p.clienteId||'';
+                        pedClienteSelected=!!(p.clienteId);
+                    }
                     document.getElementById('pedMedio').value=p.medioPago||'Efectivo';
                     if(p.creadoEn){const d=p.creadoEn;const yyyy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');document.getElementById('pedFecha').value=yyyy+'-'+mm+'-'+dd;}
                     pedClienteSelected=true;
@@ -1847,8 +1963,12 @@
           <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr;margin-bottom:1rem">
             <div class="form-group">
               <label>Cliente *</label>
+              <div id="pedClienteWebWrap" style="display:none;margin-bottom:6px">
+                <label style="font-size:0.75rem;color:var(--text-dim);margin-bottom:2px;display:block">Nombre ingresado por el cliente</label>
+                <input type="text" class="form-input" id="pedClienteNombreWeb" readonly style="opacity:0.6;cursor:default;font-size:0.83rem">
+              </div>
               <div class="cliente-select-wrap">
-                <input type="text" class="form-input" id="pedCliente" placeholder="Buscar cliente..." autocomplete="off"
+                <input type="text" class="form-input" id="pedCliente" placeholder="Buscar cliente en BDD..." autocomplete="off"
                   onfocus="this.select();showPedClienteSelect()"
                   oninput="pedClienteSelected=false;document.getElementById('pedClienteId').value='';showPedClienteSelect()"
                   onblur="onBlurPedCliente()">
