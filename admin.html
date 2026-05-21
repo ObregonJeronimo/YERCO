@@ -142,6 +142,13 @@
         .kcard-badge.envio { background: rgba(91,45,138,0.3); color: #c8a8f0; }
         .kcard-badge.retiro { background: rgba(45,107,74,0.3); color: #7dcca0; }
         @media (max-width: 700px) { #pedidosKanban { grid-template-columns: 1fr; } }
+        /* Toggle switch */
+        .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+        .toggle-switch input{opacity:0;width:0;height:0}
+        .toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.2s}
+        .toggle-slider:before{position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+        .toggle-switch input:checked+.toggle-slider{background:var(--accent)}
+        .toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px)}
     </style>
 </head>
 <body>
@@ -1730,7 +1737,10 @@
 
         /* === ADMIN RESENAS === */
         let allReviews=[];
-        let resenasConfig={preguntaExtra:'¿Qué te pareció el turrón artesanal?',preguntaExtraActiva:true};
+        let resenasConfig={
+            pregunta1:{texto:'Tu comentario',placeholder:'¿Qué te pareció? ¿Qué podemos mejorar?',activa:true},
+            pregunta2:{texto:'¿Qué te pareció el turrón artesanal?',placeholder:'Contanos tu experiencia con el turrón...',activa:true}
+        };
         async function loadResenasConfig(){
             try{
                 const snap=await db.collection('config').doc('resenasConfig').get();
@@ -1738,23 +1748,30 @@
             }catch(e){}
         }
         function openConfigResenasModal(){
-            document.getElementById('cfgResPreg').value=resenasConfig.preguntaExtra||'';
-            document.getElementById('cfgResActiva').checked=resenasConfig.preguntaExtraActiva!==false;
+            const p1=resenasConfig.pregunta1||{};
+            const p2=resenasConfig.pregunta2||{};
+            document.getElementById('cfgP1Texto').value=p1.texto||'';
+            document.getElementById('cfgP1Placeholder').value=p1.placeholder||'';
+            document.getElementById('cfgP1Activa').checked=p1.activa!==false;
+            document.getElementById('cfgP2Texto').value=p2.texto||'';
+            document.getElementById('cfgP2Placeholder').value=p2.placeholder||'';
+            document.getElementById('cfgP2Activa').checked=p2.activa!==false;
             document.getElementById('configResenasModal').classList.add('show');
         }
         function closeConfigResenasModal(){document.getElementById('configResenasModal').classList.remove('show');}
         async function saveConfigResenas(){
-            const preg=document.getElementById('cfgResPreg').value.trim();
-            const activa=document.getElementById('cfgResActiva').checked;
+            const p1={texto:document.getElementById('cfgP1Texto').value.trim(),placeholder:document.getElementById('cfgP1Placeholder').value.trim(),activa:document.getElementById('cfgP1Activa').checked};
+            const p2={texto:document.getElementById('cfgP2Texto').value.trim(),placeholder:document.getElementById('cfgP2Placeholder').value.trim(),activa:document.getElementById('cfgP2Activa').checked};
+            if(!p1.activa&&!p2.activa){showAdminToast('Al menos una pregunta debe estar activa','error');return;}
             try{
-                await db.collection('config').doc('resenasConfig').set({preguntaExtra:preg,preguntaExtraActiva:activa});
-                resenasConfig={preguntaExtra:preg,preguntaExtraActiva:activa};
+                await db.collection('config').doc('resenasConfig').set({pregunta1:p1,pregunta2:p2});
+                resenasConfig={pregunta1:p1,pregunta2:p2};
                 closeConfigResenasModal();
                 showAdminToast('Configuración guardada','success');
             }catch(e){showAdminToast('Error: '+e.message,'error');}
         }
         async function loadAdminReviews(){const c=document.getElementById('rvList');c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';try{const snap=await db.collection('resenas').orderBy('fecha','desc').get();allReviews=snap.docs.map(d=>({id:d.id,...d.data(),fecha:d.data().fecha?d.data().fecha.toDate():new Date()}));renderAdminReviews();}catch(e){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
-        function renderAdminReviews(){const c=document.getElementById('rvList');document.getElementById('rvTotal').textContent=allReviews.length;const vis=allReviews.filter(r=>r.visible!==false).length;document.getElementById('rvVisible').textContent=vis;const avg=allReviews.length?Math.round(allReviews.reduce((s,r)=>s+(r.estrellas||0),0)/allReviews.length*10)/10:0;document.getElementById('rvAvg').textContent=avg+' \u2605';if(!allReviews.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>No hay reseñas</p></div>';return;}c.innerHTML=allReviews.map(r=>{const stars='\u2605'.repeat(r.estrellas||0)+'\u2606'.repeat(5-(r.estrellas||0));const fecha=r.fecha.toLocaleDateString('es-AR');const isVis=r.visible!==false;const extraHtml=r.respuestaExtra?'<div style="font-size:0.82rem;background:rgba(91,45,138,0.12);border-left:3px solid var(--accent);padding:4px 8px;border-radius:0 6px 6px 0;margin-bottom:6px"><span style="color:var(--text-dim);font-size:0.75rem">'+esc(resenasConfig.preguntaExtra||'Pregunta extra')+'</span><br>'+esc(r.respuestaExtra)+'</div>':'';return '<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div><span style="color:#e6a817;letter-spacing:2px">'+stars+'</span> <span style="font-weight:600;margin-left:6px">'+esc(r.nombre||'Anonimo')+'</span></div><span style="font-size:0.75rem;color:var(--text-dim)">'+fecha+'</span></div>'+extraHtml+'<div style="font-size:0.88rem;color:var(--text-main);margin-bottom:6px;font-style:italic">"'+esc(r.comentario||'')+'"</div><div style="display:flex;gap:6px"><button class="btn btn-sm '+(isVis?'btn-secondary':'btn-primary')+'" onclick="toggleReviewVis(\''+r.id+'\','+(!isVis)+')"><i class="bi bi-eye'+(isVis?'-slash':'')+'"></i> '+(isVis?'Ocultar':'Mostrar')+'</button><button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="deleteReview(\''+r.id+'\')"><i class="bi bi-trash"></i></button></div></div>';}).join('');}
+        function renderAdminReviews(){const c=document.getElementById('rvList');document.getElementById('rvTotal').textContent=allReviews.length;const vis=allReviews.filter(r=>r.visible!==false).length;document.getElementById('rvVisible').textContent=vis;const avg=allReviews.length?Math.round(allReviews.reduce((s,r)=>s+(r.estrellas||0),0)/allReviews.length*10)/10:0;document.getElementById('rvAvg').textContent=avg+' \u2605';if(!allReviews.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>No hay reseñas</p></div>';return;}c.innerHTML=allReviews.map(r=>{const stars='\u2605'.repeat(r.estrellas||0)+'\u2606'.repeat(5-(r.estrellas||0));const fecha=r.fecha.toLocaleDateString('es-AR');const isVis=r.visible!==false;const extraHtml=(r.respuestaExtra?'<div style="font-size:0.82rem;background:rgba(91,45,138,0.12);border-left:3px solid var(--accent);padding:4px 8px;border-radius:0 6px 6px 0;margin-bottom:6px"><span style="color:var(--text-dim);font-size:0.75rem">'+esc((resenasConfig.pregunta2||{}).texto||'Pregunta extra')+'</span><br>'+esc(r.respuestaExtra)+'</div>':'');return '<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div><span style="color:#e6a817;letter-spacing:2px">'+stars+'</span> <span style="font-weight:600;margin-left:6px">'+esc(r.nombre||'Anonimo')+'</span></div><span style="font-size:0.75rem;color:var(--text-dim)">'+fecha+'</span></div>'+extraHtml+'<div style="font-size:0.88rem;color:var(--text-main);margin-bottom:6px;font-style:italic">"'+esc(r.comentario||'')+'"</div><div style="display:flex;gap:6px"><button class="btn btn-sm '+(isVis?'btn-secondary':'btn-primary')+'" onclick="toggleReviewVis(\''+r.id+'\','+(!isVis)+')"><i class="bi bi-eye'+(isVis?'-slash':'')+'"></i> '+(isVis?'Ocultar':'Mostrar')+'</button><button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="deleteReview(\''+r.id+'\')"><i class="bi bi-trash"></i></button></div></div>';}).join('');}
         async function toggleReviewVis(id,vis){try{await db.collection('resenas').doc(id).update({visible:vis});const r=allReviews.find(x=>x.id===id);if(r)r.visible=vis;renderAdminReviews();showAdminToast(vis?'Reseña visible':'Reseña oculta','success');}catch(e){showAdminToast('Error: '+e.message,'error');}}
         async function deleteReview(id){if(!confirm('¿Eliminar esta reseña?'))return;try{await db.collection('resenas').doc(id).delete();allReviews=allReviews.filter(r=>r.id!==id);renderAdminReviews();showAdminToast('Reseña eliminada','success');}catch(e){showAdminToast('Error: '+e.message,'error');}}
 
@@ -2054,6 +2071,24 @@
     <!-- MODAL REASIGNAR LISTA -->
     <div class="modal-overlay" id="reasignarListaModal"><div class="modal-box" style="max-width:700px"><div class="modal-header"><h3>Reasignar lista</h3><button class="modal-close" onclick="closeReasignarListaModal()"><i class="bi bi-x-lg"></i></button></div><div class="toolbar" style="margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem"><div class="search-box" style="flex:1;min-width:180px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." id="rlSearch" oninput="renderRlList()"></div><select class="form-input" style="width:auto;min-width:140px" id="rlFiltroLista" onchange="renderRlList()"><option value="">Todas las listas</option></select><label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer"><input type="checkbox" id="rlSelAll" onchange="toggleRlAll(this.checked)"> Seleccionar todos</label></div><div id="rlList" style="max-height:350px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:1rem"></div><div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap"><span style="font-size:0.85rem;color:var(--text-dim)">Mover <strong id="rlSelCount">0</strong> seleccionados a:</span><select class="form-input" style="width:auto;min-width:160px" id="rlDestinoLista"><option value="">Elegir lista...</option></select><button class="btn btn-primary" style="width:auto" onclick="aplicarReasignacion()"><i class="bi bi-shuffle"></i> Reasignar</button></div></div></div>
     <!-- MODAL CONFIG RESEÑAS -->
-    <div class="modal-overlay" id="configResenasModal"><div class="modal-box" style="max-width:460px"><div class="modal-header"><h3><i class="bi bi-gear"></i> Configurar Reseñas</h3><button class="modal-close" onclick="closeConfigResenasModal()"><i class="bi bi-x-lg"></i></button></div><div class="form-group" style="margin-bottom:1rem"><label>Pregunta extra (privada, no se publica)</label><input type="text" class="form-input" id="cfgResPreg" placeholder="¿Qué te pareció el turrón artesanal?"></div><div class="form-group" style="margin-bottom:1.5rem"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><input type="checkbox" id="cfgResActiva"> Mostrar esta pregunta en el formulario de reseña</label></div><div class="form-actions"><button class="btn btn-secondary" onclick="closeConfigResenasModal()">Cancelar</button><button class="btn btn-primary" onclick="saveConfigResenas()"><i class="bi bi-check-lg"></i> Guardar</button></div></div></div>
+    <div class="modal-overlay" id="configResenasModal"><div class="modal-box" style="max-width:520px"><div class="modal-header"><h3><i class="bi bi-gear"></i> Configurar Reseñas</h3><button class="modal-close" onclick="closeConfigResenasModal()"><i class="bi bi-x-lg"></i></button></div>
+    <div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+        <strong style="font-size:0.85rem">Pregunta 1 — Comentario general</strong>
+        <label class="toggle-switch"><input type="checkbox" id="cfgP1Activa"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem"><label style="font-size:0.78rem">Título</label><input type="text" class="form-input" id="cfgP1Texto" placeholder="Tu comentario"></div>
+      <div class="form-group"><label style="font-size:0.78rem">Placeholder</label><input type="text" class="form-input" id="cfgP1Placeholder" placeholder="¿Qué te pareció? ¿Qué podemos mejorar?"></div>
+    </div>
+    <div style="margin-bottom:1.25rem;padding:1rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+        <strong style="font-size:0.85rem">Pregunta 2 — Privada (no se publica)</strong>
+        <label class="toggle-switch"><input type="checkbox" id="cfgP2Activa"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem"><label style="font-size:0.78rem">Título</label><input type="text" class="form-input" id="cfgP2Texto" placeholder="¿Qué te pareció el turrón artesanal?"></div>
+      <div class="form-group"><label style="font-size:0.78rem">Placeholder</label><input type="text" class="form-input" id="cfgP2Placeholder" placeholder="Contanos tu experiencia..."></div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:1rem">Al menos una pregunta debe estar activa.</p>
+    <div class="form-actions"><button class="btn btn-secondary" onclick="closeConfigResenasModal()">Cancelar</button><button class="btn btn-primary" onclick="saveConfigResenas()"><i class="bi bi-check-lg"></i> Guardar</button></div></div></div>
     </body>
 </html>

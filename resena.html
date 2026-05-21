@@ -68,12 +68,12 @@
                 <span onclick="setStars(4)">&#9733;</span>
                 <span onclick="setStars(5)">&#9733;</span>
             </div>
-            <div class="field">
-                <label>Tu comentario</label>
+            <div class="field" id="campo1Wrap">
+                <label id="campo1Label">Tu comentario</label>
                 <textarea id="rComentario" placeholder="¿Qué te pareció? ¿Qué podemos mejorar?" maxlength="500"></textarea>
             </div>
-            <div class="field" id="campoExtraWrap" style="display:none">
-                <label id="campoExtraLabel">Pregunta extra</label>
+            <div class="field" id="campo2Wrap" style="display:none">
+                <label id="campo2Label">Pregunta extra</label>
                 <textarea id="rExtra" placeholder="Tu respuesta..." maxlength="300"></textarea>
             </div>
             <button class="btn-submit" id="submitBtn" onclick="submitReview()">Enviar opinión</button>
@@ -142,9 +142,21 @@
                 if(doc.data().usado){showView('usedArea');return;}
                 if(cfgDoc.exists){
                     const cfg=cfgDoc.data();
-                    if(cfg.preguntaExtraActiva&&cfg.preguntaExtra){
-                        document.getElementById('campoExtraLabel').textContent=cfg.preguntaExtra;
-                        document.getElementById('campoExtraWrap').style.display='block';
+                    const p1=cfg.pregunta1||{texto:'Tu comentario',placeholder:'¿Qué te pareció? ¿Qué podemos mejorar?',activa:true};
+                    const p2=cfg.pregunta2||{activa:false};
+                    /* Pregunta 1 */
+                    if(p1.activa!==false){
+                        document.getElementById('campo1Label').textContent=p1.texto||'Tu comentario';
+                        document.getElementById('rComentario').placeholder=p1.placeholder||'¿Qué te pareció? ¿Qué podemos mejorar?';
+                        document.getElementById('campo1Wrap').style.display='block';
+                    }else{
+                        document.getElementById('campo1Wrap').style.display='none';
+                    }
+                    /* Pregunta 2 */
+                    if(p2.activa){
+                        document.getElementById('campo2Label').textContent=p2.texto||'Pregunta extra';
+                        document.getElementById('rExtra').placeholder=p2.placeholder||'Tu respuesta...';
+                        document.getElementById('campo2Wrap').style.display='block';
                     }
                 }
                 showView('formArea');
