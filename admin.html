@@ -2117,31 +2117,41 @@
         }
         function openVentaMayModal(id){
             editingVentaMayId=id||null;
-            ventaMayItems=[];ventaMayTipoEntrega='envio';ventaMayClienteSelected=false;
-            document.getElementById('ventaMayClienteInput').value='';
+            ventaMayItems=[];ventaMayInsumosUsados=[];ventaMayTipoEntrega='envio';ventaMayClienteSelected=false;
+            document.getElementById('ventaMayCliente').value='';
             document.getElementById('ventaMayClienteId').value='';
             document.getElementById('ventaMayBuscaProd').value='';
             document.getElementById('ventaMayItemsList').innerHTML='';
+            document.getElementById('ventaMayDescuentoPct').value='0';
             const today=new Date().toISOString().split('T')[0];
             document.getElementById('ventaMayFecha').value=today;
             document.getElementById('ventaMayMedioPago').value='Efectivo';
-            setVentaMayEntrega('envio');
+            document.querySelectorAll('#ventaMayModal .entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')==='envio'));
             if(id){
                 const v=ventasMayData.find(x=>x.id===id);
                 if(v){
-                    document.getElementById('ventaMayModalTitle').textContent='Venta Mayorista #'+String(v.numero||0).padStart(6,'0');
-                    document.getElementById('ventaMayClienteInput').value=v.cliente||'';
+                    document.getElementById('ventaMayModalTitle').textContent='Editar Venta Mayorista #'+String(v.numero||0).padStart(6,'0');
+                    document.getElementById('ventaMayCliente').value=v.cliente||'';
                     document.getElementById('ventaMayClienteId').value=v.clienteId||'';
                     ventaMayClienteSelected=!!(v.clienteId);
-                    document.getElementById('ventaMayFecha').value=v.fecha.toISOString().split('T')[0];
+                    const fd=v.fecha instanceof Date?v.fecha:new Date(v.fecha);
+                    document.getElementById('ventaMayFecha').value=fd.toISOString().split('T')[0];
                     document.getElementById('ventaMayMedioPago').value=v.medioPago||'Efectivo';
-                    setVentaMayEntrega(v.tipoEntrega||'envio');
+                    ventaMayTipoEntrega=v.tipoEntrega||'envio';
+                    document.querySelectorAll('#ventaMayModal .entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')===ventaMayTipoEntrega));
+                    document.getElementById('ventaMayDescuentoPct').value=v.descuentoPct||0;
                     ventaMayItems=(v.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0}));
-                    renderVentaMayItems();
+                    ventaMayInsumosUsados=(v.insumosUsados||[]).map(u=>{const ins=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:ins?Number(ins.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});
                 }
             }else{
                 document.getElementById('ventaMayModalTitle').textContent='Nueva Venta Mayorista';
             }
+            renderVentaMayItems();
+            renderVentaMayInsumosUsados();
+            refreshVentaMayInsumosSelect();
+            filterVentaMayProducts();
+            if(!allClientes.length)loadClientes();
+            if(!insumosData.length){db.collection('insumos').orderBy('nombre').get().then(snap=>{insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));refreshVentaMayInsumosSelect();}).catch(()=>{});}
             document.getElementById('ventaMayModal').classList.add('show');
         }
         function closeVentaMayModal(){document.getElementById('ventaMayModal').classList.remove('show');editingVentaMayId=null;}
@@ -2154,16 +2164,26 @@
             renderVentaMayItems();
         }
 
-        function searchVentaMayProducts(){
-            const q=(document.getElementById('ventaMayBuscaProd').value||'').toLowerCase();
-            const list=document.getElementById('ventaMayProdList');
-            if(!q){list.innerHTML='';list.classList.remove('open');return;}
-            const res=allProducts.filter(p=>!p.oculto&&(p.nombre||'').toLowerCase().includes(q)).slice(0,8);
-            if(!res.length){list.innerHTML='<div style="padding:0.5rem;color:var(--text-dim);font-size:0.82rem">Sin resultados</div>';list.classList.add('open');return;}
-            list.innerHTML=res.map(function(p){var d=document.createElement('div');d.className='cliente-select-item';d.innerHTML='<span>'+esc(p.nombre)+'</span><small style="color:#a78bfa">$'+((p.precioMayorista||0)).toLocaleString('es-AR')+' may</small>';d.addEventListener('mousedown',function(){addVentaMayItem(p.id);});return d.outerHTML;}).join('');
-            list.classList.add('open');
+        function filterVentaMayProducts(){
+            var q=(document.getElementById('ventaMayBuscaProd').value||'').toLowerCase();
+            var list=document.getElementById('ventaMayProdListDropdown');
+            if(!list)return;
+            if(!q){list.innerHTML='';return;}
+            var res=allProducts.filter(function(p){return !p.oculto&&(p.nombre||'').toLowerCase().includes(q);}).slice(0,10);
+            if(!res.length){list.innerHTML='<div class="venta-prod-item" style="color:var(--text-dim)">Sin resultados</div>';return;}
+            list.innerHTML='';
+            res.forEach(function(p){
+                var d=document.createElement('div');
+                d.className='venta-prod-item';
+                d.innerHTML='<span class="vprod-nombre">'+esc(p.nombre)+'</span><span class="vprod-precio" style="color:#a78bfa">$'+(p.precioMayorista||p.precio||0).toLocaleString('es-AR')+'</span>';
+                d.addEventListener('mousedown',function(){
+                    addVentaMayItem(p.id);
+                    document.getElementById('ventaMayBuscaProd').value='';
+                    list.innerHTML='';
+                });
+                list.appendChild(d);
+            });
         }
-
         function addVentaMayItem(id){
             document.getElementById('ventaMayBuscaProd').value='';
             document.getElementById('ventaMayProdList').classList.remove('open');
@@ -2178,9 +2198,12 @@
         function updateVentaMayQty(id,val){const it=ventaMayItems.find(x=>x.id===id);if(it)it.cantidad=Math.max(1,parseInt(val)||1);renderVentaMayItems();}
 
         function calcVentaMayTotales(){
-            const sub=ventaMayItems.reduce((s,i)=>s+Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad,0);
-            const envio=ventaMayTipoEntrega==='envio'&&sub<100000?0:0; /* mayoristas sin costo envío por defecto */
-            return{subtotal:sub,envio:envio,total:sub+envio};
+            const sub=ventaMayItems.reduce(function(s,i){return s+Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad;},0);
+            const dcEl=document.getElementById('ventaMayDescuentoPct');
+            const dcp=dcEl?Math.min(100,Math.max(0,parseFloat(dcEl.value)||0)):0;
+            const dcMonto=Math.round(sub*dcp/100);
+            const subConDc=sub-dcMonto;
+            return{subtotal:sub,descuentoPct:dcp,descuentoMonto:dcMonto,subtotalConDesc:subConDc,envio:0,total:subConDc};
         }
 
         function renderVentaMayItems(){
@@ -2218,7 +2241,7 @@
                 const clienteId=document.getElementById('ventaMayClienteId').value||null;
                 const fecha=new Date(document.getElementById('ventaMayFecha').value+'T12:00:00');
                 const medioPago=document.getElementById('ventaMayMedioPago').value;
-                const venta={numero:num,cliente:cliente,clienteId:clienteId,fecha:fecha,medioPago:medioPago,tipoEntrega:ventaMayTipoEntrega,items:ventaMayItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),subtotal:t.subtotal,envio:t.envio,total:t.total,tipo:'mayorista'};
+                const venta={numero:num,cliente:cliente,clienteId:clienteId,fecha:fecha,medioPago:medioPago,tipoEntrega:ventaMayTipoEntrega,items:ventaMayItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaMayInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotal:t.subtotal,descuentoPct:t.descuentoPct||0,descuentoMonto:t.descuentoMonto||0,envio:t.envio,total:t.total,tipo:'mayorista'};
                 if(editingVentaMayId){
                     await db.collection('ventasMayoristas').doc(editingVentaMayId).update(venta);
                     showAdminToast('Venta mayorista actualizada','success');
@@ -2309,6 +2332,49 @@
                 showAdminToast(updates.length+' productos actualizados','success');
                 logAction('precios','Carga masiva % Mayorista: '+updates.length+' productos','');
             }catch(e){showAdminToast('Error: '+e.message,'error');}
+        }
+
+
+        let ventaMayInsumosUsados=[];
+
+        function addVentaMayInsumoFromSelect(){
+            const sel=document.getElementById('ventaMayInsumoSelect');
+            const id=sel.value;if(!id)return;
+            const ins=insumosData.find(x=>x.id===id);if(!ins)return;
+            if(ventaMayInsumosUsados.find(x=>x.id===id)){showAdminToast('Ya agregado','error');sel.value='';return;}
+            ventaMayInsumosUsados.push({id:ins.id,nombre:ins.nombre,cantidad:1,stockActual:Number(ins.stockActual||0)});
+            sel.value='';
+            renderVentaMayInsumosUsados();
+        }
+
+        function renderVentaMayInsumosUsados(){
+            const c=document.getElementById('ventaMayInsumosList');
+            if(!c)return;
+            if(!ventaMayInsumosUsados.length){c.innerHTML='';return;}
+            c.innerHTML='';
+            ventaMayInsumosUsados.forEach(function(u){
+                var row=document.createElement('div');
+                row.className='insumo-usado-row';
+                row.innerHTML='<span style="flex:1;font-size:0.85rem">'+esc(u.nombre)+'</span>'+
+                    '<span style="font-size:0.75rem;color:var(--text-dim)">Stock: '+u.stockActual+'</span>'+
+                    '<input type="number" min="0.01" step="0.01" value="'+u.cantidad+'" style="width:60px;padding:2px 4px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);text-align:center">'+
+                    '<button class="vi-remove"><i class="bi bi-x"></i></button>';
+                row.querySelector('input').addEventListener('change',function(){u.cantidad=parseFloat(this.value)||1;});
+                row.querySelector('.vi-remove').addEventListener('click',function(){ventaMayInsumosUsados=ventaMayInsumosUsados.filter(x=>x.id!==u.id);renderVentaMayInsumosUsados();});
+                c.appendChild(row);
+            });
+        }
+
+        function refreshVentaMayInsumosSelect(){
+            const sel=document.getElementById('ventaMayInsumoSelect');if(!sel)return;
+            sel.innerHTML='<option value="">+ Agregar insumo...</option>'+
+                insumosData.map(i=>'<option value="'+i.id+'">'+esc(i.nombre)+' (stock: '+i.stockActual+')</option>').join('');
+        }
+
+        function onChangeMayDescuento(){
+            var pct=Math.min(100,Math.max(0,parseFloat(document.getElementById('ventaMayDescuentoPct').value)||0));
+            var t=calcVentaMayTotales();
+            document.getElementById('ventaMayTotal').textContent='$'+t.total.toLocaleString('es-AR');
         }
 
         </script>
@@ -2434,27 +2500,30 @@
     <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:1rem">Al menos una pregunta debe estar activa.</p>
     <div class="form-actions"><button class="btn btn-secondary" onclick="closeConfigResenasModal()">Cancelar</button><button class="btn btn-primary" onclick="saveConfigResenas()"><i class="bi bi-check-lg"></i> Guardar</button></div></div></div>
     <!-- MODAL VENTA MAYORISTA -->
-    <div class="modal-overlay" id="ventaMayModal"><div class="modal-box" style="max-width:680px"><div class="modal-header"><h3 id="ventaMayModalTitle">Nueva Venta Mayorista</h3><button class="modal-close" onclick="closeVentaMayModal()"><i class="bi bi-x-lg"></i></button></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1rem">
-      <div class="form-group"><label>Cliente *</label><div style="position:relative"><input type="text" class="form-input" id="ventaMayClienteInput" placeholder="Buscar cliente..." autocomplete="off" oninput="showVentaMayClienteSelect()" onblur="setTimeout(()=>document.getElementById('ventaMayClienteList').classList.remove('open'),150)"><div class="cliente-select-list" id="ventaMayClienteList"></div></div><input type="hidden" id="ventaMayClienteId"></div>
+    <div class="modal-overlay" id="ventaMayModal"><div class="modal-box" style="max-width:700px"><div class="modal-header"><h3 id="ventaMayModalTitle"><i class="bi bi-buildings"></i> Nueva Venta Mayorista</h3><button class="modal-close" onclick="closeVentaMayModal()"><i class="bi bi-x-lg"></i></button></div><div class="venta-modal-body">
+    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr;margin-bottom:1rem">
+      <div class="form-group"><label>Cliente *</label><div class="cliente-select-wrap"><input type="text" class="form-input" id="ventaMayCliente" placeholder="Buscar cliente..." autocomplete="off" onfocus="this.select();showVentaMayClienteSelect()" oninput="ventaMayClienteSelected=false;document.getElementById('ventaMayClienteId').value='';showVentaMayClienteSelect()" onblur="setTimeout(()=>document.getElementById('ventaMayClienteList').classList.remove('open'),150)"><input type="hidden" id="ventaMayClienteId" value=""><div class="cliente-select-list" id="ventaMayClienteList"></div></div></div>
+      <div class="form-group"><label>Medio de pago</label><select class="form-input" id="ventaMayMedioPago"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Cuenta Corriente</option></select></div>
       <div class="form-group"><label>Fecha</label><input type="date" class="form-input" id="ventaMayFecha"></div>
-      <div class="form-group"><label>Medio de pago</label><select class="form-input" id="ventaMayMedioPago"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Cuenta corriente</option></select></div>
     </div>
-    <div class="form-group" style="margin-bottom:0.75rem"><label>Tipo de entrega</label>
-      <div style="display:flex;gap:0.5rem">
-        <button type="button" class="btn btn-secondary active" id="ventaMayBtnEnvio" onclick="setVentaMayEntrega('envio')" style="flex:1"><i class="bi bi-truck"></i> Con envio</button>
-        <button type="button" class="btn btn-secondary" id="ventaMayBtnRetiro" onclick="setVentaMayEntrega('retiro')" style="flex:1"><i class="bi bi-shop"></i> Retiro</button>
-      </div>
+    <div class="form-row" style="grid-template-columns:1fr;margin-bottom:1rem">
+      <div class="form-group"><label>Tipo de entrega</label><div class="entrega-toggle"><button type="button" class="entrega-btn active" data-entrega="envio" onclick="setVentaMayEntrega('envio')"><i class="bi bi-truck"></i> Con envío</button><button type="button" class="entrega-btn" data-entrega="retiro" onclick="setVentaMayEntrega('retiro')"><i class="bi bi-shop"></i> Retiro</button></div></div>
     </div>
-    <div class="form-group" id="ventaMayDireccionGroup" style="margin-bottom:0.75rem"><label>Dirección de entrega</label><input type="text" class="form-input" id="ventaMayDireccion" placeholder="Dirección..."></div>
-    <div class="form-group" style="margin-bottom:0.5rem"><label>Buscar producto (precio mayorista)</label>
-      <div style="position:relative"><input type="text" class="form-input" id="ventaMayBuscaProd" placeholder="Escribí para buscar..." autocomplete="off" oninput="searchVentaMayProducts()" onblur="setTimeout(()=>document.getElementById('ventaMayProdList').classList.remove('open'),150)"><div class="cliente-select-list" id="ventaMayProdList"></div></div>
+    <div class="toolbar" style="margin-bottom:0.75rem"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto para agregar (precio mayorista)..." id="ventaMayBuscaProd" oninput="filterVentaMayProducts()"></div></div>
+    <div class="venta-prod-list" id="ventaMayProdListDropdown"></div>
+    <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+      <h4 style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem">Items de la venta</h4>
+      <div id="ventaMayItemsList" class="venta-items"></div>
+      <div class="venta-descuento-row"><label style="font-size:0.82rem;color:var(--text-dim);display:flex;align-items:center;gap:6px"><i class="bi bi-tag"></i> Descuento (%):</label><input type="number" id="ventaMayDescuentoPct" class="form-input" min="0" max="100" step="1" value="0" style="width:80px;padding:4px 8px;text-align:right;font-family:var(--mono)" oninput="onChangeMayDescuento()"></div>
+      <div class="venta-total-row"><span>TOTAL:</span><span id="ventaMayTotal" class="venta-total-val" style="color:#a78bfa">$0</span></div>
     </div>
-    <div class="form-group" style="margin-bottom:0.5rem"><label>Items del pedido</label><div id="ventaMayItemsList"></div></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-top:1px solid var(--border)"><strong>TOTAL:</strong><strong id="ventaMayTotal" style="color:#a78bfa;font-size:1.2rem">$0</strong></div>
-    <div class="form-actions"><button class="btn btn-secondary" onclick="closeVentaMayModal()">Cancelar</button><button class="btn btn-primary" id="saveVentaMayBtn" style="background:#5b2d8a;border-color:#5b2d8a" onclick="saveVentaMay()"><i class="bi bi-check-lg"></i> Guardar venta</button></div>
-    </div></div>
-
+    <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+      <h4 style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem"><i class="bi bi-tools"></i> Insumos utilizados (opcional)</h4>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:0.5rem"><select class="form-input" id="ventaMayInsumoSelect" style="flex:1" onchange="addVentaMayInsumoFromSelect()"><option value="">+ Agregar insumo...</option></select></div>
+      <div id="ventaMayInsumosList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-secondary" onclick="closeVentaMayModal()">Cancelar</button><button class="btn btn-primary" onclick="saveVentaMay()" id="saveVentaMayBtn" style="background:#5b2d8a;border-color:#5b2d8a"><i class="bi bi-check-lg"></i> Registrar Venta</button></div>
+    </div></div></div>
     <!-- MODAL CARGA MASIVA % MAYORISTA -->
     <div class="modal-overlay" id="mayoristaPctModal"><div class="modal-box" style="max-width:600px"><div class="modal-header"><h3><i class="bi bi-percent"></i> Asignar % Ganancia Mayorista</h3><button class="modal-close" onclick="document.getElementById('mayoristaPctModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div>
     <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:1rem">Asignale el % Ganancia Mayorista a cada grupo de productos. Dejá vacío para no modificar ese grupo.</p>
