@@ -69,5 +69,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /ventasMayoristas/{doc} {
+      allow read, write: if isAdmin();
+    }
+    match /config/ventasMayCount {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
