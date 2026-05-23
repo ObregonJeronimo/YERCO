@@ -495,7 +495,10 @@ async function confirmCheckout(){
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
         /* Abrir WhatsApp con el mensaje preparado */
-        setTimeout(()=>{window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank');},300);
+        /* Abrir WhatsApp - usar location.href para iOS (window.open bloqueado en async) */
+        const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
+        const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+        if(isIOS){window.location.href=waUrl;}else{setTimeout(()=>{window.open(waUrl,'_blank');},300);}
     }catch(e){
         console.error('Error en checkout:',e);
         showToast('Error: '+(e.message||'No se pudo confirmar'),'error');
