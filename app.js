@@ -572,22 +572,26 @@ let _pedidosListener = null;
 const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 /* Inicializar auth */
-let _loginActivo = false; /* true solo cuando el usuario tocó el botón de login */
+let _loginActivo = sessionStorage.getItem('_authLoginActivo') === '1';
 
 authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
     /* Manejar redirect de vuelta desde Google en iOS */
     authClient.getRedirectResult().then(result => {
         if (result && result.user) {
+            sessionStorage.setItem('_authLoginActivo', '1');
             _loginActivo = true;
             _onUserLogin(result.user, true);
+            sessionStorage.removeItem('_authLoginActivo');
         }
     }).catch(() => {});
 });
 
 authClient.onAuthStateChanged(async user => {
     if (user) {
-        await _onUserLogin(user, _loginActivo);
+        const wasActive = _loginActivo;
         _loginActivo = false;
+        sessionStorage.removeItem('_authLoginActivo');
+        await _onUserLogin(user, wasActive);
     } else {
         _onUserLogout();
     }
@@ -649,16 +653,16 @@ function _updateNavAuth(user) {
 
 function authLogin() {
     _loginActivo = true;
+    sessionStorage.setItem('_authLoginActivo', '1');
     const provider = new firebase.auth.GoogleAuthProvider();
     if (_isIOS) {
         authClient.signInWithRedirect(provider);
     } else {
         authClient.signInWithPopup(provider).then(result => {
             if (result && result.user) {
-                _loginActivo = true;
-                _onUserLogin(result.user, true);
+                sessionStorage.setItem('_authLoginActivo', '1');
             }
-        }).catch(() => { _loginActivo = false; });
+        }).catch(() => { _loginActivo = false; sessionStorage.removeItem('_authLoginActivo'); });
     }
 }
 
