@@ -677,8 +677,27 @@ function authLogin() {
         _loginActivo = true;
         sessionStorage.setItem('_authLoginActivo', '1');
         const provider = new firebase.auth.GoogleAuthProvider();
-        const auth = firebase.auth();
-        auth.signInWithRedirect(provider);
+        provider.addScope('email');
+        provider.addScope('profile');
+        if (_isIOS) {
+            firebase.auth().signInWithRedirect(provider);
+        } else {
+            firebase.auth().signInWithPopup(provider)
+                .then(result => {
+                    if (result.user) {
+                        _loginActivo = true;
+                        _onUserLogin(result.user, true);
+                    }
+                })
+                .catch(e => {
+                    console.error('popup error:', e);
+                    if (e.code !== 'auth/popup-closed-by-user') {
+                        showToast('Error: ' + e.message, 'error');
+                    }
+                    _loginActivo = false;
+                    sessionStorage.removeItem('_authLoginActivo');
+                });
+        }
     } catch(e) {
         console.error('authLogin error:', e);
         showToast('Error al iniciar sesión: ' + e.message, 'error');
