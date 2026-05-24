@@ -101,14 +101,28 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="state-view" id="needsLoginArea">
+            <div class="icon">&#128274;</div>
+            <h2 style="color:#333">Inicia sesión para continuar</h2>
+            <p>Necesitás iniciar sesión con tu cuenta de Google para dejar una reseña.</p>
+            <button class="btn-back" onclick="loginGoogle()">Iniciar sesión con Google</button>
+        </div>
+
+        <div class="state-view" id="alreadyReviewedArea">
+            <div class="icon">&#9733;</div>
+            <h2 style="color:#2d5a3a">Ya dejaste tu reseña</h2>
+            <p>Solo se permite una reseña por cuenta. ¡Gracias por tu opinión!</p>
+            <a href="https://yerco.ar" class="btn-back">Volver a Yerco</a>
+        </div>
+<div class="toast" id="toast"></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
-        let selectedStars=0, tokenId=null;
+        let selectedStars=0, tokenId=null, currentUser=null;
 
         function setStars(n){
             selectedStars=n;
@@ -124,49 +138,80 @@
         }
 
         function showView(id){
-            ['loadingArea','formArea','successArea','usedArea','invalidArea'].forEach(v=>{
+            ['loadingArea','formArea','successArea','usedArea','invalidArea','needsLoginArea','alreadyReviewedArea'].forEach(v=>{
                 document.getElementById(v).style.display=v===id?'block':'none';
             });
+        }
+
+        function loginGoogle(){
+            const provider=new firebase.auth.GoogleAuthProvider();
+            firebase.auth().signInWithPopup(provider).catch(e=>showToast('Error al iniciar sesión'));
+        }
+
+        async function checkAlreadyReviewed(uid){
+            /* Verifica si el usuario ya tiene una reseña completada (usado=true) */
+            const snap=await db.collection('resenas')
+                .where('clienteAuthUid','==',uid)
+                .where('usado','==',true)
+                .limit(1).get();
+            return !snap.empty;
         }
 
         async function init(){
             const params=new URLSearchParams(window.location.search);
             tokenId=params.get('id');
             if(!tokenId){showView('invalidArea');return;}
-            try{
-                const [doc,cfgDoc]=await Promise.all([
-                    db.collection('resenas').doc(tokenId).get(),
-                    db.collection('config').doc('resenasConfig').get()
-                ]);
-                if(!doc.exists){showView('invalidArea');return;}
-                if(doc.data().usado){showView('usedArea');return;}
-                if(cfgDoc.exists){
-                    const cfg=cfgDoc.data();
-                    const p1=cfg.pregunta1||{texto:'Tu comentario',placeholder:'¿Qué te pareció? ¿Qué podemos mejorar?',activa:true};
-                    const p2=cfg.pregunta2||{activa:false};
-                    /* Pregunta 1 */
-                    if(p1.activa!==false){
-                        document.getElementById('campo1Label').textContent=p1.texto||'Tu comentario';
-                        document.getElementById('rComentario').placeholder=p1.placeholder||'¿Qué te pareció? ¿Qué podemos mejorar?';
-                        document.getElementById('campo1Wrap').style.display='block';
-                    }else{
-                        document.getElementById('campo1Wrap').style.display='none';
-                    }
-                    /* Pregunta 2 */
-                    if(p2.activa){
-                        document.getElementById('campo2Label').textContent=p2.texto||'Pregunta extra';
-                        document.getElementById('rExtra').placeholder=p2.placeholder||'Tu respuesta...';
-                        document.getElementById('campo2Wrap').style.display='block';
-                    }
+
+            /* Esperar estado de auth antes de continuar */
+            firebase.auth().onAuthStateChanged(async user=>{
+                currentUser=user;
+                if(!user){
+                    showView('needsLoginArea');
+                    return;
                 }
-                showView('formArea');
-            }catch(e){
-                console.error(e);
-                showView('invalidArea');
-            }
+                try{
+                    /* Verificar si ya dejó una reseña con esta cuenta */
+                    const yaReseño=await checkAlreadyReviewed(user.uid);
+                    if(yaReseño){showView('alreadyReviewedArea');return;}
+
+                    const [doc,cfgDoc]=await Promise.all([
+                        db.collection('resenas').doc(tokenId).get(),
+                        db.collection('config').doc('resenasConfig').get()
+                    ]);
+                    if(!doc.exists){showView('invalidArea');return;}
+                    if(doc.data().usado){showView('usedArea');return;}
+
+                    /* Pre-llenar nombre con el de la cuenta Google */
+                    const nombreInput=document.getElementById('rNombre');
+                    if(user.displayName&&!nombreInput.value)nombreInput.value=user.displayName;
+
+                    if(cfgDoc.exists){
+                        const cfg=cfgDoc.data();
+                        const p1=cfg.pregunta1||{texto:'Tu comentario',placeholder:'¿Qué te pareció? ¿Qué podemos mejorar?',activa:true};
+                        const p2=cfg.pregunta2||{activa:false};
+                        if(p1.activa!==false){
+                            document.getElementById('campo1Label').textContent=p1.texto||'Tu comentario';
+                            document.getElementById('rComentario').placeholder=p1.placeholder||'¿Qué te pareció? ¿Qué podemos mejorar?';
+                            document.getElementById('campo1Wrap').style.display='block';
+                        }else{
+                            document.getElementById('campo1Wrap').style.display='none';
+                        }
+                        if(p2.activa){
+                            document.getElementById('campo2Label').textContent=p2.texto||'Pregunta extra';
+                            document.getElementById('rExtra').placeholder=p2.placeholder||'Tu respuesta...';
+                            document.getElementById('campo2Wrap').style.display='block';
+                        }
+                    }
+                    showView('formArea');
+                }catch(e){
+                    console.error(e);
+                    showView('invalidArea');
+                }
+            });
         }
 
         async function submitReview(){
+            if(!currentUser){showView('needsLoginArea');return;}
             const nombre=document.getElementById('rNombre').value.trim();
             const comentario=document.getElementById('rComentario').value.trim();
             if(!nombre){showToast('Escribi tu nombre');return;}
@@ -175,6 +220,10 @@
             const btn=document.getElementById('submitBtn');
             btn.disabled=true;btn.textContent='Enviando...';
             try{
+                /* Doble check: verificar que no haya dejado reseña mientras tenía el form abierto */
+                const yaReseño=await checkAlreadyReviewed(currentUser.uid);
+                if(yaReseño){showView('alreadyReviewedArea');return;}
+
                 const extra=document.getElementById('rExtra').value.trim();
                 const updateData={
                     nombre:nombre,
@@ -182,7 +231,9 @@
                     comentario:comentario,
                     fecha:new Date(),
                     visible:true,
-                    usado:true
+                    usado:true,
+                    clienteAuthUid:currentUser.uid,
+                    clienteEmail:currentUser.email
                 };
                 if(extra)updateData.respuestaExtra=extra;
                 await db.collection('resenas').doc(tokenId).update(updateData);
