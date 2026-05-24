@@ -964,8 +964,15 @@ function _cargarPedidosCliente() {
         .onSnapshot(snap => {
             _todosPedidosCliente = snap.docs.map(d => ({ id: d.id, ...d.data(), creadoEn: d.data().creadoEn?.toDate?.() || new Date() }));
             _renderPedidosCliente();
-        }, () => {
-            c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">No se pudieron cargar los pedidos.</div>';
+        }, err => {
+            console.warn('pedidos listener error:', err);
+            /* Fallback sin orderBy si falta el índice */
+            db.collection('pedidos').where('clienteAuthUid', '==', clienteAuth.uid).get()
+                .then(snap => {
+                    _todosPedidosCliente = snap.docs.map(d => ({ id: d.id, ...d.data(), creadoEn: d.data().creadoEn?.toDate?.() || new Date() })).sort((a,b)=>b.creadoEn-a.creadoEn);
+                    _renderPedidosCliente();
+                })
+                .catch(() => { c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">Sin pedidos aún.</div>'; });
         });
 }
 

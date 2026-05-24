@@ -39,7 +39,7 @@ service cloud.firestore {
         && request.resource.data.origen == 'web';
       /* Leer: admin o el propio cliente */
       allow read: if isAdmin()
-        || (isAuthUser() && resource.data.clienteAuthUid == request.auth.uid);
+        || (isAuthUser() && 'clienteAuthUid' in resource.data && resource.data.clienteAuthUid == request.auth.uid);
       allow update, delete: if isAdmin();
     }
 
