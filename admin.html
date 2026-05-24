@@ -620,16 +620,14 @@
         function toggleVtaDsc(id){var w=document.getElementById('dscwrap-vta-'+id);if(!w)return;if(w.style.display==='none'){w.style.display='flex';w.querySelector('input').focus();}else{w.style.display='none';setVentaItemDsc(id,0);w.querySelector('input').value=0;}}
         function setVentaItemDsc(id,val){var pct=Math.min(100,Math.max(0,parseInt(val)||0));var inp=document.getElementById('dscwrap-vta-'+id)?.querySelector('input');if(inp&&parseInt(inp.value)!==pct)inp.value=pct;var it=ventaItems.find(function(x){return x.id===id;});if(!it)return;it.descuento=pct;var sub=Math.round(it.precio*(1-pct/100))*it.cantidad;var item=document.getElementById('dscwrap-vta-'+id)?.closest('.venta-item');if(item){var subEl=item.querySelector('.vi-sub');if(subEl)subEl.textContent='$'+sub.toLocaleString('es-AR');var badgeEl=document.getElementById('badge-vta-'+id);if(badgeEl){badgeEl.textContent=pct>0?'-'+pct+'%':'';badgeEl.style.display=pct>0?'inline':'none';}}var t=calcularTotalesVenta();var totalEl=document.getElementById('ventaTotal');if(totalEl)totalEl.textContent='$'+t.total.toLocaleString('es-AR');}
         function renderVentaItems(){
-            const c=document.getElementById('ventaItems');
-            const bd=document.getElementById('ventaTotalBreakdown');
-            if(!ventaItems.length){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Agrega productos buscando arriba</div>';if(bd)bd.innerHTML='';document.getElementById('ventaTotal').textContent='$0';return;}
-            c.innerHTML=ventaItems.map(function(i){
+            var c=document.getElementById('ventaItems');
+            if(!ventaItems.length){c.innerHTML='<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5rem 0">Agrega productos buscando arriba</div>';var bde=document.getElementById('ventaTotalBreakdown');if(bde)bde.innerHTML='';document.getElementById('ventaTotal').textContent='$0';return;}
                 var precioDsc=Math.round(i.precio*(1-(i.descuento||0)/100));
                 var sub=precioDsc*i.cantidad;
-                var dscBadge=(i.descuento||0)>0?'<span style="background:#e6a817;color:#000;border-radius:4px;padding:1px 5px;font-size:0.68rem;font-weight:700">-'+(i.descuento)+'%</span>':'';
+                var dscBadge=(i.descuento||0)>0?'<span id="badge-vta-'+i.id+'" style="background:#e6a817;color:#000;border-radius:4px;padding:1px 5px;font-size:0.68rem;font-weight:700">-'+(i.descuento)+'%</span>':'<span id="badge-vta-'+i.id+'" style="display:none"></span>';
                 var dscInput='<div class="vi-dsc-wrap" id="dscwrap-vta-'+i.id+'" style="display:none;align-items:center;gap:3px"><span style="font-size:0.72rem;color:var(--text-dim)">Desc%</span><input type="number" min="0" max="100" value="'+(i.descuento||0)+'" style="width:46px;padding:2px 4px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);text-align:center;font-size:0.78rem" oninput="setVentaItemDsc(\''+i.id+'\',this.value)"></div>';
                 return '<div class="venta-item" style="flex-wrap:wrap">'+
-                    '<span class="vi-name">'+i.nombre+'</span>'+
+                    '<span class="vi-name">'+esc(i.nombre)+'</span>'+
                     '<span class="vi-price">$'+i.precio.toLocaleString('es-AR')+'</span>'+
                     dscBadge+
                     '<button onclick="toggleVtaDsc(\''+i.id+'\')" style="background:none;border:1px solid var(--border);color:#e6a817;border-radius:4px;padding:1px 5px;cursor:pointer;font-size:0.75rem;font-weight:700" title="Descuento individual">%</button>'+
@@ -640,23 +638,26 @@
                     '<button class="vi-remove" onclick="removeVentaItem(\''+i.id+'\')"><i class="bi bi-x"></i></button>'+
                     '</div>';
             }).join('');
-            const t=calcularTotalesVenta();
-            const costoTotalVta=ventaItems.reduce((s,i)=>s+(i.costo||0)*i.cantidad,0);
+            var t=calcularTotalesVenta();
+            var bd=document.getElementById('ventaTotalBreakdown');
+            var costoTotalVta=ventaItems.reduce(function(s,i){return s+(i.costo||0)*i.cantidad;},0);
             if(bd){
-                let html='<div class="venta-subtotal-row"><span>Subtotal productos</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
+                var bh='<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">';
+                bh+='<div class="venta-subtotal-row"><span>Subtotal productos</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
                 if(t.descuentoPct>0){
-                    html+='<div class="venta-subtotal-row" style="color:#e6a23c"><span><i class="bi bi-tag"></i> Descuento ('+t.descuentoPct+'%)</span><span>-$'+t.descuentoMonto.toLocaleString('es-AR')+'</span></div>';
+                    bh+='<div class="venta-subtotal-row" style="color:#e6a23c"><span><i class="bi bi-tag"></i> Descuento ('+t.descuentoPct+'%)</span><span>-$'+t.descuentoMonto.toLocaleString('es-AR')+'</span></div>';
                 }
                 if(ventaTipoEntrega==='envio'){
-                    const envioTxt=t.envio===0?'<span style="color:#27ae60;font-weight:600">GRATIS</span>':'$'+t.envio.toLocaleString('es-AR');
-                    html+='<div class="venta-subtotal-row"><span><i class="bi bi-truck"></i> Envío</span><span>'+envioTxt+'</span></div>';
+                    var envioTxt=t.envio===0?'<span style="color:#27ae60;font-weight:600">GRATIS</span>':'$'+t.envio.toLocaleString('es-AR');
+                    bh+='<div class="venta-subtotal-row"><span><i class="bi bi-truck"></i> Envío</span><span>'+envioTxt+'</span></div>';
                 }else{
-                    html+='<div class="venta-subtotal-row" style="font-style:italic"><span><i class="bi bi-shop"></i> Retiro en local</span><span>sin cargo</span></div>';
+                    bh+='<div class="venta-subtotal-row" style="font-style:italic"><span><i class="bi bi-shop"></i> Retiro en local</span><span>sin cargo</span></div>';
                 }
                 if(costoTotalVta>0){
-                    html+='<div class="venta-subtotal-row" style="color:var(--text-dim);border-top:1px dashed var(--border);margin-top:4px;padding-top:4px"><span><i class="bi bi-box-seam"></i> Costo total</span><span>$'+costoTotalVta.toLocaleString('es-AR')+'</span></div>';
+                    bh+='<div class="venta-subtotal-row" style="color:var(--text-dim);border-top:1px dashed var(--border);margin-top:4px;padding-top:4px"><span><i class="bi bi-box-seam"></i> Costo total</span><span>$'+costoTotalVta.toLocaleString('es-AR')+'</span></div>';
                 }
-                bd.innerHTML=html;
+                bh+='</div>';
+                bd.innerHTML=bh;
             }
             document.getElementById('ventaTotal').textContent='$'+t.total.toLocaleString('es-AR');
         }
