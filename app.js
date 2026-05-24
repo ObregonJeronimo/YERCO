@@ -651,7 +651,7 @@ function _updateNavAuth(user) {
     authBtn.style.display = 'flex';
     if (user && clienteAuth) {
         loginBtn.style.display = 'none';
-        if (loginBtnMobile) loginBtnMobile.style.display = 'flex';
+        if (loginBtnMobile) loginBtnMobile.style.display = 'none';
         userBtn.style.display = 'flex';
         const nombre = clienteAuth.nombre || user.displayName || '';
         const apellido = clienteAuth.apellido || '';
