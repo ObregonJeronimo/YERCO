@@ -98,7 +98,15 @@
                 </div>
                 <p class="chk-retiro-info" id="chkRetiroInfo">Dirección de retiro: <strong>Tablada 16, Villa Allende</strong> · <a href="https://www.google.com/maps/place/Maxi+Kiosco+Dof/@-31.2922992,-64.3001027,17z/data=!3m1!4b1!4m6!3m5!1s0x94329d19667bbe3f:0x39cd168bd783ea1e!8m2!3d-31.2922992!4d-64.2975278!16s%2Fg%2F11bw68crnw?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" class="chk-mapa-link"><i class="bi bi-geo-alt-fill"></i> Ubicación</a></p>
             </div>
-            <div class="chk-section">
+            <!-- Login requerido -->
+            <div id="chkLoginRequired" style="display:none" class="chk-section">
+                <div style="text-align:center;padding:1rem 0">
+                    <i class="bi bi-person-lock" style="font-size:2rem;color:var(--color-primary);display:block;margin-bottom:0.75rem"></i>
+                    <p style="margin-bottom:1rem;color:#666;font-size:0.95rem">Iniciá sesión para confirmar tu pedido</p>
+                    <button onclick="authLogin()" style="background:var(--color-primary);color:#fff;border:none;border-radius:10px;padding:0.75rem 1.5rem;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem"><i class="bi bi-google"></i> Iniciar sesión con Google</button>
+                </div>
+            </div>
+            <div id="chkDatosSection" class="chk-section">
                 <label class="chk-section-label">Datos de contacto</label>
                 <div class="chk-row">
                     <div class="chk-field">
@@ -116,6 +124,12 @@
                 </div>
                 <div class="chk-field" id="chkDireccionGroup">
                     <label for="chkDireccion">Dirección de envío *</label>
+                    <!-- Selector de direcciones guardadas -->
+                    <div id="chkDirGuardadasWrap" style="display:none;margin-bottom:0.5rem">
+                        <select id="chkDirSelect" class="auth-input" onchange="onSelectDireccion(this.value)" style="margin-bottom:0.4rem">
+                            <option value="">Escribir nueva dirección...</option>
+                        </select>
+                    </div>
                     <input type="text" id="chkDireccion" placeholder="Calle, número, barrio" autocomplete="street-address">
                 </div>
                 <div class="chk-field">

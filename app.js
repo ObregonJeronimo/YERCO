@@ -366,22 +366,59 @@ function checkout() {
 }
 
 function openCheckoutModal(){
-    /* Precargar datos guardados si existen */
-    try{
-        const saved=JSON.parse(localStorage.getItem('yerco_checkout_data')||'{}');
-        if(saved.nombre)document.getElementById('chkNombre').value=saved.nombre;
-        if(saved.apellido)document.getElementById('chkApellido').value=saved.apellido;
-        if(saved.telefono)document.getElementById('chkTelefono').value=saved.telefono;
-        if(saved.direccion)document.getElementById('chkDireccion').value=saved.direccion;
-        if(saved.notas)document.getElementById('chkNotas').value=saved.notas;
-        if(saved.tipoEntrega)setCheckoutEntrega(saved.tipoEntrega);
-        else setCheckoutEntrega('envio');
-    }catch(e){setCheckoutEntrega('envio');}
+    const loginRequired = document.getElementById('chkLoginRequired');
+    const datosSection = document.getElementById('chkDatosSection');
+    const confirmBtn = document.getElementById('chkConfirmBtn');
+
+    if (!clienteAuth) {
+        /* No logueado: mostrar bloque de login */
+        if (loginRequired) loginRequired.style.display = 'block';
+        if (datosSection) datosSection.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+    } else {
+        /* Logueado: pre-llenar datos */
+        if (loginRequired) loginRequired.style.display = 'none';
+        if (datosSection) datosSection.style.display = 'block';
+        if (confirmBtn) confirmBtn.style.display = '';
+        /* Pre-llenar con datos del cliente */
+        document.getElementById('chkNombre').value = clienteAuth.nombre || '';
+        document.getElementById('chkApellido').value = clienteAuth.apellido || '';
+        document.getElementById('chkTelefono').value = clienteAuth.telefono || '';
+        /* Cargar direcciones guardadas */
+        const dirs = clienteAuth.direcciones || [];
+        const wrap = document.getElementById('chkDirGuardadasWrap');
+        const sel = document.getElementById('chkDirSelect');
+        if (dirs.length && wrap && sel) {
+            sel.innerHTML = '<option value="">Escribir nueva dirección...</option>' +
+                dirs.map((d,i) => `<option value="${i}">${d.nombre} — ${d.texto}</option>`).join('');
+            wrap.style.display = 'block';
+        } else if (wrap) {
+            wrap.style.display = 'none';
+        }
+        /* Intentar precargar de localStorage también */
+        try {
+            const saved = JSON.parse(localStorage.getItem('yerco_checkout_data') || '{}');
+            if (saved.direccion) document.getElementById('chkDireccion').value = saved.direccion;
+            if (saved.notas) document.getElementById('chkNotas').value = saved.notas;
+            if (saved.tipoEntrega) setCheckoutEntrega(saved.tipoEntrega);
+            else setCheckoutEntrega('envio');
+        } catch(e) { setCheckoutEntrega('envio'); }
+    }
     updateCheckoutResumen();
     document.getElementById('checkoutOverlay').classList.add('show');
     document.getElementById('checkoutModal').classList.add('show');
-    document.body.style.overflow='hidden';
-    setTimeout(()=>document.getElementById('chkNombre')?.focus(),150);
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('chkNombre')?.focus(), 150);
+}
+
+function onSelectDireccion(val) {
+    const dirs = clienteAuth?.direcciones || [];
+    const input = document.getElementById('chkDireccion');
+    if (val === '' || !dirs[val]) {
+        if (input) input.value = '';
+    } else {
+        if (input) input.value = dirs[parseInt(val)].texto;
+    }
 }
 
 function closeCheckoutModal(){
@@ -466,6 +503,7 @@ async function confirmCheckout(){
             numero:pedidoNum,
             estado:'pendiente',
             cliente:clienteNombreCompleto,
+            clienteAuthUid:clienteAuth?clienteAuth.uid:null,
             telefono:telefonoLimpio,
             direccion:tipoEntrega==='envio'?direccion:null,
             notas:notas||null,
@@ -512,7 +550,7 @@ function initScrollAnimations(){if(window.innerWidth<768||window.matchMedia('(pr
 
 function toggleCategoryFilters(){const f=document.getElementById('categoryFilters');const btn=document.getElementById('toggleCatsBtn');f.classList.toggle('cat-hidden');if(f.classList.contains('cat-hidden')){btn.innerHTML='<i class="bi bi-funnel"></i> Categorias';}else{btn.innerHTML='<i class="bi bi-funnel-fill"></i> Categorias';}}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
 
 // Cargar contenido editable desde Firestore
 async function loadSiteContent(){try{const snap=await db.collection('config').doc('siteContent').get();if(!snap.exists)return;const d=snap.data();const s=(id,val)=>{const el=document.querySelector(id);if(el&&val)el.textContent=val;};s('.hero-badge span',d.heroBadge);const tl=document.querySelectorAll('.title-line');if(tl[0]&&d.heroTitle1)tl[0].textContent=d.heroTitle1;const th=document.querySelectorAll('.title-highlight');if(th[0]&&d.heroTitle2)th[0].textContent=d.heroTitle2;s('.hero-subtitle',d.heroSubtitle);const stats=document.querySelectorAll('.stat-item');if(stats[0]&&d.stat1Num){stats[0].querySelector('.stat-number').textContent=d.stat1Num;stats[0].querySelector('.stat-label').textContent=d.stat1Label||'';}if(stats[1]&&d.stat2Num){stats[1].querySelector('.stat-number').textContent=d.stat2Num;stats[1].querySelector('.stat-label').textContent=d.stat2Label||'';}s('.why-us-section .section-tag',d.nosotrosTag);s('.why-us-section .section-title',d.nosotrosTitulo);s('.why-us-text',d.nosotrosTexto);const badges=document.querySelectorAll('.trust-badge span');if(badges[0]&&d.badge1)badges[0].textContent=d.badge1;if(badges[1]&&d.badge2)badges[1].textContent=d.badge2;const cards=document.querySelectorAll('.feature-card');if(cards[0]){if(d.card1t)cards[0].querySelector('h4').textContent=d.card1t;if(d.card1p)cards[0].querySelector('p').textContent=d.card1p;}if(cards[1]){if(d.card2t)cards[1].querySelector('h4').textContent=d.card2t;if(d.card2p)cards[1].querySelector('p').textContent=d.card2p;}if(cards[2]){if(d.card3t)cards[2].querySelector('h4').textContent=d.card3t;if(d.card3p)cards[2].querySelector('p').textContent=d.card3p;}if(cards[3]){if(d.card4t)cards[3].querySelector('h4').textContent=d.card4t;if(d.card4p)cards[3].querySelector('p').textContent=d.card4p;}s('.cta-title',d.ctaTitulo);s('.cta-text',d.ctaTexto);s('.footer-description',d.footerDesc);if(d.instagram){const ig=document.querySelector('.social-links a[aria-label="Instagram"]');if(ig)ig.href=d.instagram;}if(d.whatsapp){const wa=document.querySelectorAll('a[href*="wa.me"]:not(.wa-dev)');wa.forEach(a=>{const oldHref=a.href;a.href=a.href.replace(/wa\.me\/[0-9]+/,'wa.me/'+d.whatsapp);});}if(d.email){const em=document.querySelector('.social-links a[aria-label="Email"]');if(em)em.href='mailto:'+d.email;}if(d.heroImg&&d.heroImg.startsWith('http')){const ho=document.querySelector('.hero-overlay');if(ho){ho.style.backgroundImage='url('+d.heroImg+')';ho.style.backgroundSize='cover';ho.style.backgroundPosition='center';ho.style.opacity='0.35';}}else{const ho=document.querySelector('.hero-overlay');if(ho)ho.style.opacity='0.35';}if(d.ctaImg&&d.ctaImg.startsWith('http')){const cta=document.querySelector('.cta-background');if(cta){const st=document.createElement('style');st.textContent='.cta-background::before{background-image:url('+d.ctaImg+')!important}';document.head.appendChild(st);}}if(d.logoIcon&&d.logoIcon.startsWith('http')){const li=document.querySelector('.logo-img');if(li)li.src=d.logoIcon;}if(d.logoText&&d.logoText.startsWith('http')){const lt=document.querySelector('.brand-text-img');if(lt)lt.src=d.logoText;}if(d.logoFooter&&d.logoFooter.startsWith('http')){const lf=document.querySelector('.footer-brand img');if(lf)lf.src=d.logoFooter;}}catch(e){console.log('Site content not loaded:',e);}}
