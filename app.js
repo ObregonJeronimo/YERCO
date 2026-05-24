@@ -653,10 +653,7 @@ authClient.onAuthStateChanged(async user => {
 async function _onUserLogin(user, showModal=false) {
     /* Mostrar avatar inmediatamente mientras carga Firestore */
     _updateNavAuth(user);
-    /* Si el checkout está abierto, refrescarlo con los datos del usuario */
-    if(document.getElementById('checkoutModal')?.classList.contains('show')){
-        setTimeout(()=>openCheckoutModal(),300);
-    }
+    /* checkout se refresca al final de _onUserLogin, después de cargar Firestore */
     /* Cargar o crear doc en clientesAuth */
     const ref = db.collection('clientesAuth').doc(user.uid);
     const snap = await ref.get();
@@ -678,6 +675,10 @@ async function _onUserLogin(user, showModal=false) {
     /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */
     if (showModal && (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono)) {
         _showModalDatos();
+    }
+    /* Si el checkout estaba abierto, refrescarlo con los datos */
+    if (document.getElementById('checkoutModal')?.classList.contains('show')) {
+        openCheckoutModal();
     }
 }
 
