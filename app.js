@@ -514,7 +514,8 @@ async function confirmCheckout(){
     /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
     const selDir = document.getElementById('chkDirSelect');
     const nomDir = sanitizeText(document.getElementById('chkNombreDir')?.value, 60);
-    const esNueva = !selDir || selDir.style.display === 'none' || selDir.value === 'nueva';
+    const dirWrap = document.getElementById('chkDirGuardadasWrap');
+    const esNueva = !selDir || !dirWrap || dirWrap.style.display === 'none' || selDir.value === 'nueva';
     if (clienteAuth && esNueva && nomDir) {
         const dirs = clienteAuth.direcciones || [];
         const dirTexto = sanitizeText(document.getElementById('chkDireccion').value, 200);
