@@ -1757,7 +1757,7 @@
                 pb.style.width='75%';pt.textContent='Comparando con BDD ('+allProducts.length+' productos)...';
                 const pdfByName={};uniquePdf.forEach(pp=>{pdfByName[pp.nombre]=pp;});
                 const pdfNames=new Set(uniquePdf.map(p=>p.nombre));
-                const fruticorId=listasData.find(function(l){return l.nombre.toUpperCase()==='FRUTICOR';})?.id||null;const bddByName={};allProducts.filter(function(p){return !fruticorId||p.lista===fruticorId;}).forEach(p=>{bddByName[p.nombre]=p;});
+                const bddByName={};allProducts.forEach(p=>{bddByName[p.nombre]=p;});
                 /* Factor 1: Removed - products in BDD not in PDF (solo los no ocultos - los ya ocultos no hace falta re-procesar) */
                 wpRemoved=[];allProducts.forEach(p=>{if(!pdfNames.has(p.nombre)&&p.oculto!==true&&p.envasadoPropio!==true){wpRemoved.push({id:p.id,nombre:p.nombre,categoria:p.categoria||'',subcategoria:p.subcategoria||'',costo:p.costo||0});}});
                 /* Factor 2: Price changes - cualquier producto del PDF con costo distinto al de la BDD, excluyendo los ocultos (esos los maneja Factor 4) */
@@ -1944,7 +1944,7 @@
                     '<i class="bi bi-box-seam"></i> '+l.nombre+
                     ' <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:1px 7px;font-size:0.75rem">'+count+'</span></button>'+
                     '<button class="rl-editar-btn" data-id="'+l.id+'" style="background:none;border:none;border-left:1px solid rgba(255,255,255,0.2);color:'+tdim+';padding:0.4rem 0.5rem;cursor:pointer;font-size:0.78rem" title="Editar"><i class="bi bi-pencil"></i></button>'+
-                    (l.nombre.toUpperCase()==='FRUTICOR'?'':'<button class="rl-eliminar-btn" data-id="'+l.id+'" data-nombre="'+l.nombre+'" style="background:none;border:none;border-left:1px solid rgba(255,255,255,0.2);color:'+tdim+';padding:0.4rem 0.5rem;cursor:pointer;font-size:0.78rem" title="Eliminar"><i class="bi bi-trash"></i></button>')+
+                    '<button class="rl-eliminar-btn" data-id="'+l.id+'" data-nombre="'+l.nombre+'" style="background:none;border:none;border-left:1px solid rgba(255,255,255,0.2);color:'+tdim+';padding:0.4rem 0.5rem;cursor:pointer;font-size:0.78rem" title="Eliminar"><i class="bi bi-trash"></i></button>'+
                     '</div>';
             });
             if(filtroActual)html+='<button class="rl-filtrar-btn" data-id="" style="background:none;border:1.5px dashed var(--border);border-radius:8px;color:var(--text-dim);padding:0.4rem 0.75rem;cursor:pointer;font-size:0.82rem"><i class="bi bi-x"></i> Ver todos</button>';
