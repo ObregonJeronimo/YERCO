@@ -510,7 +510,7 @@ img { max-width: 100%; height: auto; }
 }
 
 @media (min-width: 992px) {
-  .btn-login-desktop{display:flex !important}
+  .btn-login-desktop{display:flex}
   #loginNavBtnMobile{display:none !important}
   .brand-text-img{height:38px !important}
   .logo-img{width:50px !important;height:50px !important}
