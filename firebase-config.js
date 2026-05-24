@@ -13,8 +13,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// App Check - desactivado temporalmente para debug auth
-// if(typeof firebase.appCheck === 'function'){
-//     const appCheck = firebase.appCheck();
-//     appCheck.activate('6Ldkj5ksAAAAAJASQVftQ9SDUba3-pGM5hkObmtl', true);
-// }
+// App Check - proteccion contra abuso
+if(typeof firebase.appCheck === 'function'){
+    const appCheck = firebase.appCheck();
+    appCheck.activate('6Ldkj5ksAAAAAJASQVftQ9SDUba3-pGM5hkObmtl', true);
+}
