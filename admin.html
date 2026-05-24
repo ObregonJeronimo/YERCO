@@ -2593,14 +2593,17 @@
         function verImgExtra(url){
             const ov=document.createElement('div');
             ov.className='img-visor-overlay';
-            /* stopPropagation para que no cierre el modal de producto */
-            ov.addEventListener('click',function(e){e.stopPropagation();});
+            ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center';
+            /* Bloquear TODOS los clicks para que no lleguen al modal */
+            ov.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();},{capture:true});
+            ov.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();},{capture:true});
             const btnClose=document.createElement('button');
             btnClose.className='img-visor-close';
             btnClose.innerHTML='<i class="bi bi-x-lg"></i>';
-            btnClose.addEventListener('click',function(e){e.stopPropagation();ov.remove();});
+            btnClose.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();ov.remove();});
             const img=document.createElement('img');
             img.src=url;
+            img.style.cssText='max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain';
             ov.appendChild(btnClose);
             ov.appendChild(img);
             document.body.appendChild(ov);
