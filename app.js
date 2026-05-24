@@ -588,13 +588,10 @@ let _loginActivo = sessionStorage.getItem('_authLoginActivo') === '1';
 authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
     authClient.getRedirectResult().then(result => {
         if (result && result.user) {
-            console.log('redirect result user:', result.user.email);
             sessionStorage.setItem('_authLoginActivo', '1');
             _loginActivo = true;
             _onUserLogin(result.user, true);
             sessionStorage.removeItem('_authLoginActivo');
-        } else {
-            console.log('no redirect result');
         }
     }).catch(e => { console.error('getRedirectResult error:', e); });
 });
