@@ -404,6 +404,8 @@ function openCheckoutModal(){
         }
         setCheckoutEntrega('envio');
     }
+    /* Limpiar cupón al abrir nuevo checkout */
+    quitarCupon();
     updateCheckoutResumen();
     document.getElementById('checkoutOverlay').classList.add('show');
     document.getElementById('checkoutModal').classList.add('show');
@@ -581,6 +583,25 @@ async function confirmCheckout(){
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
         /* Abrir WhatsApp con el mensaje preparado */
         /* Abrir WhatsApp - usar location.href para iOS (window.open bloqueado en async) */
+        /* Registrar uso del cupón */
+        if (_cuponAplicado && clienteAuth) {
+            try {
+                const cupSnap = await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get();
+                if (!cupSnap.empty) {
+                    const cupRef = cupSnap.docs[0].ref;
+                    const batch = db.batch();
+                    batch.update(cupRef, { usos: firebase.firestore.FieldValue.increment(1) });
+                    batch.set(db.collection('cuponesUsos').doc(), {
+                        cuponId: cupSnap.docs[0].id,
+                        codigo: _cuponAplicado.codigo,
+                        uid: clienteAuth.uid,
+                        email: clienteAuth.email,
+                        fecha: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    await batch.commit();
+                }
+            } catch(e) { console.warn('Error registrando uso de cupón:', e); }
+        }
         const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
         const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
         if(isIOS){window.location.href=waUrl;}else{setTimeout(()=>{window.open(waUrl,'_blank');},300);}
@@ -1052,13 +1073,32 @@ async function aplicarCupon() {
             if(btn){btn.disabled=false;btn.textContent='Aplicar';}
             return;
         }
-        const cup = snap.docs[0].data();
+        const cupDoc = snap.docs[0];
+        const cup = cupDoc.data();
         const pct = parseInt(cup.porcentaje);
-        /* Validar que el porcentaje sea razonable (no manipulado) */
         if (isNaN(pct) || pct < 1 || pct > 100) {
             if(msg) msg.innerHTML='<span style="color:#e53e3e">Cupón inválido.</span>';
             if(btn){btn.disabled=false;btn.textContent='Aplicar';}
             return;
+        }
+        /* Verificar máximo de usos global */
+        const usos = parseInt(cup.usos || 0);
+        if (cup.maxUsos && usos >= parseInt(cup.maxUsos)) {
+            if(msg) msg.innerHTML='<span style="color:#e53e3e">Este cupón ya alcanzó el máximo de usos.</span>';
+            if(btn){btn.disabled=false;btn.textContent='Aplicar';}
+            return;
+        }
+        /* Verificar uso por cliente (una vez por usuario) */
+        if (clienteAuth) {
+            const yaUsado = await db.collection('cuponesUsos')
+                .where('cuponId', '==', cupDoc.id)
+                .where('uid', '==', clienteAuth.uid)
+                .get();
+            if (!yaUsado.empty) {
+                if(msg) msg.innerHTML='<span style="color:#e53e3e">Ya usaste este cupón anteriormente.</span>';
+                if(btn){btn.disabled=false;btn.textContent='Aplicar';}
+                return;
+            }
         }
         /* Verificar límite de compra */
         const subtotal = carrito.reduce((s,i) => s + i.precio * i.cantidad, 0);

@@ -80,6 +80,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /cuponesUsos/{doc} {
+      allow read: if isAdmin();
+      allow create: if isAuthUser()
+        && request.resource.data.uid == request.auth.uid
+        && validString(request.resource.data.codigo, 30);
+    }
 
     /* ===== CONFIG ===== */
     match /config/{doc} {
