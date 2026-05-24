@@ -2531,8 +2531,46 @@
 
         function prodCarouselNav(dir){
             var total=_getAllProdImgs().length;
+            if(!total)return;
             _prodCarIdx=(_prodCarIdx+dir+total)%total;
-            renderProdCarousel();
+            /* Actualizar tamaños/clases de los slides existentes sin destruir el DOM */
+            var track=document.getElementById('prodCarouselTrack');
+            if(!track){renderProdCarousel();return;}
+            var slides=track.querySelectorAll('.prod-car-slide');
+            var imgs=_getAllProdImgs();
+            /* Recalcular qué imagen corresponde a cada slot */
+            var slots=[-1,0,1];
+            var slotIdx=0;
+            /* Reconstruir solo si el número de slides no coincide */
+            var placeholders=track.children.length;
+            if(placeholders!==3){renderProdCarousel();return;}
+            slots.forEach(function(offset,si){
+                var i=_prodCarIdx+offset;
+                var child=track.children[si];
+                if(i<0||i>=imgs.length){
+                    /* Placeholder */
+                    child.style.cssText='width:160px;height:120px;flex-shrink:0';
+                    child.className='';
+                    child.innerHTML='';
+                    return;
+                }
+                var isCenter=offset===0;
+                child.className='prod-car-slide'+(isCenter?' main-slide':'');
+                child.style.cssText='width:'+(isCenter?'200px':'150px')+';height:'+(isCenter?'140px':'110px')+';margin-top:'+(isCenter?'0':'15px')+';transition:width 0.2s,height 0.2s,margin-top 0.2s';
+                var img=child.querySelector('img');
+                if(img&&img.src!==imgs[i].url&&!imgs[i].url.startsWith('data:')){img.src=imgs[i].url;}
+                else if(!img){renderProdCarousel();return;}
+                /* Badge principal */
+                var badge=child.querySelector('.slide-badge');
+                if(imgs[i].principal&&!badge){var b=document.createElement('div');b.className='slide-badge';b.textContent='PRINCIPAL';child.insertBefore(b,child.firstChild);}
+                else if(!imgs[i].principal&&badge){badge.remove();}
+                /* Actualizar onclick para el índice correcto */
+                var finalI=i;
+                child.onclick=function(e){e.preventDefault();_prodCarIdx=finalI;prodCarouselNav(0);};
+            });
+            /* Actualizar counter */
+            var counter=document.getElementById('prodCarouselCounter');
+            if(counter)counter.textContent=imgs.length+'/20 imágenes';
         }
 
         function renderImgExtraCards(){
