@@ -631,6 +631,7 @@ function _onUserLogout() {
 function _updateNavAuth(user) {
     const authBtn = document.getElementById('authNavBtn');
     const loginBtn = document.getElementById('loginNavBtn');
+    const loginBtnMobile = document.getElementById('loginNavBtnMobile');
     const userBtn = document.getElementById('userNavBtn');
     const initials = document.getElementById('avatarInitials');
     const udNombre = document.getElementById('udNombre');
@@ -639,6 +640,7 @@ function _updateNavAuth(user) {
     authBtn.style.display = 'flex';
     if (user && clienteAuth) {
         loginBtn.style.display = 'none';
+        if (loginBtnMobile) loginBtnMobile.style.display = 'none';
         userBtn.style.display = 'block';
         const nombre = clienteAuth.nombre || user.displayName || '';
         const apellido = clienteAuth.apellido || '';
@@ -647,6 +649,7 @@ function _updateNavAuth(user) {
         udEmail.textContent = user.email;
     } else {
         loginBtn.style.display = 'flex';
+        if (loginBtnMobile) loginBtnMobile.style.display = 'flex';
         userBtn.style.display = 'none';
     }
 }

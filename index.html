@@ -28,7 +28,8 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li></ul></div><div id="authNavBtn" style="display:flex;align-items:center;margin-right:0.5rem">
-  <button id="loginNavBtn" class="btn-auth-nav" onclick="authLogin()" style="display:flex"><i class="bi bi-google"></i> Iniciar sesión</button>
+  <button id="loginNavBtn" class="btn-auth-nav btn-login-desktop" onclick="authLogin()" style="display:flex"><i class="bi bi-google"></i> Iniciar sesión</button>
+  <button id="loginNavBtnMobile" class="btn-auth-icon-mobile" onclick="authLogin()" style="display:none" title="Iniciar sesión"><i class="bi bi-person-circle"></i></button>
   <div id="userNavBtn" style="display:none;position:relative">
     <button class="btn-avatar-nav" id="avatarNavBtn" onclick="toggleUserMenu()"><span id="avatarInitials"></span></button>
     <div class="user-dropdown" id="userDropdown">

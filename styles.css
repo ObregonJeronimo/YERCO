@@ -492,3 +492,29 @@ img { max-width: 100%; height: auto; }
 .dir-card-text{font-size:0.8rem;color:#888}
 .dir-card-del{background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.85rem}
 #authNavBtn{display:flex;align-items:center}
+
+/* === HEADER AUTH RESPONSIVE === */
+.btn-auth-icon-mobile{background:none;border:none;color:var(--color-primary-dark);font-size:1.6rem;cursor:pointer;padding:0.2rem;display:flex;align-items:center;line-height:1}
+.btn-auth-icon-mobile:hover{color:var(--color-primary)}
+
+/* Logo más grande */
+.brand-text-img{height:28px !important}
+.logo-img{width:44px !important;height:44px !important}
+
+@media (max-width: 991px) {
+  .btn-login-desktop{display:none !important}
+  #loginNavBtnMobile{display:flex !important}
+  /* Orden en mobile: logo | nombre | spacer | persona | carrito */
+  .navbar .container{flex-wrap:nowrap}
+  #authNavBtn{order:3;margin-right:0.25rem !important}
+  .cart-btn{order:4}
+  .navbar-toggler{display:none !important}
+  .navbar-collapse{display:none !important}
+}
+
+@media (min-width: 992px) {
+  .btn-login-desktop{display:flex !important}
+  #loginNavBtnMobile{display:none !important}
+  .brand-text-img{height:32px !important}
+  .logo-img{width:50px !important;height:50px !important}
+}
