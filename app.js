@@ -649,9 +649,11 @@ function _updateNavAuth(user) {
     const udEmail = document.getElementById('udEmail');
     if (!authBtn) return;
     authBtn.style.display = 'flex';
+    const loginBtnMobileLogged = document.getElementById('loginNavBtnMobileLogged');
     if (user && clienteAuth) {
         loginBtn.style.display = 'none';
         if (loginBtnMobile) loginBtnMobile.style.display = 'none';
+        if (loginBtnMobileLogged) loginBtnMobileLogged.style.display = 'flex';
         userBtn.style.display = 'flex';
         const nombre = clienteAuth.nombre || user.displayName || '';
         const apellido = clienteAuth.apellido || '';
@@ -661,6 +663,7 @@ function _updateNavAuth(user) {
     } else {
         loginBtn.style.display = 'flex';
         if (loginBtnMobile) loginBtnMobile.style.display = 'flex';
+        if (loginBtnMobileLogged) loginBtnMobileLogged.style.display = 'none';
         userBtn.style.display = 'none';
     }
 }
