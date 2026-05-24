@@ -283,7 +283,13 @@
     <div class="section-content" id="sec-excelNew"><div class="toolbar" style="margin-bottom:1rem"><button class="btn btn-secondary" style="width:auto" onclick="switchSection('products')"><i class="bi bi-arrow-left"></i> Volver</button></div><div class="drop-zone" id="dropZoneNew"><i class="bi bi-cloud-arrow-up"></i><p>Arrastra tu Excel aca o hace clic</p><p class="hint">.xlsx</p></div><input type="file" class="file-input-hidden" id="excelInputNew" accept=".xlsx,.xls"><div class="upload-progress" id="uploadProgressNew" style="display:none"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBarNew"></div></div><p class="progress-text" id="progressTextNew">Procesando...</p></div><div class="format-info"><h4><i class="bi bi-info-circle"></i> Importar Nuevos Productos</h4><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Este Excel <strong>agrega productos nuevos</strong> a la base de datos.</p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Columnas obligatorias: <strong>NOMBRE, CATEGORIA</strong></p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Columnas opcionales: <strong>SUBCATEGORIA, COSTO, PORCENTAJE, STOCK, DESCRIPCION</strong></p><p style="font-size:0.78rem;color:var(--text-dim)">El precio se calcula: COSTO x (1 + PORCENTAJE/100). Si no hay costo, el precio queda en $0.</p></div></div>
     <div class="section-content" id="sec-excelJoaco"><div class="toolbar" style="margin-bottom:1rem"><button class="btn btn-secondary" style="width:auto" onclick="switchSection('products')"><i class="bi bi-arrow-left"></i> Volver</button></div><div class="drop-zone" id="dropZoneJoaco"><i class="bi bi-cloud-arrow-up"></i><p>Subi el Excel modificado por Joaco</p><p class="hint">.xlsx</p></div><input type="file" class="file-input-hidden" id="excelInputJoaco" accept=".xlsx,.xls"><div class="upload-progress" id="uploadProgressJoaco" style="display:none"><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBarJoaco"></div></div><p class="progress-text" id="progressTextJoaco">Procesando...</p></div><div id="joacoResultArea" style="display:none"></div><div class="format-info"><h4><i class="bi bi-stars"></i> Importar Joaco</h4><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem">Subi el Excel exportado que Joaco modifico (NOMBRE, COSTO, PORCENTAJE).</p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem"><strong>Paso 1:</strong> Actualiza costo y porcentaje de los productos que ya existen.</p><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.5rem"><strong>Paso 2:</strong> Los productos nuevos que agrego Joaco se crean con categoria "POR CLASIFICAR" y stock 0. Despues les pones imagen, categoria y stock desde el admin.</p></div></div>
     <div class="section-content" id="sec-clientesAuth">
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total clientes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="caStatTotal">0</strong></div>
+        <div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total ventas</div><strong style="font-size:1.2rem;color:#67c23a" id="caStatVentas">$0</strong></div>
+        <div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total ganado</div><strong style="font-size:1.2rem;color:#e6a817" id="caStatGanado">$0</strong></div>
+      </div>
       <div class="toolbar" style="margin-bottom:1rem;flex-wrap:wrap">
+        <select class="form-input" id="caAuthMesFiltro" style="width:auto;min-width:170px;font-weight:600;background:#1e3a5f;color:#fff;border-color:#1e3a5f" onchange="filterClientesAuth()"><option value="">Todos los meses</option></select>
         <div class="search-box" style="flex:1;min-width:150px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar..." id="clienteAuthSearch" oninput="filterClientesAuth()"></div>
         <select class="form-input" id="clienteAuthSort" style="width:auto" onchange="filterClientesAuth()"><option value="reciente">Más recientes</option><option value="ventas">Mayor ventas</option><option value="nombre">Nombre A-Z</option></select>
         <button class="btn btn-secondary" style="width:auto" onclick="loadClientesAuth()"><i class="bi bi-arrow-clockwise"></i></button>
@@ -2639,9 +2645,21 @@
                     const v=d.data();
                     if(v.clienteAuthUid){
                         const cl=clientesAuthData.find(x=>x.uid===v.clienteAuthUid);
-                        if(cl)cl._totalVentas=(cl._totalVentas||0)+(v.total||0);
+                        if(cl){
+                            cl._totalVentas=(cl._totalVentas||0)+(v.total||0);
+                            const ganancia=(v.items||[]).reduce(function(s,i){return s+(((i.precio||0)-(i.costo||0))*(i.cantidad||1));},0);
+                            cl._totalGanado=(cl._totalGanado||0)+Math.round(ganancia);
+                            /* Por mes */
+                            const fd=v.fecha instanceof Date?v.fecha:(v.fecha?.toDate?v.fecha.toDate():new Date(v.fecha));
+                            const mesKey=fd.getFullYear()+'-'+String(fd.getMonth()+1).padStart(2,'0');
+                            if(!cl._ventasPorMes)cl._ventasPorMes={};
+                            if(!cl._ventasPorMes[mesKey])cl._ventasPorMes[mesKey]={ventas:0,ganado:0};
+                            cl._ventasPorMes[mesKey].ventas+=(v.total||0);
+                            cl._ventasPorMes[mesKey].ganado+=Math.round(ganancia);
+                        }
                     }
                 });
+                _buildMesOptions('caAuthMesFiltro');
                 filterClientesAuth();
             }catch(e){
                 c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';
@@ -2651,15 +2669,33 @@
         function filterClientesAuth(){
             const q=(document.getElementById('clienteAuthSearch')?.value||'').toLowerCase();
             const sort=document.getElementById('clienteAuthSort')?.value||'reciente';
+            const mes=document.getElementById('caAuthMesFiltro')?.value||'';
             let filtered=q?clientesAuthData.filter(c=>
                 (c.nombre||'').toLowerCase().includes(q)||
                 (c.apellido||'').toLowerCase().includes(q)||
                 (c.email||'').toLowerCase().includes(q)||
                 (c.telefono||'').includes(q)
             ):[...clientesAuthData];
+            /* Si hay filtro de mes, filtrar clientes que tienen ventas en ese mes */
+            if(mes){
+                const[my,mm]=mes.split('-').map(Number);
+                filtered=filtered.filter(c=>c._ventasPorMes&&c._ventasPorMes[mes]);
+            }
             if(sort==='nombre')filtered.sort((a,b)=>((a.nombre||'')+(a.apellido||'')).localeCompare((b.nombre||'')+(b.apellido||'')));
-            else if(sort==='ventas')filtered.sort((a,b)=>(b._totalVentas||0)-(a._totalVentas||0));
-            /* reciente: ya viene ordenado por creadoEn desc */
+            else if(sort==='ventas')filtered.sort((a,b)=>{
+                const av=mes?(a._ventasPorMes&&a._ventasPorMes[mes]?.ventas||0):(a._totalVentas||0);
+                const bv=mes?(b._ventasPorMes&&b._ventasPorMes[mes]?.ventas||0):(b._totalVentas||0);
+                return bv-av;
+            });
+            /* Stats */
+            const totalV=filtered.reduce((s,c)=>s+(mes?(c._ventasPorMes&&c._ventasPorMes[mes]?.ventas||0):(c._totalVentas||0)),0);
+            const totalG=filtered.reduce((s,c)=>s+(mes?(c._ventasPorMes&&c._ventasPorMes[mes]?.ganado||0):(c._totalGanado||0)),0);
+            const caStatTotal=document.getElementById('caStatTotal');
+            const caStatVentas=document.getElementById('caStatVentas');
+            const caStatGanado=document.getElementById('caStatGanado');
+            if(caStatTotal)caStatTotal.textContent=filtered.length;
+            if(caStatVentas)caStatVentas.textContent='$'+totalV.toLocaleString('es-AR');
+            if(caStatGanado)caStatGanado.textContent='$'+totalG.toLocaleString('es-AR');
             renderClientesAuth(filtered);
         }
 
@@ -2872,6 +2908,7 @@
             document.getElementById('caModalTel').textContent=cl.telefono||'—';
             document.getElementById('caModalId').textContent=cl.clienteId?'#'+String(cl.clienteId).padStart(4,'0'):'Sin ID';
             document.getElementById('caModalVentas').textContent='$'+(cl._totalVentas||0).toLocaleString('es-AR');
+            document.getElementById('caModalGanado').textContent='$'+(cl._totalGanado||0).toLocaleString('es-AR');
             /* Direcciones */
             const dirs=(cl.direcciones||[]);
             document.getElementById('caModalDirs').innerHTML=dirs.length?dirs.map(d=>'<div style="font-size:0.8rem;padding:3px 0;border-bottom:1px solid var(--border)"><strong>'+esc(d.nombre)+':</strong> '+esc(d.texto)+'</div>').join(''):'<span style="color:var(--text-dim);font-size:0.82rem">Sin direcciones</span>';
@@ -2882,15 +2919,26 @@
             try{
                 const pedSnap=await db.collection('pedidos').where('clienteAuthUid','==',uid).orderBy('creadoEn','desc').get();
                 if(pedSnap.empty){hist.innerHTML='<div style="color:var(--text-dim);font-size:0.82rem;padding:0.5rem 0">Sin pedidos</div>';return;}
+                let totalGanado=0;
                 hist.innerHTML=pedSnap.docs.map(d=>{
                     const p=d.data();
                     const fecha=p.creadoEn?.toDate?p.creadoEn.toDate().toLocaleDateString('es-AR'):'—';
                     const estadoColor={pendiente:'#e6a817',confirmado:'#67c23a',entregado:'#a78bfa'}[p.estado]||'var(--text-dim)';
+                    const ganancia=(p.items||[]).reduce((s,i)=>{
+                        const precioDsc=Math.round((i.precio||0)*(1-(i.descuento||0)/100));
+                        const costoU=i.costo||0;
+                        return s+(precioDsc-costoU)*(i.cantidad||1);
+                    },0);
+                    totalGanado+=ganancia;
                     return '<div style="padding:0.5rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'+
-                        '<div><div style="font-size:0.82rem;font-weight:600">#'+String(p.numero||0).padStart(6,'0')+' <span style="color:'+estadoColor+';font-size:0.72rem">'+( p.estado||'—')+'</span></div>'+
+                        '<div><div style="font-size:0.82rem;font-weight:600">#'+String(p.numero||0).padStart(6,'0')+' <span style="color:'+estadoColor+';font-size:0.72rem">'+(p.estado||'—')+'</span></div>'+
                         '<div style="font-size:0.75rem;color:var(--text-dim)">'+fecha+' · '+(p.items||[]).length+' items</div></div>'+
-                        '<span style="font-weight:700;color:var(--accent-light)">$'+(p.total||0).toLocaleString('es-AR')+'</span></div>';
+                        '<div style="text-align:right"><div style="font-weight:700;color:var(--accent-light)">$'+(p.total||0).toLocaleString('es-AR')+'</div>'+
+                        '<div style="font-size:0.72rem;color:#e6a817">+$'+ganancia.toLocaleString('es-AR')+'</div></div></div>';
                 }).join('');
+                /* Actualizar stat TOTAL GANADO */
+                const tgEl=document.getElementById('caModalGanado');
+                if(tgEl)tgEl.textContent='$'+totalGanado.toLocaleString('es-AR');
             }catch(e){
                 /* Fallback sin orderBy */
                 const pedSnap=await db.collection('pedidos').where('clienteAuthUid','==',uid).get().catch(()=>({docs:[]}));
@@ -3078,6 +3126,10 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
       <div style="background:var(--bg-input);border-radius:var(--radius);padding:0.75rem"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px">ID</div><strong id="caModalId" style="font-family:var(--mono);color:var(--accent-light)">—</strong></div>
       <div style="background:var(--bg-input);border-radius:var(--radius);padding:0.75rem"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px">Total ventas</div><strong id="caModalVentas" style="color:#67c23a">$0</strong></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+      <div style="background:var(--bg-input);border-radius:var(--radius);padding:0.75rem"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:2px">Total ganado</div><strong id="caModalGanado" style="color:#e6a817">$0</strong></div>
+      <div></div>
     </div>
     <div class="form-group"><label>Nombre</label><div id="caModalNombre" style="font-size:0.95rem;font-weight:600;padding:0.4rem 0"></div></div>
     <div class="form-group"><label>Email</label><div id="caModalEmail" style="font-size:0.88rem;color:var(--text-dim)"></div></div>

@@ -512,11 +512,13 @@ function sanitizePhone(val) {
 
 async function confirmCheckout(){
     /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
+    const nomDirInput = document.getElementById('chkNombreDir');
+    const nomDir = sanitizeText(nomDirInput?.value, 60);
     const selDir = document.getElementById('chkDirSelect');
-    const nomDir = sanitizeText(document.getElementById('chkNombreDir')?.value, 60);
-    const dirWrap = document.getElementById('chkDirGuardadasWrap');
-    const esNueva = !selDir || !dirWrap || dirWrap.style.display === 'none' || selDir.value === 'nueva';
-    if (clienteAuth && esNueva && nomDir) {
+    /* Guardar si: hay nombre, y (no hay select visible O eligió "nueva") */
+    const selVisible = selDir && selDir.offsetParent !== null;
+    const esNueva = !selVisible || selDir.value === 'nueva';
+    if (clienteAuth && nomDir && esNueva) {
         const dirs = clienteAuth.direcciones || [];
         const dirTexto = sanitizeText(document.getElementById('chkDireccion').value, 200);
         if (dirs.length < 5 && dirTexto) {
@@ -524,6 +526,7 @@ async function confirmCheckout(){
             try {
                 await db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs });
                 clienteAuth.direcciones = dirs;
+                console.log('Dirección guardada:', nomDir, dirTexto);
             } catch(e) { console.warn('Error guardando dirección:', e); }
         }
     }
