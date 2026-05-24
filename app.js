@@ -655,7 +655,7 @@ function _updateNavAuth(user) {
     authBtn.style.display = 'flex';
     if (user) {
         loginBtn.style.display = 'none';
-        if (loginBtnMobile) loginBtnMobile.style.display = 'none';
+        if (loginBtnMobile){loginBtnMobile.style.display='none';loginBtnMobile.style.visibility='hidden';}
         userBtn.style.display = 'flex';
         const nombre = (clienteAuth && clienteAuth.nombre) || user.displayName || '';
         const apellido = (clienteAuth && clienteAuth.apellido) || '';
