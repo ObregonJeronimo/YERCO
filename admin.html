@@ -2771,7 +2771,7 @@
                 var row=document.createElement('div');
                 row.style.cssText='background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
                 var activo=cup.activo!==false;
-                var limiteText=cup.limiteCompra?'hasta $'+Number(cup.limiteCompra).toLocaleString('es-AR'):'sin límite';
+                var limiteText=cup.limiteCompra?'máx $'+Number(cup.limiteCompra).toLocaleString('es-AR'):'sin límite';
                 var usos=cup.usos||0;var maxU=cup.maxUsos;var usosText=maxU?usos+'/'+maxU+' usos':usos?usos+' uso'+(usos!==1?'s':''):'sin usos';
                 row.innerHTML='<div style="flex:1">'+
                     '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem">'+
@@ -3064,8 +3064,8 @@
       <div class="form-group"><label>% de descuento (1-100)</label><input type="number" class="form-input" id="cuponPct" min="1" max="100" placeholder="Ej: 10"></div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.25rem"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponActivo" checked><span class="toggle-slider"></span></label> Activo</label></div>
     </div>
-    <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleLimite" onchange="toggleCuponLimite()"><span class="toggle-slider"></span></label> Límite de compra mínimo</label></div>
-    <div class="form-group" id="cuponLimiteGroup" style="display:none"><label>Monto mínimo de compra para aplicar el cupón</label><input type="number" class="form-input" id="cuponLimite" min="2" placeholder="Ej: 50000" oninput="if(this.value<0)this.value=0"></div>
+    <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleLimite" onchange="toggleCuponLimite()"><span class="toggle-slider"></span></label> Límite de compra máximo</label></div>
+    <div class="form-group" id="cuponLimiteGroup" style="display:none"><label>Monto máximo de compra para poder usar el cupón</label><input type="number" class="form-input" id="cuponLimite" min="2" placeholder="Ej: 50000" oninput="if(this.value<0)this.value=0"></div>
     <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleMaxUsos" onchange="toggleCuponMaxUsos()"><span class="toggle-slider"></span></label> Límite de usos totales</label></div>
     <div class="form-group" id="cuponMaxUsosGroup" style="display:none"><label>Máximo de usos totales del cupón</label><input type="number" class="form-input" id="cuponMaxUsos" min="1" placeholder="Ej: 50" oninput="if(this.value<1)this.value=1"></div>
     <div class="form-actions"><button class="btn btn-secondary" onclick="closeCuponModal()">Cancelar</button><button class="btn btn-primary" onclick="saveCupon()"><i class="bi bi-check-lg"></i> Guardar</button></div>

@@ -1132,8 +1132,8 @@ async function aplicarCupon() {
         }
         /* Verificar límite de compra */
         const subtotal = carrito.reduce((s,i) => s + i.precio * i.cantidad, 0);
-        if (cup.limiteCompra && subtotal < Number(cup.limiteCompra)) {
-            if(msg) msg.innerHTML='<span style="color:#e53e3e">El cupón requiere un mínimo de $'+Number(cup.limiteCompra).toLocaleString('es-AR')+'.</span>';
+        if (cup.limiteCompra && subtotal > Number(cup.limiteCompra)) {
+            if(msg) msg.innerHTML='<span style="color:#e53e3e">Este cupón solo aplica en pedidos hasta $'+Number(cup.limiteCompra).toLocaleString('es-AR')+'.</span>';
             if(btn){btn.disabled=false;btn.textContent='Aplicar';}
             return;
         }
