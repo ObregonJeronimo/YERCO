@@ -392,15 +392,35 @@
 
         function previewSelectedImage(input){
             const file=input.files[0];if(!file)return;
-            selectedImageFile=file;showImageSize(file);
+            showImageSize(file);
             const reader=new FileReader();
             reader.onload=function(e){
-                _imgPrincipalUrl=e.target.result;
-                existingImageUrl=null;
-                _prodCarIdx=0;
+                if(!_imgPrincipalUrl&&!existingImageUrl){
+                    /* No hay imagen principal: esta es la nueva principal */
+                    selectedImageFile=file;
+                    _imgPrincipalUrl=e.target.result;
+                    existingImageUrl=null;
+                    _prodCarIdx=0;
+                }else{
+                    /* Ya hay principal: subir como extra */
+                    handleImgExtraUploadFile(file);
+                    return;
+                }
                 renderProdCarousel();
             };
             reader.readAsDataURL(file);
+        }
+        async function handleImgExtraUploadFile(file){
+            if(_imgExtraUrls.length>=20){showAdminToast('Máximo 20 imágenes extras','error');return;}
+            try{
+                const url=await uploadImage(file);
+                _imgExtraUrls.push(url);
+                const hidden=document.getElementById('pImagenesExtra');
+                if(hidden)hidden.value=_imgExtraUrls.join('\n');
+                _prodCarIdx=_getAllProdImgs().length-1;
+                renderProdCarousel();
+                showAdminToast('Imagen extra agregada','success');
+            }catch(e){showAdminToast('Error al subir: '+e.message,'error');}
         }
 
         function compressImage(file,maxWidth,quality){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*(maxWidth/w));w=maxWidth;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);const tryWebP=()=>{canvas.toBlob(blob=>{if(blob)resolve(blob);else canvas.toBlob(blob2=>{if(blob2)resolve(blob2);else reject(new Error('Error al comprimir'));},'image/jpeg',quality);},'image/webp',quality);};tryWebP();};img.onerror=()=>reject(new Error('Error al leer imagen'));img.src=URL.createObjectURL(file);});}
