@@ -564,7 +564,18 @@ loadReviews();
 
 
 /* ===== AUTH CLIENTES ===== */
-let authClient; try { authClient = firebase.auth(); } catch(e) { console.warn('auth init:', e); }
+const authClient = firebase.auth();
+
+/* Refresh del estado de auth cuando el DOM esté listo */
+document.addEventListener('DOMContentLoaded', function() {
+    const user = authClient.currentUser;
+    if (user && clienteAuth) {
+        _updateNavAuth(user);
+    } else if (user && !clienteAuth) {
+        /* Sesión existe pero clienteAuth no cargó aún - recargar */
+        _onUserLogin(user, false);
+    }
+});
 let clienteAuth = null; // datos del cliente en Firestore
 let _pedidosListener = null;
 
