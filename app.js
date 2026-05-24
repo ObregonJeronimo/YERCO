@@ -611,6 +611,8 @@ authClient.onAuthStateChanged(async user => {
 });
 
 async function _onUserLogin(user, showModal=false) {
+    /* Mostrar avatar inmediatamente mientras carga Firestore */
+    _updateNavAuth(user);
     /* Cargar o crear doc en clientesAuth */
     const ref = db.collection('clientesAuth').doc(user.uid);
     const snap = await ref.get();
@@ -651,14 +653,14 @@ function _updateNavAuth(user) {
     const udEmail = document.getElementById('udEmail');
     if (!authBtn) return;
     authBtn.style.display = 'flex';
-    if (user && clienteAuth) {
+    if (user) {
         loginBtn.style.display = 'none';
         if (loginBtnMobile) loginBtnMobile.style.display = 'none';
         userBtn.style.display = 'flex';
-        const nombre = clienteAuth.nombre || user.displayName || '';
-        const apellido = clienteAuth.apellido || '';
+        const nombre = (clienteAuth && clienteAuth.nombre) || user.displayName || '';
+        const apellido = (clienteAuth && clienteAuth.apellido) || '';
         initials.textContent = ((nombre[0] || '') + (apellido[0] || '')).toUpperCase() || user.email[0].toUpperCase();
-        udNombre.textContent = nombre + (apellido ? ' ' + apellido : '') || user.email;
+        udNombre.textContent = (nombre + (apellido ? ' ' + apellido : '')) || user.email;
         udEmail.textContent = user.email;
     } else {
         loginBtn.style.display = 'flex';
