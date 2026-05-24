@@ -464,12 +464,28 @@ function updateCheckoutResumen(){
         '<div class="chk-resumen-total"><span>TOTAL</span><span>$'+formatPrice(total)+'</span></div>';
 }
 
+
+/* ===== SEGURIDAD - SANITIZACIÓN ===== */
+function sanitizeText(val, maxLen) {
+    if (!val) return '';
+    /* Eliminar caracteres de control y HTML */
+    return String(val)
+        .replace(/[<>"'`]/g, '')
+        .replace(/[ -]/g, '')
+        .trim()
+        .slice(0, maxLen || 500);
+}
+function sanitizePhone(val) {
+    if (!val) return '';
+    return String(val).replace(/[^0-9+\-\s()]/g, '').trim().slice(0, 30);
+}
+
 async function confirmCheckout(){
-    const nombre=document.getElementById('chkNombre').value.trim();
-    const apellido=document.getElementById('chkApellido').value.trim();
-    const telefono=document.getElementById('chkTelefono').value.trim();
-    const direccion=document.getElementById('chkDireccion').value.trim();
-    const notas=document.getElementById('chkNotas').value.trim();
+    const nombre=sanitizeText(document.getElementById('chkNombre').value, 80);
+    const apellido=sanitizeText(document.getElementById('chkApellido').value, 80);
+    const telefono=sanitizePhone(document.getElementById('chkTelefono').value);
+    const direccion=sanitizeText(document.getElementById('chkDireccion').value, 200);
+    const notas=sanitizeText(document.getElementById('chkNotas').value, 500);
     const tipoEntrega=window._chkTipoEntrega||'envio';
     /* Validaciones */
     if(!nombre){showToast('Ingresá tu nombre','error');document.getElementById('chkNombre').focus();return;}

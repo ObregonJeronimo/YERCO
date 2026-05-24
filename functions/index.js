@@ -113,3 +113,61 @@ exports.notifyTelegramOnNewOrder = onDocumentCreated(
     }
   }
 );
+
+
+/**
+ * RATE LIMITING: bloquea creacion de pedidos si el usuario hizo mas de 5 en la ultima hora
+ * Se ejecuta cuando se crea un documento en /pedidos
+ */
+const {onDocumentCreated: onPedidoCreated} = require('firebase-functions/v2/firestore');
+
+exports.rateLimitPedidos = onDocumentCreated('pedidos/{pedidoId}', async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+
+  const uid = data.clienteAuthUid;
+  if (!uid) return; // sin uid no podemos limitar
+
+  const ahora = new Date();
+  const haceUnaHora = new Date(ahora.getTime() - 60 * 60 * 1000);
+
+  try {
+    const snap = await db.collection('pedidos')
+      .where('clienteAuthUid', '==', uid)
+      .where('creadoEn', '>=', haceUnaHora)
+      .get();
+
+    const LIMITE = 5;
+    if (snap.size > LIMITE) {
+      logger.warn(`Rate limit: UID ${uid} hizo ${snap.size} pedidos en la ultima hora. Eliminando el excedente.`);
+      /* Eliminar el pedido recién creado */
+      await db.collection('pedidos').doc(event.params.pedidoId).delete();
+    }
+  } catch (e) {
+    logger.error('Error en rateLimitPedidos:', e);
+  }
+});
+
+/**
+ * SANITIZACIÓN SERVER-SIDE: limpia y valida pedidos al crearse
+ */
+exports.sanitizarPedido = onDocumentCreated('pedidos/{pedidoId}', async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+
+  function sanitize(val, maxLen) {
+    if (!val) return '';
+    return String(val).replace(/[<>"'`\x00-\x1F\x7F]/g, '').trim().slice(0, maxLen);
+  }
+
+  try {
+    await db.collection('pedidos').doc(event.params.pedidoId).update({
+      cliente: sanitize(data.cliente, 120),
+      telefono: sanitize(data.telefono, 30).replace(/[^0-9+\-\s()]/g, ''),
+      direccion: data.direccion ? sanitize(data.direccion, 200) : null,
+      notas: data.notas ? sanitize(data.notas, 500) : null,
+    });
+  } catch (e) {
+    logger.error('Error en sanitizarPedido:', e);
+  }
+});

@@ -1,89 +1,139 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isAdmin() {
-      return request.auth != null && 
-        request.auth.token.email in [
-          'yerco.cba@gmail.com',
-          'agustinmarqez2@gmail.com',
-          'genaro077caromaggi@gmail.com',
-          'jeroobregon03@gmail.com',
-          'joacobrarda06@gmail.com'
-        ];
+      return request.auth != null && (
+        request.auth.token.email == 'jeroobregon03@gmail.com' ||
+        request.auth.token.email == 'obregonjeronimo@icloud.com'
+      );
     }
+
+    function isAuthUser() {
+      return request.auth != null;
+    }
+
+    function validString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    /* ===== PRODUCTOS ===== */
     match /productos/{doc} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /historial/{doc} {
-      allow read, write: if isAdmin();
-    }
-    match /ventas/{doc} {
-      allow read, write: if isAdmin();
-    }
+
+    /* ===== PEDIDOS ===== */
     match /pedidos/{doc} {
-      allow read: if isAdmin();
-      allow create: if true;
+      /* Crear: solo usuarios autenticados, validando estructura */
+      allow create: if isAuthUser()
+        && request.resource.data.keys().hasAll(['cliente','telefono','items','total','origen','estado','creadoEn'])
+        && validString(request.resource.data.cliente, 120)
+        && validString(request.resource.data.telefono, 30)
+        && request.resource.data.total is number
+        && request.resource.data.total > 0
+        && request.resource.data.total < 10000000
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 100
+        && request.resource.data.origen == 'web';
+      /* Leer: admin o el propio cliente */
+      allow read: if isAdmin()
+        || (isAuthUser() && resource.data.clienteAuthUid == request.auth.uid);
       allow update, delete: if isAdmin();
     }
-    match /config/telegram {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    match /config/pedidosCount {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /config/resenasConfig {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /config/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /clientes/{doc} {
-      allow read: if isAdmin();
-      allow create: if true;
-      allow update: if isAdmin() || (resource.data.origen == 'web');
-      allow delete: if isAdmin();
-    }
-    match /resenas/{doc} {
-      allow read: if true;
-      allow create: if isAdmin();
-      allow update: if resource.data.usado == false;
-      allow delete: if isAdmin();
-    }
-    match /_categorias/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /packs/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /insumos/{doc} {
+
+    /* ===== VENTAS ===== */
+    match /ventas/{doc} {
       allow read, write: if isAdmin();
-    }
-    match /listas/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /cupones/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /clientesAuth/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    match /pedidos/{doc} {
-      allow read: if request.auth != null && resource.data.clienteAuthUid == request.auth.uid;
     }
     match /ventasMayoristas/{doc} {
       allow read, write: if isAdmin();
     }
+
+    /* ===== CLIENTES ===== */
+    match /clientes/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ===== CLIENTES AUTH ===== */
+    match /clientesAuth/{uid} {
+      allow read: if isAdmin() || (isAuthUser() && request.auth.uid == uid);
+      allow create: if isAuthUser() && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['email','nombre','apellido','telefono','direcciones','creadoEn'])
+        && validString(request.resource.data.email, 200)
+        && validString(request.resource.data.nombre, 80)
+        && validString(request.resource.data.apellido, 80)
+        && validString(request.resource.data.telefono, 30)
+        && request.resource.data.direcciones is list
+        && request.resource.data.direcciones.size() <= 5;
+      allow update: if isAdmin()
+        || (isAuthUser() && request.auth.uid == uid
+          && (!('nombre' in request.resource.data) || validString(request.resource.data.nombre, 80))
+          && (!('apellido' in request.resource.data) || validString(request.resource.data.apellido, 80))
+          && (!('telefono' in request.resource.data) || validString(request.resource.data.telefono, 30))
+          && (!('direcciones' in request.resource.data) || (request.resource.data.direcciones is list && request.resource.data.direcciones.size() <= 5)));
+    }
+
+    /* ===== CUPONES ===== */
+    match /cupones/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ===== CONFIG ===== */
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin()
+        || doc == 'pedidosCount'
+        || doc == 'ventasMayCount';
+    }
+
+    /* ===== RESEÑAS ===== */
+    match /resenas/{doc} {
+      allow read: if true;
+      allow create: if validString(request.resource.data.nombre, 100)
+        && validString(request.resource.data.comentario, 1000)
+        && request.resource.data.estrellas is number
+        && request.resource.data.estrellas >= 1
+        && request.resource.data.estrellas <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    /* ===== HISTORIAL ===== */
+    match /historial/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ===== SITE CONTENT ===== */
+    match /siteContent/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ===== LISTAS PROVEEDORES ===== */
+    match /listas/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ===== INSUMOS ===== */
+    match /insumos/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ===== FACTURA ===== */
+    match /factura/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    /* ===== CATEGORIAS ===== */
+    match /_categorias/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ===== CONTADOR VENTAS MAYORISTAS ===== */
     match /config/ventasMayCount {
       allow read: if true;
       allow write: if isAdmin();
