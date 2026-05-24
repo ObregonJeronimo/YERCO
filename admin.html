@@ -170,6 +170,7 @@
         .img-extra-add i{font-size:1.5rem}
         /* Visor de imagen */
         .img-visor-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center}
+        #imgVisorOverlay{position:fixed !important;z-index:99999 !important;}
         .img-visor-overlay img{max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain}
         .img-visor-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
         .img-visor-close:hover{background:rgba(255,255,255,0.3)}
@@ -2591,22 +2592,27 @@
         }
 
         function verImgExtra(url){
+            /* Crear visor ANTES de que el click se propague */
             const ov=document.createElement('div');
-            ov.className='img-visor-overlay';
-            ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center';
-            /* Bloquear TODOS los clicks para que no lleguen al modal */
-            ov.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();},{capture:true});
-            ov.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();},{capture:true});
+            ov.id='imgVisorOverlay';
+            ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center';
             const btnClose=document.createElement('button');
             btnClose.className='img-visor-close';
             btnClose.innerHTML='<i class="bi bi-x-lg"></i>';
-            btnClose.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();ov.remove();});
             const img=document.createElement('img');
             img.src=url;
             img.style.cssText='max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain';
             ov.appendChild(btnClose);
             ov.appendChild(img);
-            document.body.appendChild(ov);
+            /* Insertar en el modal de producto, no en body, para que quede en el mismo stacking context */
+            const modalBox=document.querySelector('#productModal .modal-box');
+            const target=modalBox||document.body;
+            target.appendChild(ov);
+            /* Después de insertar, agregar listeners */
+            btnClose.addEventListener('click',function(e){e.stopPropagation();ov.remove();});
+            /* Tecla ESC para cerrar */
+            function onEsc(e){if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',onEsc);}}
+            document.addEventListener('keydown',onEsc);
         }
 
         </script>
