@@ -2609,7 +2609,8 @@
             const target=modalBox||document.body;
             target.appendChild(ov);
             /* Después de insertar, agregar listeners */
-            btnClose.addEventListener('click',function(e){e.stopPropagation();ov.remove();});
+            btnClose.type='button';
+            btnClose.addEventListener('click',function(e){e.stopPropagation();e.preventDefault();ov.remove();});
             /* Tecla ESC para cerrar */
             function onEsc(e){if(e.key==='Escape'){ov.remove();document.removeEventListener('keydown',onEsc);}}
             document.addEventListener('keydown',onEsc);
