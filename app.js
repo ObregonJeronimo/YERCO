@@ -655,15 +655,7 @@ function authLogin() {
     _loginActivo = true;
     sessionStorage.setItem('_authLoginActivo', '1');
     const provider = new firebase.auth.GoogleAuthProvider();
-    if (_isIOS) {
-        authClient.signInWithRedirect(provider);
-    } else {
-        authClient.signInWithPopup(provider).then(result => {
-            if (result && result.user) {
-                sessionStorage.setItem('_authLoginActivo', '1');
-            }
-        }).catch(() => { _loginActivo = false; sessionStorage.removeItem('_authLoginActivo'); });
-    }
+    authClient.signInWithRedirect(provider);
 }
 
 function authLogout() {
