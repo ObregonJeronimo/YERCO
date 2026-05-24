@@ -614,20 +614,36 @@
                 const totalRow=document.querySelector('#ventaModal .venta-total-row');
                 if(totalRow)totalRow.parentNode.insertBefore(row,totalRow);
             }
-            /* Mostrar cliente como card readonly si tiene auth, o input editable si no */
-            const ventaClienteInput=document.getElementById('ventaCliente');
-            const ventaClienteWrap=ventaClienteInput?.closest('.cliente-select-wrap');
+            /* Card de cliente readonly */
+            const ventaClienteWrap=document.getElementById('ventaCliente')?.closest('.cliente-select-wrap');
             let authCard=document.getElementById('ventaAuthCard');
             if(!authCard){authCard=document.createElement('div');authCard.id='ventaAuthCard';ventaClienteWrap?.parentNode.insertBefore(authCard,ventaClienteWrap);}
-            if(v.clienteAuthUid){
-                authCard.innerHTML='<div style="font-size:0.82rem;background:rgba(91,45,138,0.15);border-radius:6px;padding:6px 10px;margin-bottom:6px"><i class="bi bi-person-check" style="color:#a78bfa"></i> <strong>'+esc(v.cliente||'')+'</strong>'+(v.clienteId?' <span style="color:var(--text-dim);font-size:0.75rem">#'+v.clienteId+'</span>':'')+'</div>';
-                authCard.style.display='block';
-                if(ventaClienteWrap)ventaClienteWrap.style.display='none';
-            }else{
-                authCard.style.display='none';
-                if(ventaClienteWrap)ventaClienteWrap.style.display='';
-            }renderVentaItems();renderVentaInsumosUsados();refreshVentaInsumosSelect();filterVentaProducts();document.getElementById('ventaModal').classList.add('show');}
+            _renderClienteCard(v,authCard,ventaClienteWrap);
+            renderVentaItems();renderVentaInsumosUsados();refreshVentaInsumosSelect();filterVentaProducts();document.getElementById('ventaModal').classList.add('show');}
         function closeVentaModal(){const ac=document.getElementById('ventaAuthCard');if(ac)ac.style.display='none';const cr=document.getElementById('ventaCuponRow');if(cr)cr.remove();const cw=document.querySelector('#ventaModal .cliente-select-wrap');if(cw)cw.style.display='';document.getElementById('ventaModal').classList.remove('show');}
+        /* Card de cliente reutilizable para ventas min/may */
+        function _renderClienteCard(v,cardEl,wrapEl){
+            const uid=v.clienteAuthUid||null;
+            const hasCliente=uid||v.clienteId;
+            if(!hasCliente){cardEl.style.display='none';if(wrapEl)wrapEl.style.display='';return;}
+            const cl=uid?clientesAuthData.find(x=>x.uid===uid):null;
+            const nombre=v.cliente||'';
+            const email=cl?cl.email:(v.clienteEmail||'');
+            const tel=cl?cl.telefono:'';
+            const cid=v.clienteId||'';
+            let html='<div style="font-size:0.82rem;background:rgba(91,45,138,0.15);border-radius:6px;padding:8px 12px;margin-bottom:6px">';
+            html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">';
+            html+='<i class="bi bi-person-check" style="color:#a78bfa"></i>';
+            html+='<strong>'+esc(nombre)+'</strong>';
+            if(cid)html+=' <span style="color:var(--text-dim);font-size:0.75rem">#'+esc(cid)+'</span>';
+            html+='</div>';
+            if(email)html+='<div style="color:var(--text-dim);font-size:0.78rem">'+esc(email)+'</div>';
+            if(tel)html+='<div style="color:var(--text-dim);font-size:0.78rem"><i class="bi bi-telephone"></i> '+esc(tel)+'</div>';
+            html+='</div>';
+            cardEl.innerHTML=html;
+            cardEl.style.display='block';
+            if(wrapEl)wrapEl.style.display='none';
+        }
         function filterVentaProducts(){const c=document.getElementById('ventaProdList');const q=(document.getElementById('ventaProdSearch')?.value||'').toLowerCase();if(!q){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Escribi para buscar productos...</div>';return;}let f=allProducts.filter(p=>(p.nombre||'').toLowerCase().includes(q));if(!f.length){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Sin resultados</div>';return;}c.innerHTML=f.slice(0,15).map(p=>'<div class="venta-prod-item" onclick="addVentaItem(\''+p.id+'\')"><span>'+p.nombre+'</span><span style="color:var(--accent-light);font-family:var(--mono)">$'+(p.precio||0).toLocaleString('es-AR')+'</span></div>').join('');}
         function addVentaItem(id){const existing=ventaItems.find(i=>i.id===id);if(existing){existing.cantidad++;renderVentaItems();return;}const p=allProducts.find(x=>x.id===id);if(!p)return;ventaItems.push({id:p.id,nombre:p.nombre,precio:p.precio,costo:p.costo||0,cantidad:1,descuento:0});renderVentaItems();}
         function removeVentaItem(id){ventaItems=ventaItems.filter(i=>i.id!==id);renderVentaItems();}
@@ -2362,9 +2378,17 @@
                     document.getElementById('ventaMayDescuentoPct').value=v.descuentoPct||0;
                     ventaMayItems=(v.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0}));
                     ventaMayInsumosUsados=(v.insumosUsados||[]).map(u=>{const ins=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:ins?Number(ins.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});
+                    /* Card de cliente readonly */
+                    const mayWrap=document.getElementById('ventaMayCliente')?.closest('.cliente-select-wrap');
+                    let mayCard=document.getElementById('ventaMayAuthCard');
+                    if(!mayCard){mayCard=document.createElement('div');mayCard.id='ventaMayAuthCard';mayWrap?.parentNode.insertBefore(mayCard,mayWrap);}
+                    _renderClienteCard(v,mayCard,mayWrap);
                 }
             }else{
                 document.getElementById('ventaMayModalTitle').textContent='Nueva Venta Mayorista';
+                /* Al crear: asegurar que se muestre el input */
+                const mayCard=document.getElementById('ventaMayAuthCard');if(mayCard)mayCard.style.display='none';
+                const mayWrap=document.getElementById('ventaMayCliente')?.closest('.cliente-select-wrap');if(mayWrap)mayWrap.style.display='';
             }
             renderVentaMayItems();
             renderVentaMayInsumosUsados();
@@ -2374,7 +2398,11 @@
             if(!insumosData.length){db.collection('insumos').orderBy('nombre').get().then(snap=>{insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));refreshVentaMayInsumosSelect();}).catch(()=>{});}
             document.getElementById('ventaMayModal').classList.add('show');
         }
-        function closeVentaMayModal(){document.getElementById('ventaMayModal').classList.remove('show');editingVentaMayId=null;}
+        function closeVentaMayModal(){
+            const mc=document.getElementById('ventaMayAuthCard');if(mc)mc.style.display='none';
+            const mw=document.getElementById('ventaMayCliente')?.closest('.cliente-select-wrap');if(mw)mw.style.display='';
+            document.getElementById('ventaMayModal').classList.remove('show');editingVentaMayId=null;
+        }
         async function deleteVentaMay(docId,num){if(!confirm('Eliminar venta mayorista #'+num+'? Esta accion no se puede deshacer.'))return;try{const venta=ventasMayData.find(v=>v.id===docId);if(venta&&venta.insumosUsados&&venta.insumosUsados.length){for(const u of venta.insumosUsados){const ins=insumosData.find(x=>x.id===u.id);if(!ins)continue;const nuevo=Number(ins.stockActual||0)+Number(u.cantidad||0);await db.collection('insumos').doc(u.id).update({stockActual:nuevo,actualizadoEn:new Date()});ins.stockActual=nuevo;}}await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Venta mayorista #'+num+' eliminada','success');logAction('eliminar','Venta Mayorista #'+num+' eliminada','DocID: '+docId);ventasMayData=ventasMayData.filter(v=>v.id!==docId);filterVentasMay();}catch(e){showAdminToast('Error: '+e.message,'error');}}
 
         function setVentaMayEntrega(tipo){
