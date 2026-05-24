@@ -82,9 +82,8 @@ service cloud.firestore {
     }
     match /cuponesUsos/{doc} {
       allow read: if isAdmin();
-      allow create: if isAuthUser()
-        && request.resource.data.uid == request.auth.uid
-        && validString(request.resource.data.codigo, 30);
+      allow create: if validString(request.resource.data.codigo, 30)
+        && (!request.resource.data.keys().hasAny(['uid']) || request.resource.data.uid == request.auth.uid);
     }
 
     /* ===== CONFIG ===== */

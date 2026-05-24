@@ -607,22 +607,23 @@ async function confirmCheckout(){
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
         /* Abrir WhatsApp con el mensaje preparado */
-        /* Abrir WhatsApp - usar location.href para iOS (window.open bloqueado en async) */
-        /* Registrar uso del cupón */
-        if (_cuponAplicado && clienteAuth) {
+        /* Registrar uso del cupón - ANTES de abrir WhatsApp */
+        if (_cuponAplicado) {
             try {
                 const cupSnap = await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get();
                 if (!cupSnap.empty) {
                     const cupRef = cupSnap.docs[0].ref;
                     const batch = db.batch();
                     batch.update(cupRef, { usos: firebase.firestore.FieldValue.increment(1) });
-                    batch.set(db.collection('cuponesUsos').doc(), {
+                    const usoData = {
                         cuponId: cupSnap.docs[0].id,
                         codigo: _cuponAplicado.codigo,
-                        uid: clienteAuth.uid,
-                        email: clienteAuth.email,
-                        fecha: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                        fecha: firebase.firestore.FieldValue.serverTimestamp(),
+                        pedidoNum: pedidoNum
+                    };
+                    if (clienteAuth) { usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email; }
+                    else if (nombre && apellido) { usoData.nombreCliente = nombre+' '+apellido; usoData.telefono = telefono; }
+                    batch.set(db.collection('cuponesUsos').doc(), usoData);
                     await batch.commit();
                 }
             } catch(e) { console.warn('Error registrando uso de cupón:', e); }
