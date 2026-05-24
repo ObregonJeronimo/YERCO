@@ -2491,14 +2491,16 @@
                 var actions=document.createElement('div');
                 actions.className='slide-actions';
                 var btnVer=document.createElement('button');
+                btnVer.type='button';
                 btnVer.innerHTML='<i class="bi bi-eye"></i>';
                 btnVer.title='Ver';
-                btnVer.onclick=function(e){e.stopPropagation();verImgExtra(item.url);};
+                btnVer.onclick=function(e){e.stopPropagation();e.preventDefault();verImgExtra(item.url);};
                 var btnDel=document.createElement('button');
+                btnDel.type='button';
                 btnDel.innerHTML='<i class="bi bi-trash"></i>';
                 btnDel.title='Eliminar';
                 btnDel.onclick=function(e){
-                    e.stopPropagation();
+                    e.stopPropagation();e.preventDefault();
                     if(item.principal){
                         _imgPrincipalUrl=null;existingImageUrl=null;selectedImageFile=null;
                     }else{
@@ -2518,7 +2520,7 @@
                 actions.appendChild(btnDel);
                 slide.appendChild(img);
                 slide.appendChild(actions);
-                slide.addEventListener('click',function(){_prodCarIdx=i;renderProdCarousel();});
+                slide.addEventListener('click',function(e){e.preventDefault();_prodCarIdx=i;renderProdCarousel();});
                 track.appendChild(slide);
             });
             var addExtra=total<21; /* principal + 20 extras */
@@ -2547,9 +2549,10 @@
                 const actions=document.createElement('div');
                 actions.className='img-extra-actions';
                 const btnVer=document.createElement('button');
+                btnVer.type='button';
                 btnVer.title='Ver';
                 btnVer.innerHTML='<i class="bi bi-eye"></i>';
-                btnVer.onclick=function(){verImgExtra(url);};
+                btnVer.onclick=function(e){e.stopPropagation();e.preventDefault();verImgExtra(url);};
                 const btnDel=document.createElement('button');
                 btnDel.title='Eliminar';
                 btnDel.innerHTML='<i class="bi bi-trash"></i>';
