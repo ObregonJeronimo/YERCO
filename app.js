@@ -390,17 +390,28 @@ function openCheckoutModal(){
         const sel = document.getElementById('chkDirSelect');
         const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
         const nomDirWrap = document.getElementById('chkNombreDirWrap');
-        if (dirs.length && wrap && sel) {
-            sel.innerHTML = dirs.map((d,i) => `<option value="${i}">${d.nombre} — ${d.texto}</option>`).join('') +
-                '<option value="nueva">+ Nueva dirección...</option>';
-            wrap.style.display = 'block';
-            /* Pre-seleccionar la primera dirección */
-            const primeraDir = dirs[0];
-            document.getElementById('chkDireccion').value = primeraDir.texto;
+        if (dirs.length) {
+            /* Tiene direcciones: mostrar selector */
+            sel.innerHTML = dirs.map((d,i) =>
+                `<option value="${i}">${d.nombre}\n${d.texto}</option>`
+            ).join('') + '<option value="nueva">+ Nueva dirección...</option>';
+            /* Usar optgroup visual con nombre y dirección */
+            sel.innerHTML = dirs.map((d,i) =>
+                `<option value="${i}">${d.nombre} — ${d.texto}</option>`
+            ).join('') + '<option value="nueva">+ Nueva dirección...</option>';
+            if (wrap) wrap.style.display = 'block';
             if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
-        } else if (wrap) {
-            wrap.style.display = 'none';
+            /* Pre-seleccionar la primera */
+            document.getElementById('chkDireccion').value = dirs[0].texto;
+            sel.value = '0';
+        } else {
+            /* Sin direcciones: mostrar campo directo + nombre para guardar */
+            if (wrap) wrap.style.display = 'none';
             if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
+            if (nomDirWrap) nomDirWrap.style.display = 'block';
+            document.getElementById('chkDireccion').value = '';
+            const nomDirInput = document.getElementById('chkNombreDir');
+            if (nomDirInput) nomDirInput.value = '';
         }
         setCheckoutEntrega('envio');
     }
@@ -421,11 +432,14 @@ function onSelectDireccion(val) {
     if (val === 'nueva') {
         if (input) input.value = '';
         if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
-        /* Mostrar campo nombre si no tiene 5 direcciones */
         if (nomDirWrap) nomDirWrap.style.display = dirs.length < 5 ? 'block' : 'none';
-    } else if (dirs[parseInt(val)]) {
+        const nomDirInput = document.getElementById('chkNombreDir');
+        if (nomDirInput) nomDirInput.value = '';
+    } else {
         const dir = dirs[parseInt(val)];
-        if (input) input.value = dir.texto;
+        if (dir) {
+            if (input) input.value = dir.texto;
+        }
         if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
     }
 }

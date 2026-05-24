@@ -112,16 +112,18 @@
                 <input type="hidden" id="chkApellido">
                 <input type="hidden" id="chkTelefono">
                 <div class="chk-field" id="chkDireccionGroup">
-                    <label for="chkDireccion">Dirección de envío *</label>
-                    <div id="chkDirGuardadasWrap" style="display:none;margin-bottom:0.5rem">
-                        <select id="chkDirSelect" class="auth-input" onchange="onSelectDireccion(this.value)" style="margin-bottom:0.5rem">
-                            <option value="">+ Nueva dirección...</option>
+                    <label>Dirección de envío *</label>
+                    <!-- Selector cuando tiene direcciones guardadas -->
+                    <div id="chkDirGuardadasWrap" style="display:none">
+                        <select id="chkDirSelect" class="auth-input" onchange="onSelectDireccion(this.value)" style="width:100%">
                         </select>
                     </div>
-                    <div id="chkNuevaDirWrap">
+                    <!-- Campo cuando no tiene o elige nueva -->
+                    <div id="chkNuevaDirWrap" style="margin-top:0.4rem">
                         <input type="text" id="chkDireccion" placeholder="Calle, número, barrio" autocomplete="street-address">
-                        <div id="chkNombreDirWrap" style="display:none;margin-top:0.4rem">
-                            <input type="text" id="chkNombreDir" placeholder="Nombre para esta dirección (ej: Mi casa)" class="auth-input" style="font-size:0.88rem">
+                        <div id="chkNombreDirWrap" style="margin-top:0.4rem">
+                            <input type="text" id="chkNombreDir" class="auth-input" placeholder="Nombre de esta dirección (ej: Mi casa)" style="font-size:0.88rem">
+                            <small style="color:#888;font-size:0.75rem">Se guardará en tu perfil para próximos pedidos</small>
                         </div>
                     </div>
                 </div>
