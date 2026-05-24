@@ -661,7 +661,7 @@ function _updateNavAuth(user) {
         udEmail.textContent = user.email;
     } else {
         loginBtn.style.display = 'flex';
-        if (loginBtnMobile) loginBtnMobile.style.display = 'flex';
+        if (loginBtnMobile){loginBtnMobile.style.display='flex';loginBtnMobile.style.visibility='visible';}
         userBtn.style.display = 'none';
     }
 }
