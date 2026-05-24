@@ -1149,6 +1149,9 @@
                     if(p.creadoEn){const d=p.creadoEn;const yyyy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');document.getElementById('pedFecha').value=yyyy+'-'+mm+'-'+dd;}
                     pedClienteSelected=true;
                     pedItems=(p.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0}));
+                    /* Mostrar cupón si el pedido lo tiene */
+                    const bdEl=document.getElementById('pedTotalBreakdown');
+                    if(bdEl&&p.cupon){bdEl.innerHTML='<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:#2d6b4a;padding:4px 0;border-top:1px solid var(--border)"><span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(p.cupon.codigo)+' (-'+p.cupon.porcentaje+'%)</span><span>-$'+Number(p.cupon.monto||0).toLocaleString('es-AR')+'</span></div>';}else if(bdEl){bdEl.innerHTML='';}
                     pedInsumosUsados=(p.insumosUsados||[]).map(u=>{const ins=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:ins?Number(ins.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});
                     pedTipoEntrega=p.tipoEntrega||'envio';
                     document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===pedTipoEntrega));
