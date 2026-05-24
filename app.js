@@ -473,9 +473,10 @@ function setCheckoutEntrega(tipo){
 function updateCheckoutResumen(){
     const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
     const tipoEntrega=window._chkTipoEntrega||'envio';
-    const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
     const dcMonto=_cuponAplicado?Math.round(subtotal*_cuponAplicado.porcentaje/100):0;
-    const total=subtotal+envio-dcMonto;
+    const subtotalConDesc=subtotal-dcMonto;
+    const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
+    const total=subtotalConDesc+envio;
     const el=document.getElementById('chkResumen');
     if(!el)return;
     const envioRow=tipoEntrega==='retiro'
@@ -551,9 +552,10 @@ async function confirmCheckout(){
         if(!firebase||!firebase.firestore){throw new Error('Firebase no inicializado');}
         const db=firebase.firestore();
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-        const envio=tipoEntrega==='retiro'?0:(subtotal>=100000?0:2000);
         const dcMonto=_cuponAplicado?Math.round(subtotal*_cuponAplicado.porcentaje/100):0;
-        const total=subtotal+envio-dcMonto;
+        const subtotalConDesc=subtotal-dcMonto;
+        const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
+        const total=subtotalConDesc+envio;
         const clienteNombreCompleto=nombre+' '+apellido;
         /* Obtener numero de pedido secuencial con transaction atomica */
         let pedidoNum=1;

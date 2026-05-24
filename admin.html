@@ -622,6 +622,7 @@
         function renderVentaItems(){
             var c=document.getElementById('ventaItems');
             if(!ventaItems.length){c.innerHTML='<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5rem 0">Agrega productos buscando arriba</div>';var bde=document.getElementById('ventaTotalBreakdown');if(bde)bde.innerHTML='';document.getElementById('ventaTotal').textContent='$0';return;}
+            c.innerHTML=ventaItems.map(function(i){
                 var precioDsc=Math.round(i.precio*(1-(i.descuento||0)/100));
                 var sub=precioDsc*i.cantidad;
                 var dscBadge=(i.descuento||0)>0?'<span id="badge-vta-'+i.id+'" style="background:#e6a817;color:#000;border-radius:4px;padding:1px 5px;font-size:0.68rem;font-weight:700">-'+(i.descuento)+'%</span>':'<span id="badge-vta-'+i.id+'" style="display:none"></span>';
@@ -860,7 +861,7 @@
             setTimeout(()=>{const t=document.getElementById('stockBajoToast');if(t)t.remove();},6700);
         }
 
-        async function deleteVenta(docId,num){if(!confirm('Eliminar venta #'+num+'? Esta accion no se puede deshacer.'))return;try{await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+' eliminada','success');logAction('eliminar','Venta #'+num+' eliminada','DocID: '+docId);ventasData=ventasData.filter(v=>v.docId!==docId);filterVentas();}catch(e){showAdminToast('Error: '+e.message,'error');}}
+        async function deleteVenta(docId,num){if(!confirm('Eliminar venta #'+num+'? Esta accion no se puede deshacer.'))return;try{const venta=ventasData.find(v=>v.docId===docId);if(venta&&venta.insumosUsados&&venta.insumosUsados.length){for(const u of venta.insumosUsados){const ins=insumosData.find(x=>x.id===u.id);if(!ins)continue;const nuevo=Number(ins.stockActual||0)+Number(u.cantidad||0);await db.collection('insumos').doc(u.id).update({stockActual:nuevo,actualizadoEn:new Date()});ins.stockActual=nuevo;}}await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+' eliminada','success');logAction('eliminar','Venta #'+num+' eliminada','DocID: '+docId);ventasData=ventasData.filter(v=>v.docId!==docId);filterVentas();}catch(e){showAdminToast('Error: '+e.message,'error');}}
         function _buildMesOptions(selId){const sel=document.getElementById(selId);if(!sel)return;const now=new Date();let opts='<option value="">Todos los meses</option>';for(let i=0;i<12;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const val=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');const label=d.toLocaleDateString('es-AR',{month:'long',year:'numeric'});opts+='<option value="'+val+'"'+(i===0?' selected':'')+'>'+label.charAt(0).toUpperCase()+label.slice(1)+'</option>';}sel.innerHTML=opts;}
         async function loadVentas(){_buildMesOptions('ventaMesFiltro');const c=document.getElementById('ventasList');c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';try{const snap=await db.collection('ventas').orderBy('creadoEn','desc').get();ventasData=snap.docs.map(d=>{const r=d.data();return{docId:d.id,...r,fecha:r.fecha?r.fecha.toDate?r.fecha.toDate():new Date(r.fecha):new Date()};});ventasPage=0;filterVentas();}catch(e){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
         function filterVentas(){const q=(document.getElementById('ventaSearch')?.value||'').toLowerCase();const mes=document.getElementById('ventaMesFiltro')?.value||'';ventasFiltered=ventasData;if(mes){const[my,mm]=mes.split('-').map(Number);ventasFiltered=ventasFiltered.filter(v=>v.fecha.getFullYear()===my&&(v.fecha.getMonth()+1)===mm);}if(q)ventasFiltered=ventasFiltered.filter(v=>(v.cliente||'').toLowerCase().includes(q)||String(v.numero).includes(q)||(v.medioPago||'').toLowerCase().includes(q));renderVentas();}
@@ -1212,7 +1213,7 @@
         function closePedidoModal(){document.getElementById('pedidoModal').classList.remove('show');editingPedidoId=null;pedidoDirty=false;}
         function markPedidoDirty(){pedidoDirty=true;const b=document.getElementById('convertirVentaBtn');if(b){b.disabled=true;b.title='Guardá los cambios antes de convertir a venta';}}
         function setPedEntrega(tipo){markPedidoDirty();pedTipoEntrega=tipo;document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===tipo));renderPedItems();}
-        function calcPedTotales(){const sub=pedItems.reduce((s,i)=>s+Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad,0);const envio=pedTipoEntrega==='envio'&&sub<50000?3000:0;return{subtotal:sub,envio:envio,total:sub+envio};}
+        function calcPedTotales(){const sub=pedItems.reduce((s,i)=>s+Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad,0);const envio=pedTipoEntrega==='envio'?(sub>=ENVIO_GRATIS_DESDE?0:ENVIO_PRECIO):0;return{subtotal:sub,envio:envio,total:sub+envio};}
         function filterPedProducts(){
             const c=document.getElementById('pedProdList');
             const q=(document.getElementById('pedProdSearch')?.value||'').toLowerCase();
@@ -2278,10 +2279,11 @@
 
         function _ventaMayCardHtml(v){
             var num='#'+String(v.numero||0).padStart(6,'0');
+            var numPad=String(v.numero||0).padStart(6,'0');
             var fecha=v.fecha.toLocaleDateString('es-AR');
             var nitems=(v.items||[]).length;
             var id=v.id;
-            var html='<div class="venta-card" style="cursor:pointer" onclick="openVentaMayModal(this.dataset.id)" data-id="'+id+'">';
+            var html='<div class="venta-card">';
             html+='<div class="venta-card-header"><span class="venta-num">'+num+'</span>';
             html+='<span class="venta-cliente">'+esc(v.cliente||'\u2014')+'</span>';
             html+='<span class="venta-total">$'+(v.total||0).toLocaleString('es-AR')+'</span></div>';
@@ -2290,7 +2292,11 @@
             html+='<span>'+esc(v.medioPago||'\u2014')+'</span>';
             html+='<span>'+nitems+' item'+(nitems!==1?'s':'')+'</span>';
             html+='<span style="background:rgba(91,45,138,0.3);color:#c8a8f0;padding:1px 7px;border-radius:10px;font-size:0.72rem">MAYORISTA</span>';
-            html+='</div></div>';
+            html+='<span style="background:'+(v.tipoEntrega==='retiro'?'#3a2818':'#1a3a2a')+';color:'+(v.tipoEntrega==='retiro'?'#e6a817':'#67c23a')+';padding:1px 7px;border-radius:10px;font-size:0.72rem"><i class="bi bi-'+(v.tipoEntrega==='retiro'?'shop':'truck')+'"></i> '+(v.tipoEntrega==='retiro'?'Retiro':'Envío')+'</span>';
+            if((v.descuentoPct||0)>0)html+='<span style="background:#3a2a00;color:#e6a23c;padding:1px 7px;border-radius:10px;font-size:0.72rem"><i class="bi bi-tag"></i> -'+v.descuentoPct+'%</span>';
+            html+='</div>';
+            html+='<div class="venta-card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm btn-secondary" onclick="openVentaMayModal(\''+id+'\')"><i class="bi bi-pencil"></i> Editar</button><button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="deleteVentaMay(\''+id+'\',\''+numPad+'\')"><i class="bi bi-trash"></i></button></div>';
+            html+='</div>';
             return html;
         }
         function renderVentasMay(){
@@ -2344,6 +2350,7 @@
             document.getElementById('ventaMayModal').classList.add('show');
         }
         function closeVentaMayModal(){document.getElementById('ventaMayModal').classList.remove('show');editingVentaMayId=null;}
+        async function deleteVentaMay(docId,num){if(!confirm('Eliminar venta mayorista #'+num+'? Esta accion no se puede deshacer.'))return;try{const venta=ventasMayData.find(v=>v.id===docId);if(venta&&venta.insumosUsados&&venta.insumosUsados.length){for(const u of venta.insumosUsados){const ins=insumosData.find(x=>x.id===u.id);if(!ins)continue;const nuevo=Number(ins.stockActual||0)+Number(u.cantidad||0);await db.collection('insumos').doc(u.id).update({stockActual:nuevo,actualizadoEn:new Date()});ins.stockActual=nuevo;}}await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Venta mayorista #'+num+' eliminada','success');logAction('eliminar','Venta Mayorista #'+num+' eliminada','DocID: '+docId);ventasMayData=ventasMayData.filter(v=>v.id!==docId);filterVentasMay();}catch(e){showAdminToast('Error: '+e.message,'error');}}
 
         function setVentaMayEntrega(tipo){
             ventaMayTipoEntrega=tipo;

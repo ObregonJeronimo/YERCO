@@ -91,15 +91,15 @@ service cloud.firestore {
     match /config/{doc} {
       allow read: if true;
       allow write: if isAdmin()
-        || doc == 'pedidosCount'
-        || doc == 'ventasMayCount'
+        || (doc == 'pedidosCount' && isAuthUser())
         || doc == 'clientesAuthCount';
     }
 
     /* ===== RESEÑAS ===== */
     match /resenas/{doc} {
       allow read: if true;
-      allow create: if validString(request.resource.data.nombre, 100)
+      allow create: if isAuthUser()
+        && validString(request.resource.data.nombre, 100)
         && validString(request.resource.data.comentario, 1000)
         && request.resource.data.estrellas is number
         && request.resource.data.estrellas >= 1
@@ -136,12 +136,6 @@ service cloud.firestore {
 
     /* ===== CATEGORIAS ===== */
     match /_categorias/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    /* ===== CONTADOR VENTAS MAYORISTAS ===== */
-    match /config/ventasMayCount {
       allow read: if true;
       allow write: if isAdmin();
     }
