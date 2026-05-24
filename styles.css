@@ -504,7 +504,7 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 991px) {
   .btn-login-desktop{display:none !important}
   #loginNavBtnMobile{display:flex !important}
-  #authNavBtn .btn-auth-icon-mobile{display:flex !important}
+  /* btn-auth-icon-mobile se controla por JS */
   .navbar .container{flex-wrap:nowrap;position:relative}
   #authNavBtn{order:3;margin-right:0.25rem !important}
   .cart-btn{order:4}
