@@ -342,7 +342,7 @@ function updateCartUI() {
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
-    if(ckBtn){ckBtn.disabled=carrito.length===0||tp<30000;if(tp>0&&tp<30000){ckBtn.innerHTML='<i class="bi bi-whatsapp"></i> Minimo $30.000';}else{ckBtn.innerHTML='<i class="bi bi-whatsapp"></i> Comprar por WhatsApp';}}
+    if(ckBtn){ckBtn.disabled=carrito.length===0||tp<30000;if(tp>0&&tp<30000){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $30.000';}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
     updateShippingBar(tp);
 }
 function renderCartItems() {
@@ -426,7 +426,7 @@ function closeCheckoutModal(){
     document.getElementById('checkoutModal')?.classList.remove('show');
     document.body.style.overflow='';_cuponAplicado=null;const ci=document.getElementById('chkCuponInput');if(ci)ci.value='';const cm=document.getElementById('chkCuponMsg');if(cm)cm.innerHTML='';
     const btn=document.getElementById('chkConfirmBtn');
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="bi bi-whatsapp"></i> Comprar por WhatsApp';}
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="bi bi-whatsapp"></i> Confirmar pedido';}
 }
 
 function setCheckoutEntrega(tipo){
@@ -653,6 +653,10 @@ authClient.onAuthStateChanged(async user => {
 async function _onUserLogin(user, showModal=false) {
     /* Mostrar avatar inmediatamente mientras carga Firestore */
     _updateNavAuth(user);
+    /* Si el checkout está abierto, refrescarlo con los datos del usuario */
+    if(document.getElementById('checkoutModal')?.classList.contains('show')){
+        setTimeout(()=>openCheckoutModal(),300);
+    }
     /* Cargar o crear doc en clientesAuth */
     const ref = db.collection('clientesAuth').doc(user.uid);
     const snap = await ref.get();
