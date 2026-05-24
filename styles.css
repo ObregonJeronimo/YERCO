@@ -179,7 +179,7 @@ img { max-width: 100%; height: auto; }
 .pdm-close:hover { background: #f3f3f3; color: #333; }
 .pdm-body { overflow-y: auto; flex: 1; }
 .pdm-carousel { position: relative; background: #fff; height: 380px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.pdm-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+.pdm-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.3s; }
 .pdm-img.active { opacity: 1; }
 .pdm-img-placeholder { color: #aaa; font-size: 2rem; display: flex; align-items: center; gap: 0.5rem; }
 .pdm-carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.92); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
