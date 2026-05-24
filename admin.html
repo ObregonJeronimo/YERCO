@@ -2593,8 +2593,16 @@
         function verImgExtra(url){
             const ov=document.createElement('div');
             ov.className='img-visor-overlay';
-            ov.innerHTML='<button class="img-visor-close" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button><img src="'+url+'">';
-            ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+            /* stopPropagation para que no cierre el modal de producto */
+            ov.addEventListener('click',function(e){e.stopPropagation();});
+            const btnClose=document.createElement('button');
+            btnClose.className='img-visor-close';
+            btnClose.innerHTML='<i class="bi bi-x-lg"></i>';
+            btnClose.addEventListener('click',function(e){e.stopPropagation();ov.remove();});
+            const img=document.createElement('img');
+            img.src=url;
+            ov.appendChild(btnClose);
+            ov.appendChild(img);
             document.body.appendChild(ov);
         }
 
