@@ -586,15 +586,17 @@ const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let _loginActivo = sessionStorage.getItem('_authLoginActivo') === '1';
 
 authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-    /* Manejar redirect de vuelta desde Google en iOS */
     authClient.getRedirectResult().then(result => {
         if (result && result.user) {
+            console.log('redirect result user:', result.user.email);
             sessionStorage.setItem('_authLoginActivo', '1');
             _loginActivo = true;
             _onUserLogin(result.user, true);
             sessionStorage.removeItem('_authLoginActivo');
+        } else {
+            console.log('no redirect result');
         }
-    }).catch(() => {});
+    }).catch(e => { console.error('getRedirectResult error:', e); });
 });
 
 authClient.onAuthStateChanged(async user => {
