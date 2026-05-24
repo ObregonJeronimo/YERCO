@@ -214,6 +214,7 @@
         <div class="sidebar-section">
             <a class="sidebar-item" onclick="switchSection('historial')"><i class="bi bi-clock-history"></i><span>Historial</span></a>
             <a class="sidebar-item" onclick="switchSection('resenas')"><i class="bi bi-star"></i><span>Reseñas</span></a>
+            <a class="sidebar-item" onclick="switchSection('cupones')"><i class="bi bi-ticket-perforated"></i><span>Cupones</span></a>
             <a class="sidebar-item" onclick="switchSection('factura')"><i class="bi bi-receipt"></i><span>Factura</span></a>
             <a class="sidebar-item" onclick="switchSection('editor')"><i class="bi bi-brush"></i><span>Editor Web</span></a>
         </div>
@@ -222,6 +223,13 @@
     <div class="section-content active" id="sec-products"><div id="listasPanel" style="margin-bottom:1.5rem"><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem"><span style="font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">Listas de proveedores</span><button class="btn btn-secondary" style="width:auto;padding:3px 10px;font-size:0.78rem" onclick="openCrearListaModal()"><i class="bi bi-plus-lg"></i> Nueva</button><button class="btn btn-secondary" style="width:auto;padding:3px 10px;font-size:0.78rem;background:#2d4a6b;border-color:#2d4a6b;color:#fff" onclick="openReasignarListaModal()"><i class="bi bi-shuffle"></i> Reasignar lista</button></div><div id="listasCards" style="display:flex;gap:0.5rem;flex-wrap:wrap"><span style="color:var(--text-dim);font-size:0.85rem">Cargando...</span></div></div><div class="stats-row" id="productsStatsRow"><div class="stat-card"><div class="stat-label">Total Productos</div><div class="stat-value" id="statTotal">0</div></div><div class="stat-card"><div class="stat-label">Categorias</div><div class="stat-value" id="statCats">0</div></div><div class="stat-card"><div class="stat-label">Sin Stock <span class="stat-tooltip-trigger" onclick="toggleStatTooltip('outstock')">?</span><div class="stat-tooltip" id="tooltipOutstock"></div></div><div class="stat-value" style="color:var(--danger)" id="statOutStock">0</div></div><div class="stat-card"><div class="stat-label">Stock Bajo <span class="stat-tooltip-trigger" onclick="toggleStatTooltip('lowstock')">?</span><div class="stat-tooltip" id="tooltipLowstock"></div></div><div class="stat-value" style="color:var(--warning)" id="statLowStock">0</div><div class="stock-threshold-row"><label>Limite:</label><input type="number" class="threshold-input" id="lowStockThreshold" value="10" min="1" max="999" onchange="saveLowStockThreshold()"></div></div><div class="stat-card"><div class="stat-label">Sin Categoria <span class="stat-tooltip-trigger" onclick="openNoCatModal()">?</span></div><div class="stat-value" style="color:#9b59b6" id="statNoCat">0</div></div></div><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto..." id="searchInput" oninput="filterTable()"></div><select class="form-input" style="width:auto;min-width:160px" id="filterCat" onchange="filterTable()"><option value="">Todas</option></select><select class="form-input" style="width:auto;min-width:140px" id="filterLista" onchange="filterTable()"><option value="">Todas las listas</option></select><button class="btn btn-secondary" style="width:auto;padding:6px 10px" onclick="openCatManager()" title="Administrar categorias"><i class="bi bi-gear"></i></button><button class="btn btn-primary" style="width:auto" onclick="openModal()"><i class="bi bi-plus-lg"></i> Nuevo</button><button class="btn btn-secondary" style="width:auto" onclick="openPriceModal('all')"><i class="bi bi-percent"></i> Costo %</button><button class="btn btn-secondary" style="width:auto" onclick="exportCostosExcel()"><i class="bi bi-download"></i> Exportar Costos</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excel')"><i class="bi bi-upload"></i> Importar Costos</button><button class="btn btn-secondary" style="width:auto" onclick="switchSection('excelNew')"><i class="bi bi-file-earmark-plus"></i> Importar Nuevos</button><button class="btn btn-secondary" style="width:auto" onclick="openRoundModal('all')"><i class="bi bi-arrows-angle-contract"></i> Redondear</button><button class="btn btn-secondary" style="width:auto;background:#8a2d2d;border-color:#8a2d2d;color:#fff" onclick="exportCatalogoPDF()" title="Descargar catalogo PDF para clientes"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</button><button class="btn btn-secondary" style="width:auto;background:#5b2d8a;border-color:#5b2d8a;color:#fff" onclick="openMayoristaPdfModal()" title="PDF de precios mayoristas (con % personalizado)"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF M</button><button class="btn btn-secondary" style="width:auto;background:#2d6b4a;border-color:#2d6b4a;color:#ccc" onclick="openWeeklyPdfModal()"><i class="bi bi-calendar-week"></i> PDF Semanal</button></div><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th onclick="sortTableBy('imagen')" style="cursor:pointer">Img <i class="bi bi-arrow-down-up" id="sortIconImagen" style="font-size:0.6rem;opacity:0.4"></i></th><th>Nombre</th><th>Cat / Sub</th><th onclick="sortTableBy('costo')">Costo <i class="bi bi-arrow-down-up" id="sortIconCosto" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('porcentaje')">Porcentaje(%) <i class="bi bi-arrow-down-up" id="sortIconPct" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('precio')">Precio <i class="bi bi-arrow-down-up" id="sortIconPrecio" style="font-size:0.6rem;opacity:0.4"></i></th><th onclick="sortTableBy('stock')">Stock <i class="bi bi-arrow-down-up" id="sortIconStock" style="font-size:0.6rem;opacity:0.4"></i></th><th>Acciones</th></tr></thead><tbody id="productsTableBody"><tr><td colspan="8"><div class="empty-state"><i class="bi bi-box-seam"></i><p>Cargando...</p></div></td></tr></tbody></table></div></div></div>
     
         <div class="section-content" id="sec-stock"><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar producto para agregar stock..." id="stockSearch" oninput="filterStockList()"></div><select class="form-input" style="width:auto;min-width:160px" id="stockFilterCat" onchange="filterStockList()"><option value="">Todas</option></select><button class="btn btn-secondary" style="width:auto" id="stockSortBtn" onclick="toggleStockSort()"><i class="bi bi-sort-numeric-down"></i> Mayor stock</button></div><div id="stockList"></div></div>
+    <div class="section-content" id="sec-cupones">
+      <div class="toolbar" style="margin-bottom:1rem">
+        <button class="btn btn-primary" style="width:auto" onclick="openCuponModal()"><i class="bi bi-plus-lg"></i> Nuevo cupón</button>
+        <div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar cupón..." id="cuponSearch" oninput="filterCupones()"></div>
+      </div>
+      <div id="cuponesList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando...</p></div></div>
+    </div>
     <div class="section-content" id="sec-insumos"><div style="max-width:900px"><div class="toolbar"><h3 style="font-size:1rem;color:var(--text-main);margin:0 1rem 0 0;display:flex;align-items:center;gap:0.5rem"><i class="bi bi-tools"></i> Insumos</h3><button class="btn btn-primary" style="width:auto" onclick="openInsumoModal()"><i class="bi bi-plus-lg"></i> Nuevo</button><div class="search-box" style="flex:1;min-width:180px;max-width:280px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar..." id="insumoSearch" oninput="renderInsumos()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadInsumos()"><i class="bi bi-arrow-clockwise"></i></button></div><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nombre</th><th style="text-align:right">Stock</th><th style="text-align:right">Mínimo</th><th style="text-align:center">Acciones</th></tr></thead><tbody id="insumosTableBody"><tr><td colspan="4"><div class="empty-state"><i class="bi bi-tools"></i><p>Cargando insumos...</p></div></td></tr></tbody></table></div></div></div></div>
     <div class="section-content" id="sec-ventas"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Ventas</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Facturado Total</div><strong style="font-size:1.2rem;color:#67c23a" id="vtStatTotal$">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Este Mes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatMes">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Ticket Promedio</div><strong style="font-size:1.2rem;color:#e6a817" id="vtStatProm">$0</strong></div></div><div class="toolbar" style="flex-wrap:wrap"><button class="btn btn-primary" style="width:auto" onclick="openVentaModal()"><i class="bi bi-plus-lg"></i> Nueva Venta</button><select class="form-input" id="ventaMesFiltro" style="width:auto;min-width:170px;font-weight:600;background:#1e3a5f;color:#fff;border-color:#1e3a5f" onchange="filterVentas()"><option value="">Todos los meses</option></select><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar venta..." id="ventaSearch" oninput="filterVentas()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadVentas()"><i class="bi bi-arrow-clockwise"></i></button><button class="btn btn-secondary" style="width:auto;background:#5a2a7a;border-color:#5a2a7a;color:#fff;margin-left:auto" onclick="generarLinkResena()" title="Generar link de reseña anónima"><i class="bi bi-link-45deg"></i> Link de reseña</button></div><div id="ventasList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando ventas...</p></div></div><div class="price-pager" id="ventasPager"></div></div>
     <div class="section-content" id="sec-clientes"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Clientes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Con Ventas</div><strong style="font-size:1.2rem;color:#67c23a" id="clStatConVentas">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Facturado</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatFacturado">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Promedio x Cliente</div><strong style="font-size:1.2rem;color:#e6a817" id="clStatPromedio">$0</strong></div></div><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openClienteModal()"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar cliente..." id="clienteSearch" oninput="filterClientes()"></div><button class="btn btn-secondary" style="width:auto" id="clSortBtn" onclick="toggleClienteSort()"><i class="bi bi-sort-numeric-down"></i> Ventas</button></div><div id="clientesList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando clientes...</p></div></div></div>
@@ -345,7 +353,7 @@
         _initAuth();
         function logout(){auth.signOut();}
         function toggleSidebarVentas(){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(!sub)return;const open=sub.classList.toggle('open');if(chev)chev.style.transform=open?'rotate(90deg)':'rotate(0deg)';}
-        function switchSection(sec){document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));const el=document.getElementById('sec-'+sec);if(el)el.classList.add('active');document.querySelectorAll('.sidebar-item').forEach(i=>{const oc=i.getAttribute('onclick')||'';if(oc.includes("'"+sec+"'"))i.classList.add('active');});if(sec==='ventas'||sec==='ventasMay'){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(sub&&!sub.classList.contains('open')){sub.classList.add('open');if(chev)chev.style.transform='rotate(90deg)';}}if(sec==='stock')renderStockList();if(sec==='historial')loadHistorial();if(sec==='ventas'){_buildMesOptions('ventaMesFiltro');loadVentas();}if(sec==='ventasMay'){_buildMesOptions('ventaMayMesFiltro');loadVentasMay();}if(sec==='pedidos'){loadPedidos();}else if(_pedidosUnsubscribe){_pedidosUnsubscribe();_pedidosUnsubscribe=null;}if(sec==='clientes')loadClientes();if(sec==='clientesAuth')loadClientesAuth();if(sec==='editor')loadSiteContent();if(sec==='resenas')loadAdminReviews();if(sec==='factura')loadFceEditor();if(sec==='insumos')loadInsumos();document.getElementById('adminSidebar').classList.remove('open');}
+        function switchSection(sec){document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));const el=document.getElementById('sec-'+sec);if(el)el.classList.add('active');document.querySelectorAll('.sidebar-item').forEach(i=>{const oc=i.getAttribute('onclick')||'';if(oc.includes("'"+sec+"'"))i.classList.add('active');});if(sec==='ventas'||sec==='ventasMay'){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(sub&&!sub.classList.contains('open')){sub.classList.add('open');if(chev)chev.style.transform='rotate(90deg)';}}if(sec==='stock')renderStockList();if(sec==='historial')loadHistorial();if(sec==='ventas'){_buildMesOptions('ventaMesFiltro');loadVentas();}if(sec==='ventasMay'){_buildMesOptions('ventaMayMesFiltro');loadVentasMay();}if(sec==='pedidos'){loadPedidos();}else if(_pedidosUnsubscribe){_pedidosUnsubscribe();_pedidosUnsubscribe=null;}if(sec==='clientes')loadClientes();if(sec==='clientesAuth')loadClientesAuth();if(sec==='editor')loadSiteContent();if(sec==='resenas')loadAdminReviews();if(sec==='cupones')loadCupones();if(sec==='factura')loadFceEditor();if(sec==='insumos')loadInsumos();document.getElementById('adminSidebar').classList.remove('open');}
         function toggleSidebar(){document.getElementById('adminSidebar').classList.toggle('open');}
         let savedCats={};async function loadCategorias(){try{const snap=await db.collection('_categorias').get();savedCats={};snap.docs.forEach(d=>{const data=d.data();savedCats[d.id]={nombre:data.nombre||d.id,subcategorias:data.subcategorias||[]};});}catch(e){}}
         async function loadProducts(){try{await loadCategorias();const snap=await db.collection('productos').get();allProducts=snap.docs.map(d=>{const r=d.data();return{id:d.id,...r,porcentajeMayorista:r.porcentajeMayorista||0,precioMayorista:r.precioMayorista||0};});filterTable();updateStats();updateCategoryFilter();renderStockList();renderListaFilterSelect();}catch(e){console.error(e);showAdminToast('Error al cargar','error');}}
@@ -2689,6 +2697,108 @@
             }
         }
 
+
+        /* ===== CUPONES ===== */
+        let cuponesData=[], editingCuponId=null;
+
+        async function loadCupones(){
+            const c=document.getElementById('cuponesList');
+            c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';
+            try{
+                const snap=await db.collection('cupones').orderBy('creadoEn','desc').get();
+                cuponesData=snap.docs.map(d=>({id:d.id,...d.data()}));
+                filterCupones();
+            }catch(e){c.innerHTML='<div class="empty-state"><p>Error: '+e.message+'</p></div>';}
+        }
+
+        function filterCupones(){
+            const q=(document.getElementById('cuponSearch')?.value||'').toLowerCase();
+            const filtered=q?cuponesData.filter(c=>(c.codigo||'').toLowerCase().includes(q)):cuponesData;
+            renderCupones(filtered);
+        }
+
+        function renderCupones(lista){
+            const c=document.getElementById('cuponesList');
+            if(!lista.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin cupones</p></div>';return;}
+            c.innerHTML='';
+            lista.forEach(function(cup){
+                var row=document.createElement('div');
+                row.style.cssText='background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
+                var activo=cup.activo!==false;
+                var limiteText=cup.limiteCompra?'hasta $'+Number(cup.limiteCompra).toLocaleString('es-AR'):'sin límite';
+                var usosText=cup.usos?cup.usos+' uso'+(cup.usos!==1?'s':''):'sin usos';
+                row.innerHTML='<div style="flex:1">'+
+                    '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem">'+
+                    '<strong style="font-family:var(--mono);font-size:1.1rem;letter-spacing:2px">'+esc(cup.codigo||'')+'</strong>'+
+                    '<span style="background:'+(activo?'#1a3a2a':'#3a1a1a')+';color:'+(activo?'#67c23a':'#f56c6c')+';font-size:0.7rem;padding:1px 8px;border-radius:10px;font-weight:700">'+(activo?'ACTIVO':'INACTIVO')+'</span>'+
+                    '</div>'+
+                    '<div style="font-size:0.82rem;color:var(--text-dim)">'+cup.porcentaje+'% desc · '+limiteText+' · '+usosText+'</div>'+
+                    '</div>'+
+                    '<div style="display:flex;gap:0.5rem">'+
+                    '<button class="btn btn-sm btn-secondary" style="width:auto"><i class="bi bi-pencil"></i></button>'+
+                    '<button class="btn btn-sm" style="width:auto;background:#f56c6c;border-color:#f56c6c;color:#fff"><i class="bi bi-trash"></i></button>'+
+                    '</div>';
+                row.querySelectorAll('button')[0].addEventListener('click',function(){openCuponModal(cup.id);});
+                row.querySelectorAll('button')[1].addEventListener('click',function(){deleteCupon(cup.id,cup.codigo);});
+                c.appendChild(row);
+            });
+        }
+
+        function openCuponModal(id){
+            editingCuponId=id||null;
+            const cup=id?cuponesData.find(x=>x.id===id):null;
+            document.getElementById('cuponCodigo').value=cup?cup.codigo:'';
+            document.getElementById('cuponPct').value=cup?cup.porcentaje:'';
+            document.getElementById('cuponActivo').checked=cup?cup.activo!==false:true;
+            const tieneLimit=cup&&cup.limiteCompra;
+            document.getElementById('cuponToggleLimite').checked=!!tieneLimit;
+            document.getElementById('cuponLimiteGroup').style.display=tieneLimit?'block':'none';
+            document.getElementById('cuponLimite').value=tieneLimit?cup.limiteCompra:'';
+            document.getElementById('cuponModal').classList.add('show');
+        }
+
+        function closeCuponModal(){document.getElementById('cuponModal').classList.remove('show');editingCuponId=null;}
+
+        function toggleCuponLimite(){
+            const on=document.getElementById('cuponToggleLimite').checked;
+            document.getElementById('cuponLimiteGroup').style.display=on?'block':'none';
+        }
+
+        async function saveCupon(){
+            let codigo=document.getElementById('cuponCodigo').value.trim().toUpperCase();
+            const pct=parseInt(document.getElementById('cuponPct').value);
+            const activo=document.getElementById('cuponActivo').checked;
+            const tieneLimit=document.getElementById('cuponToggleLimite').checked;
+            const limite=tieneLimit?parseInt(document.getElementById('cuponLimite').value):null;
+            if(!codigo){showAdminToast('Ingresá el código del cupón','error');return;}
+            if(isNaN(pct)||pct<1||pct>100){showAdminToast('El porcentaje debe ser entre 1 y 100','error');return;}
+            if(tieneLimit&&(isNaN(limite)||limite<=1)){showAdminToast('El límite de compra debe ser mayor a 1','error');return;}
+            const data={codigo,porcentaje:pct,activo,limiteCompra:limite||null,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};
+            try{
+                if(editingCuponId){
+                    await db.collection('cupones').doc(editingCuponId).update({codigo,porcentaje:pct,activo,limiteCompra:limite||null});
+                    showAdminToast('Cupón actualizado','success');
+                }else{
+                    /* Verificar que no exista el código */
+                    const exists=await db.collection('cupones').where('codigo','==',codigo).get();
+                    if(!exists.empty){showAdminToast('Ya existe un cupón con ese código','error');return;}
+                    await db.collection('cupones').add(data);
+                    showAdminToast('Cupón creado','success');
+                }
+                closeCuponModal();
+                loadCupones();
+            }catch(e){showAdminToast('Error: '+e.message,'error');}
+        }
+
+        async function deleteCupon(id,codigo){
+            if(!confirm('Eliminar cupón "'+codigo+'"?'))return;
+            try{
+                await db.collection('cupones').doc(id).delete();
+                showAdminToast('Cupón eliminado','info');
+                loadCupones();
+            }catch(e){showAdminToast('Error: '+e.message,'error');}
+        }
+
         </script>
     <script src="admin-pagination.js"></script>
     <div class="modal-overlay" id="noCatModal"><div class="modal-box" style="max-width:700px;max-height:92vh"><div class="modal-header"><h3><i class="bi bi-exclamation-triangle" style="color:#9b59b6"></i> Productos sin categoria</h3><button class="modal-close" onclick="document.getElementById('noCatModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;max-height:calc(92vh - 80px)"><div id="noCatList"></div><div class="price-pager" id="noCatPager"></div></div></div></div>
@@ -2848,6 +2958,17 @@
     <div class="form-group" style="margin-bottom:1rem"><label>Cliente Auth</label><div style="background:var(--bg-input);padding:0.6rem 0.85rem;border-radius:var(--radius);font-size:0.88rem" id="syncAuthNombre">—</div></div>
     <div class="form-group" style="margin-bottom:1.5rem"><label>Cliente a sincronizar (de la lista Clientes)</label><select class="form-input" id="syncClienteSelect"><option value="">-- Seleccionar --</option></select></div>
     <div class="form-actions"><button class="btn btn-secondary" onclick="closeSincronizarModal()">Cancelar</button><button class="btn btn-primary" id="syncConfirmBtn" onclick="confirmarSincronizar()"><i class="bi bi-link-45deg"></i> Sincronizar</button></div>
+    </div></div>
+    <!-- MODAL CUPON -->
+    <div class="modal-overlay" id="cuponModal"><div class="modal-box" style="max-width:460px"><div class="modal-header"><h3><i class="bi bi-ticket-perforated"></i> Cupón de descuento</h3><button class="modal-close" onclick="closeCuponModal()"><i class="bi bi-x-lg"></i></button></div>
+    <div class="form-group"><label>Código del cupón <span style="font-size:0.75rem;color:var(--text-dim)">(siempre en mayúsculas)</span></label><input type="text" class="form-input" id="cuponCodigo" placeholder="Ej: VERANO20" oninput="this.value=this.value.toUpperCase()" style="font-family:var(--mono);letter-spacing:2px"></div>
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
+      <div class="form-group"><label>% de descuento (1-100)</label><input type="number" class="form-input" id="cuponPct" min="1" max="100" placeholder="Ej: 10"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.25rem"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponActivo" checked><span class="toggle-slider"></span></label> Activo</label></div>
+    </div>
+    <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleLimite" onchange="toggleCuponLimite()"><span class="toggle-slider"></span></label> Límite de compra mínimo</label></div>
+    <div class="form-group" id="cuponLimiteGroup" style="display:none"><label>Monto mínimo de compra para aplicar el cupón</label><input type="number" class="form-input" id="cuponLimite" min="2" placeholder="Ej: 50000" oninput="if(this.value<0)this.value=0"></div>
+    <div class="form-actions"><button class="btn btn-secondary" onclick="closeCuponModal()">Cancelar</button><button class="btn btn-primary" onclick="saveCupon()"><i class="bi bi-check-lg"></i> Guardar</button></div>
     </div></div>
     </body>
 </html>

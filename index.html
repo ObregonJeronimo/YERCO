@@ -137,6 +137,14 @@
                     <textarea id="chkNotas" rows="2" placeholder="Comentarios sobre el pedido o entrega"></textarea>
                 </div>
             </div>
+            <div class="chk-section" id="chkCuponSection">
+                <label class="chk-section-label">¿Tenés un cupón?</label>
+                <div style="display:flex;gap:0.5rem">
+                    <input type="text" id="chkCuponInput" class="auth-input" placeholder="Ingresá tu código" style="flex:1;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+                    <button onclick="aplicarCupon()" style="background:var(--color-primary);color:#fff;border:none;border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap">Aplicar</button>
+                </div>
+                <div id="chkCuponMsg" style="font-size:0.82rem;margin-top:0.4rem"></div>
+            </div>
             <div class="chk-section">
                 <div id="chkResumen" class="chk-resumen"></div>
             </div>
