@@ -641,7 +641,7 @@ function _updateNavAuth(user) {
     if (user && clienteAuth) {
         loginBtn.style.display = 'none';
         if (loginBtnMobile) loginBtnMobile.style.display = 'none';
-        userBtn.style.display = 'block';
+        userBtn.style.display = 'flex';
         const nombre = clienteAuth.nombre || user.displayName || '';
         const apellido = clienteAuth.apellido || '';
         initials.textContent = ((nombre[0] || '') + (apellido[0] || '')).toUpperCase() || user.email[0].toUpperCase();
