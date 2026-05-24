@@ -27,7 +27,19 @@
     <link rel="stylesheet" href="footer-dev.min.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li></ul></div><button class="cart-btn" id="cartToggle" aria-label="Ver carrito"><i class="bi bi-cart3"></i><span class="cart-count" id="cartCount">0</span></button></div></nav>
+    <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li></ul></div><div id="authNavBtn" style="display:none;margin-right:0.5rem">
+  <button id="loginNavBtn" class="btn-auth-nav" onclick="authLogin()" style="display:none"><i class="bi bi-google"></i> Iniciar sesión</button>
+  <div id="userNavBtn" style="display:none;position:relative">
+    <button class="btn-avatar-nav" id="avatarNavBtn" onclick="toggleUserMenu()"><span id="avatarInitials"></span></button>
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-dropdown-info"><strong id="udNombre"></strong><small id="udEmail"></small></div>
+      <a href="#" onclick="openPerfilModal();closeUserMenu()"><i class="bi bi-person"></i> Mi perfil</a>
+      <a href="#" onclick="openHistorialModal();closeUserMenu()"><i class="bi bi-clock-history"></i> Mis pedidos</a>
+      <a href="#" onclick="authLogout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+    </div>
+  </div>
+</div>
+<button class="cart-btn" id="cartToggle" aria-label="Ver carrito"><i class="bi bi-cart3"></i><span class="cart-count" id="cartCount">0</span></button></div></nav>
 
     <section id="inicio" class="hero-section"><div class="hero-overlay"></div><div class="hero-particles" id="particles"></div><div class="container hero-content"><div class="row align-items-center min-vh-100"><div class="col-lg-8 hero-text"><div class="hero-badge"><i class="bi bi-leaf"></i><span>100% Natural</span></div><h1 class="hero-title"><span class="title-line">Tu dietética</span><span class="title-highlight">de confianza</span></h1><p class="hero-subtitle">Productos naturales y de calidad a la puerta de tu casa. Envíos rápidos a todo Villa Allende y Mendiolaza.</p><div class="hero-buttons"><a href="#productos" class="btn btn-primary-custom"><i class="bi bi-basket"></i> Ver Productos</a><a href="https://wa.me/5493515314675" target="_blank" class="btn btn-outline-custom"><i class="bi bi-whatsapp"></i> WhatsApp</a></div><div class="hero-stats"><div class="stat-item"><span class="stat-number">+600</span><span class="stat-label">Productos</span></div><div class="stat-item"><span class="stat-number">24h</span><span class="stat-label">Envío rápido</span></div></div></div></div></div><a href="#productos" class="scroll-indicator" style="text-decoration:none;cursor:pointer"><span>Descubrí más</span><i class="bi bi-chevron-double-down"></i></a></section>
 
@@ -140,6 +152,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="app.min.js"></script>
     <script>function toggleChatFloat(){document.getElementById('chatFloatBox').classList.toggle('show');document.getElementById('chatFloatBtn').classList.toggle('hide');}document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('keydown',function(e){if(e.ctrlKey&&(e.key==='s'||e.key==='S'||e.key==='u'||e.key==='U'||e.key==='p'||e.key==='P'))e.preventDefault();});</script>
@@ -147,6 +160,60 @@
     
 
     
+
+    <!-- MODAL COMPLETAR DATOS -->
+    <div class="modal-auth-overlay" id="modalCompletarDatos">
+      <div class="modal-auth-box">
+        <div class="modal-auth-header"><h3><i class="bi bi-person-check"></i> Completá tus datos</h3></div>
+        <p style="font-size:0.9rem;color:#666;margin-bottom:1.25rem">Para continuar necesitamos algunos datos de contacto.</p>
+        <div class="auth-form-group"><label>Nombre *</label><input type="text" id="cdNombre" class="auth-input" placeholder="Tu nombre"></div>
+        <div class="auth-form-group"><label>Apellido *</label><input type="text" id="cdApellido" class="auth-input" placeholder="Tu apellido"></div>
+        <div class="auth-form-group"><label>Teléfono *</label><input type="tel" id="cdTelefono" class="auth-input" placeholder="Ej: 3512345678"></div>
+        <div id="cdError" style="color:#e53e3e;font-size:0.82rem;margin-bottom:0.75rem;display:none"></div>
+        <button class="btn-auth-primary" onclick="guardarDatosCliente()"><i class="bi bi-check-lg"></i> Guardar y continuar</button>
+      </div>
+    </div>
+
+    <!-- MODAL PERFIL -->
+    <div class="modal-auth-overlay" id="modalPerfil" style="display:none">
+      <div class="modal-auth-box" style="max-width:480px">
+        <div class="modal-auth-header">
+          <h3><i class="bi bi-person-circle"></i> Mi perfil</h3>
+          <button onclick="closePerfilModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#666"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="perfil-tabs"><button class="perfil-tab active" onclick="switchPerfilTab('datos')">Mis datos</button><button class="perfil-tab" onclick="switchPerfilTab('direcciones')">Mis direcciones</button></div>
+        <!-- Tab datos -->
+        <div id="perfilTabDatos">
+          <div class="auth-form-group"><label>Nombre</label><input type="text" id="pfNombre" class="auth-input"></div>
+          <div class="auth-form-group"><label>Apellido</label><input type="text" id="pfApellido" class="auth-input"></div>
+          <div class="auth-form-group"><label>Teléfono</label><input type="tel" id="pfTelefono" class="auth-input"></div>
+          <div class="auth-form-group"><label>Email</label><input type="text" class="auth-input" id="pfEmail" readonly style="opacity:0.6"></div>
+          <button class="btn-auth-primary" onclick="guardarPerfil()"><i class="bi bi-check-lg"></i> Guardar cambios</button>
+        </div>
+        <!-- Tab direcciones -->
+        <div id="perfilTabDirecciones" style="display:none">
+          <div id="listaDirecciones" style="margin-bottom:1rem"></div>
+          <button class="btn-auth-secondary" id="btnAgregarDir" onclick="mostrarFormDir()"><i class="bi bi-plus-lg"></i> Agregar dirección</button>
+          <div id="formDireccion" style="display:none;margin-top:1rem;border-top:1px solid #eee;padding-top:1rem">
+            <div class="auth-form-group"><label>Nombre de la dirección *</label><input type="text" id="dirNombre" class="auth-input" placeholder="Ej: Mi casa, Trabajo..."></div>
+            <div class="auth-form-group"><label>Dirección completa *</label><input type="text" id="dirTexto" class="auth-input" placeholder="Calle, número, barrio..."></div>
+            <div style="display:flex;gap:0.5rem"><button class="btn-auth-primary" style="flex:1" onclick="guardarDireccion()">Guardar</button><button class="btn-auth-secondary" style="flex:1" onclick="cancelarFormDir()">Cancelar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL HISTORIAL PEDIDOS -->
+    <div class="modal-auth-overlay" id="modalHistorial" style="display:none">
+      <div class="modal-auth-box" style="max-width:600px;max-height:85vh;overflow-y:auto">
+        <div class="modal-auth-header">
+          <h3><i class="bi bi-clock-history"></i> Mis pedidos</h3>
+          <button onclick="closeHistorialModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#666"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="hist-tabs"><button class="hist-tab active" onclick="filterHistPedidos('todos')">Todos</button><button class="hist-tab" onclick="filterHistPedidos('pendiente')">Pendientes</button><button class="hist-tab" onclick="filterHistPedidos('confirmado')">Confirmados</button><button class="hist-tab" onclick="filterHistPedidos('entregado')">Entregados</button></div>
+        <div id="listaPedidosCliente"><div style="text-align:center;padding:2rem;color:#999">Cargando...</div></div>
+      </div>
+    </div>
 
 </body>
 </html>

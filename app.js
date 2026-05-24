@@ -562,3 +562,323 @@ function renderReviewsIndex(){
 }
 loadReviews();
 
+
+/* ===== AUTH CLIENTES ===== */
+const authClient = firebase.auth();
+let clienteAuth = null; // datos del cliente en Firestore
+let _pedidosListener = null;
+
+/* Detectar iOS */
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+/* Inicializar auth */
+authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+    /* Manejar redirect de vuelta desde Google en iOS */
+    authClient.getRedirectResult().then(result => {
+        if (result && result.user) {
+            _onUserLogin(result.user);
+        }
+    }).catch(() => {});
+});
+
+authClient.onAuthStateChanged(async user => {
+    if (user) {
+        await _onUserLogin(user);
+    } else {
+        _onUserLogout();
+    }
+});
+
+async function _onUserLogin(user) {
+    /* Cargar o crear doc en clientesAuth */
+    const ref = db.collection('clientesAuth').doc(user.uid);
+    const snap = await ref.get();
+    if (!snap.exists) {
+        /* Nuevo cliente — crear doc básico */
+        await ref.set({
+            email: user.email,
+            nombre: '',
+            apellido: '',
+            telefono: '',
+            direcciones: [],
+            creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        clienteAuth = { uid: user.uid, email: user.email, nombre: '', apellido: '', telefono: '', direcciones: [] };
+    } else {
+        clienteAuth = { uid: user.uid, ...snap.data() };
+    }
+    _updateNavAuth(user);
+    /* Si faltan datos obligatorios, mostrar modal */
+    if (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono) {
+        _showModalDatos();
+    }
+}
+
+function _onUserLogout() {
+    clienteAuth = null;
+    _updateNavAuth(null);
+    if (_pedidosListener) { _pedidosListener(); _pedidosListener = null; }
+}
+
+function _updateNavAuth(user) {
+    const authBtn = document.getElementById('authNavBtn');
+    const loginBtn = document.getElementById('loginNavBtn');
+    const userBtn = document.getElementById('userNavBtn');
+    const initials = document.getElementById('avatarInitials');
+    const udNombre = document.getElementById('udNombre');
+    const udEmail = document.getElementById('udEmail');
+    if (!authBtn) return;
+    authBtn.style.display = 'flex';
+    if (user && clienteAuth) {
+        loginBtn.style.display = 'none';
+        userBtn.style.display = 'block';
+        const nombre = clienteAuth.nombre || user.displayName || '';
+        const apellido = clienteAuth.apellido || '';
+        initials.textContent = ((nombre[0] || '') + (apellido[0] || '')).toUpperCase() || user.email[0].toUpperCase();
+        udNombre.textContent = nombre + (apellido ? ' ' + apellido : '') || user.email;
+        udEmail.textContent = user.email;
+    } else {
+        loginBtn.style.display = 'flex';
+        userBtn.style.display = 'none';
+    }
+}
+
+function authLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    if (_isIOS) {
+        authClient.signInWithRedirect(provider);
+    } else {
+        authClient.signInWithPopup(provider).catch(() => {});
+    }
+}
+
+function authLogout() {
+    authClient.signOut();
+    closeUserMenu();
+}
+
+function toggleUserMenu() {
+    document.getElementById('userDropdown').classList.toggle('open');
+}
+
+function closeUserMenu() {
+    document.getElementById('userDropdown')?.classList.remove('open');
+}
+
+/* Cerrar dropdown al clickear fuera */
+document.addEventListener('click', function(e) {
+    const btn = document.getElementById('avatarNavBtn');
+    const dd = document.getElementById('userDropdown');
+    if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.remove('open');
+    }
+});
+
+/* === MODAL COMPLETAR DATOS === */
+function _showModalDatos() {
+    const m = document.getElementById('modalCompletarDatos');
+    if (!m) return;
+    m.style.display = 'flex';
+    if (clienteAuth) {
+        document.getElementById('cdNombre').value = clienteAuth.nombre || '';
+        document.getElementById('cdApellido').value = clienteAuth.apellido || '';
+        document.getElementById('cdTelefono').value = clienteAuth.telefono || '';
+    }
+}
+
+async function guardarDatosCliente() {
+    const nombre = document.getElementById('cdNombre').value.trim();
+    const apellido = document.getElementById('cdApellido').value.trim();
+    const telefono = document.getElementById('cdTelefono').value.trim();
+    const err = document.getElementById('cdError');
+    if (!nombre || !apellido || !telefono) {
+        err.textContent = 'Completá todos los campos obligatorios.';
+        err.style.display = 'block';
+        return;
+    }
+    err.style.display = 'none';
+    try {
+        const user = authClient.currentUser;
+        await db.collection('clientesAuth').doc(user.uid).update({ nombre, apellido, telefono });
+        clienteAuth.nombre = nombre;
+        clienteAuth.apellido = apellido;
+        clienteAuth.telefono = telefono;
+        document.getElementById('modalCompletarDatos').style.display = 'none';
+        _updateNavAuth(user);
+    } catch (e) {
+        err.textContent = 'Error al guardar: ' + e.message;
+        err.style.display = 'block';
+    }
+}
+
+/* === MODAL PERFIL === */
+function openPerfilModal() {
+    if (!clienteAuth) return;
+    const m = document.getElementById('modalPerfil');
+    m.style.display = 'flex';
+    document.getElementById('pfNombre').value = clienteAuth.nombre || '';
+    document.getElementById('pfApellido').value = clienteAuth.apellido || '';
+    document.getElementById('pfTelefono').value = clienteAuth.telefono || '';
+    document.getElementById('pfEmail').value = clienteAuth.email || '';
+    switchPerfilTab('datos');
+    renderDirecciones();
+}
+
+function closePerfilModal() {
+    document.getElementById('modalPerfil').style.display = 'none';
+}
+
+function switchPerfilTab(tab) {
+    document.getElementById('perfilTabDatos').style.display = tab === 'datos' ? 'block' : 'none';
+    document.getElementById('perfilTabDirecciones').style.display = tab === 'direcciones' ? 'block' : 'none';
+    document.querySelectorAll('.perfil-tab').forEach((b, i) => b.classList.toggle('active', (i === 0 && tab === 'datos') || (i === 1 && tab === 'direcciones')));
+}
+
+async function guardarPerfil() {
+    const nombre = document.getElementById('pfNombre').value.trim();
+    const apellido = document.getElementById('pfApellido').value.trim();
+    const telefono = document.getElementById('pfTelefono').value.trim();
+    if (!nombre || !apellido || !telefono) { showToast('Completá todos los campos', 'error'); return; }
+    try {
+        await db.collection('clientesAuth').doc(clienteAuth.uid).update({ nombre, apellido, telefono });
+        clienteAuth.nombre = nombre; clienteAuth.apellido = apellido; clienteAuth.telefono = telefono;
+        _updateNavAuth(authClient.currentUser);
+        showToast('Perfil actualizado', 'success');
+        closePerfilModal();
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+/* === DIRECCIONES === */
+function renderDirecciones() {
+    const dirs = clienteAuth?.direcciones || [];
+    const c = document.getElementById('listaDirecciones');
+    if (!c) return;
+    if (!dirs.length) { c.innerHTML = '<p style="color:#999;font-size:0.88rem">No tenés direcciones guardadas.</p>'; return; }
+    c.innerHTML = dirs.map((d, i) => `
+        <div class="dir-card">
+            <div><div class="dir-card-name">${d.nombre}</div><div class="dir-card-text">${d.texto}</div></div>
+            <button class="dir-card-del" onclick="eliminarDireccion(${i})"><i class="bi bi-trash"></i></button>
+        </div>`).join('');
+    const addBtn = document.getElementById('btnAgregarDir');
+    if (addBtn) addBtn.style.display = dirs.length >= 5 ? 'none' : 'block';
+}
+
+function mostrarFormDir() {
+    document.getElementById('formDireccion').style.display = 'block';
+    document.getElementById('dirNombre').value = '';
+    document.getElementById('dirTexto').value = '';
+}
+
+function cancelarFormDir() {
+    document.getElementById('formDireccion').style.display = 'none';
+}
+
+async function guardarDireccion() {
+    const nombre = document.getElementById('dirNombre').value.trim();
+    const texto = document.getElementById('dirTexto').value.trim();
+    if (!nombre || !texto) { showToast('Completá los campos de la dirección', 'error'); return; }
+    const dirs = clienteAuth.direcciones || [];
+    if (dirs.length >= 5) { showToast('Máximo 5 direcciones', 'error'); return; }
+    dirs.push({ nombre, texto });
+    try {
+        await db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs });
+        clienteAuth.direcciones = dirs;
+        cancelarFormDir();
+        renderDirecciones();
+        showToast('Dirección guardada', 'success');
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function eliminarDireccion(idx) {
+    const dirs = clienteAuth.direcciones || [];
+    dirs.splice(idx, 1);
+    try {
+        await db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs });
+        clienteAuth.direcciones = dirs;
+        renderDirecciones();
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+/* === HISTORIAL PEDIDOS === */
+let _todosPedidosCliente = [];
+let _filtroHistPedidos = 'todos';
+
+function openHistorialModal() {
+    if (!clienteAuth) return;
+    document.getElementById('modalHistorial').style.display = 'flex';
+    _cargarPedidosCliente();
+}
+
+function closeHistorialModal() {
+    document.getElementById('modalHistorial').style.display = 'none';
+    if (_pedidosListener) { _pedidosListener(); _pedidosListener = null; }
+}
+
+function _cargarPedidosCliente() {
+    if (!clienteAuth) return;
+    const c = document.getElementById('listaPedidosCliente');
+    c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">Cargando...</div>';
+    if (_pedidosListener) { _pedidosListener(); }
+    _pedidosListener = db.collection('pedidos')
+        .where('clienteAuthUid', '==', clienteAuth.uid)
+        .orderBy('creadoEn', 'desc')
+        .onSnapshot(snap => {
+            _todosPedidosCliente = snap.docs.map(d => ({ id: d.id, ...d.data(), creadoEn: d.data().creadoEn?.toDate?.() || new Date() }));
+            _renderPedidosCliente();
+        }, () => {
+            c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">No se pudieron cargar los pedidos.</div>';
+        });
+}
+
+function filterHistPedidos(estado) {
+    _filtroHistPedidos = estado;
+    document.querySelectorAll('.hist-tab').forEach(b => b.classList.remove('active'));
+    const tabs = { todos: 0, pendiente: 1, confirmado: 2, entregado: 3 };
+    document.querySelectorAll('.hist-tab')[tabs[estado]]?.classList.add('active');
+    _renderPedidosCliente();
+}
+
+function _renderPedidosCliente() {
+    const c = document.getElementById('listaPedidosCliente');
+    let pedidos = _todosPedidosCliente;
+    if (_filtroHistPedidos !== 'todos') pedidos = pedidos.filter(p => p.estado === _filtroHistPedidos);
+    if (!pedidos.length) {
+        c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">Sin pedidos.</div>';
+        return;
+    }
+    c.innerHTML = pedidos.map(p => {
+        const num = '#' + String(p.numero || 0).padStart(6, '0');
+        const fecha = p.creadoEn.toLocaleDateString('es-AR');
+        const items = (p.items || []).map(i => i.nombre + ' x' + i.cantidad).join(', ');
+        const estadoClass = 'estado-' + (p.estado || 'pendiente');
+        const estadoLabel = { pendiente: 'Pendiente', confirmado: 'Confirmado', entregado: 'Entregado' }[p.estado] || p.estado;
+        return `<div class="pedido-hist-card">
+            <div class="pedido-hist-top">
+                <span class="pedido-hist-num">${num}</span>
+                <span class="pedido-hist-estado ${estadoClass}">${estadoLabel}</span>
+                <span class="pedido-hist-total">$${(p.total||0).toLocaleString('es-AR')}</span>
+            </div>
+            <div style="font-size:0.78rem;color:#888;margin-bottom:0.5rem">${fecha} · ${p.tipoEntrega==='envio'?'Envío':'Retiro'}</div>
+            <div class="pedido-hist-items">${items}</div>
+            <button class="btn-repetir" onclick="repetirPedido('${p.id}')"><i class="bi bi-arrow-repeat"></i> Repetir pedido</button>
+        </div>`;
+    }).join('');
+}
+
+async function repetirPedido(pedidoId) {
+    const pedido = _todosPedidosCliente.find(p => p.id === pedidoId);
+    if (!pedido) return;
+    let agregados = 0, omitidos = [];
+    carrito = [];
+    for (const item of (pedido.items || [])) {
+        const prod = productos.find(p => p.id === item.id);
+        if (!prod) { omitidos.push(item.nombre + ' (ya no existe)'); continue; }
+        if ((prod.stock || 0) <= 0) { omitidos.push(item.nombre + ' (sin stock)'); continue; }
+        carrito.push({ id: prod.id, nombre: prod.nombre, precio: prod.precio, imagen: prod.imagen, cantidad: item.cantidad });
+        agregados++;
+    }
+    saveCart(); updateCartUI();
+    closeHistorialModal();
+    if (omitidos.length) showToast('Omitidos: ' + omitidos.join(', '), 'error');
+    if (agregados) { showToast('Pedido cargado en tu carrito', 'success'); openCart(); }
+}
