@@ -136,7 +136,7 @@
                 <label class="chk-section-label">¿Tenés un cupón?</label>
                 <div style="display:flex;gap:0.5rem">
                     <input type="text" id="chkCuponInput" class="auth-input" placeholder="Ingresá tu código" style="flex:1;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
-                    <button onclick="aplicarCupon()" style="background:var(--color-primary);color:#fff;border:none;border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap">Aplicar</button>
+                    <button onclick="aplicarCupon()" style="background:#2d6b4a;color:#fff;border:none;border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap" id="chkCuponBtn">Aplicar</button>
                 </div>
                 <div id="chkCuponMsg" style="font-size:0.82rem;margin-top:0.4rem"></div>
             </div>
@@ -151,7 +151,7 @@
         <div class="chk-footer">
             <button class="chk-cancel-btn" onclick="closeCheckoutModal()">Volver al carrito</button>
             <button class="chk-confirm-btn" id="chkConfirmBtn" onclick="confirmCheckout()">
-                <i class="bi bi-whatsapp"></i> Confirmar pedido y enviar por WhatsApp
+                Confirmar pedido
             </button>
         </div>
     </aside>
