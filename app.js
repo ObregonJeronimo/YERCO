@@ -564,7 +564,7 @@ loadReviews();
 
 
 /* ===== AUTH CLIENTES ===== */
-const authClient = firebase.auth();
+let authClient; try { authClient = firebase.auth(); } catch(e) { console.warn('auth init:', e); }
 let clienteAuth = null; // datos del cliente en Firestore
 let _pedidosListener = null;
 
@@ -655,10 +655,16 @@ function _updateNavAuth(user) {
 }
 
 function authLogin() {
-    _loginActivo = true;
-    sessionStorage.setItem('_authLoginActivo', '1');
-    const provider = new firebase.auth.GoogleAuthProvider();
-    authClient.signInWithRedirect(provider);
+    try {
+        _loginActivo = true;
+        sessionStorage.setItem('_authLoginActivo', '1');
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const auth = firebase.auth();
+        auth.signInWithRedirect(provider);
+    } catch(e) {
+        console.error('authLogin error:', e);
+        showToast('Error al iniciar sesión: ' + e.message, 'error');
+    }
 }
 
 function authLogout() {
