@@ -641,6 +641,7 @@
                     '</div>';
             }).join('');
             const t=calcularTotalesVenta();
+            const costoTotalVta=ventaItems.reduce((s,i)=>s+(i.costo||0)*i.cantidad,0);
             if(bd){
                 let html='<div class="venta-subtotal-row"><span>Subtotal productos</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
                 if(t.descuentoPct>0){
@@ -651,6 +652,9 @@
                     html+='<div class="venta-subtotal-row"><span><i class="bi bi-truck"></i> Envío</span><span>'+envioTxt+'</span></div>';
                 }else{
                     html+='<div class="venta-subtotal-row" style="font-style:italic"><span><i class="bi bi-shop"></i> Retiro en local</span><span>sin cargo</span></div>';
+                }
+                if(costoTotalVta>0){
+                    html+='<div class="venta-subtotal-row" style="color:var(--text-dim);border-top:1px dashed var(--border);margin-top:4px;padding-top:4px"><span><i class="bi bi-box-seam"></i> Costo total</span><span>$'+costoTotalVta.toLocaleString('es-AR')+'</span></div>';
                 }
                 bd.innerHTML=html;
             }
@@ -1243,6 +1247,7 @@
                     '</div>';
             }).join('');
             const t=calcPedTotales();
+            const costoTotalPed=pedItems.reduce((s,i)=>s+(i.costo||0)*i.cantidad,0);
             if(bd){
                 var bdHtml='<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">';
                 bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text-dim);padding:3px 0"><span>Subtotal productos</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
@@ -1251,6 +1256,9 @@
                 }
                 if(_pedidoCupon){
                     bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.88rem;color:#2d6b4a;padding:3px 0;font-weight:600"><span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(_pedidoCupon.codigo)+' (-'+_pedidoCupon.porcentaje+'%)</span><span>-$'+Number(_pedidoCupon.monto||0).toLocaleString('es-AR')+'</span></div>';
+                }
+                if(costoTotalPed>0){
+                    bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--text-dim);padding:3px 0;border-top:1px dashed var(--border);margin-top:4px"><span><i class="bi bi-box-seam"></i> Costo total</span><span>$'+costoTotalPed.toLocaleString('es-AR')+'</span></div>';
                 }
                 bdHtml+='</div>';
                 bd.innerHTML=bdHtml;
@@ -2404,6 +2412,20 @@
                 c.appendChild(row);
             });
             var t=calcVentaMayTotales();
+            var bd=document.getElementById('ventaMayTotalBreakdown');
+            var costoTotalMay=ventaMayItems.reduce(function(s,i){return s+(i.costo||0)*i.cantidad;},0);
+            if(bd){
+                var bh='<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">';
+                bh+='<div class="venta-subtotal-row"><span>Subtotal productos</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
+                if(t.descuentoPct>0){
+                    bh+='<div class="venta-subtotal-row" style="color:#e6a23c"><span><i class="bi bi-tag"></i> Descuento ('+t.descuentoPct+'%)</span><span>-$'+t.descuentoMonto.toLocaleString('es-AR')+'</span></div>';
+                }
+                if(costoTotalMay>0){
+                    bh+='<div class="venta-subtotal-row" style="color:var(--text-dim);border-top:1px dashed var(--border);margin-top:4px;padding-top:4px"><span><i class="bi bi-box-seam"></i> Costo total</span><span>$'+costoTotalMay.toLocaleString('es-AR')+'</span></div>';
+                }
+                bh+='</div>';
+                bd.innerHTML=bh;
+            }
             document.getElementById('ventaMayTotal').textContent='$'+t.total.toLocaleString('es-AR');
         }
         async function saveVentaMay(){
@@ -2553,8 +2575,7 @@
 
         function onChangeMayDescuento(){
             var pct=Math.min(100,Math.max(0,parseFloat(document.getElementById('ventaMayDescuentoPct').value)||0));
-            var t=calcVentaMayTotales();
-            document.getElementById('ventaMayTotal').textContent='$'+t.total.toLocaleString('es-AR');
+            renderVentaMayItems();
         }
 
 
@@ -3118,6 +3139,7 @@
     <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
       <h4 style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem">Items de la venta</h4>
       <div id="ventaMayItemsList" class="venta-items"></div>
+      <div id="ventaMayTotalBreakdown"></div>
       <div class="venta-descuento-row"><label style="font-size:0.82rem;color:var(--text-dim);display:flex;align-items:center;gap:6px"><i class="bi bi-tag"></i> Descuento (%):</label><input type="number" id="ventaMayDescuentoPct" class="form-input" min="0" max="100" step="1" value="0" style="width:80px;padding:4px 8px;text-align:right;font-family:var(--mono)" oninput="onChangeMayDescuento()"></div>
       <div class="venta-total-row"><span>TOTAL:</span><span id="ventaMayTotal" class="venta-total-val" style="color:#a78bfa">$0</span></div>
     </div>
