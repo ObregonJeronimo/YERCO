@@ -572,24 +572,28 @@ let _pedidosListener = null;
 const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 /* Inicializar auth */
+let _loginActivo = false; /* true solo cuando el usuario tocó el botón de login */
+
 authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
     /* Manejar redirect de vuelta desde Google en iOS */
     authClient.getRedirectResult().then(result => {
         if (result && result.user) {
-            _onUserLogin(result.user);
+            _loginActivo = true;
+            _onUserLogin(result.user, true);
         }
     }).catch(() => {});
 });
 
 authClient.onAuthStateChanged(async user => {
     if (user) {
-        await _onUserLogin(user);
+        await _onUserLogin(user, _loginActivo);
+        _loginActivo = false;
     } else {
         _onUserLogout();
     }
 });
 
-async function _onUserLogin(user) {
+async function _onUserLogin(user, showModal=false) {
     /* Cargar o crear doc en clientesAuth */
     const ref = db.collection('clientesAuth').doc(user.uid);
     const snap = await ref.get();
@@ -608,8 +612,8 @@ async function _onUserLogin(user) {
         clienteAuth = { uid: user.uid, ...snap.data() };
     }
     _updateNavAuth(user);
-    /* Si faltan datos obligatorios, mostrar modal */
-    if (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono) {
+    /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */
+    if (showModal && (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono)) {
         _showModalDatos();
     }
 }
@@ -644,11 +648,17 @@ function _updateNavAuth(user) {
 }
 
 function authLogin() {
+    _loginActivo = true;
     const provider = new firebase.auth.GoogleAuthProvider();
     if (_isIOS) {
         authClient.signInWithRedirect(provider);
     } else {
-        authClient.signInWithPopup(provider).catch(() => {});
+        authClient.signInWithPopup(provider).then(result => {
+            if (result && result.user) {
+                _loginActivo = true;
+                _onUserLogin(result.user, true);
+            }
+        }).catch(() => { _loginActivo = false; });
     }
 }
 
