@@ -551,6 +551,8 @@ async function confirmCheckout(){
             estado:'pendiente',
             cliente:clienteNombreCompleto,
             clienteAuthUid:clienteAuth?clienteAuth.uid:null,
+            clienteEmail:clienteAuth?clienteAuth.email:null,
+            clienteId:clienteAuth?clienteAuth.clienteId:null,
             telefono:telefonoLimpio,
             direccion:tipoEntrega==='envio'?direccion:null,
             notas:notas||null,
@@ -721,6 +723,16 @@ async function _onUserLogin(user, showModal=false) {
     const ref = db.collection('clientesAuth').doc(user.uid);
     const snap = await ref.get();
     if (!snap.exists) {
+        /* Asignar ID de cliente incremental */
+        let clienteId = 1;
+        try {
+            const cntRef = db.collection('config').doc('clientesAuthCount');
+            await db.runTransaction(async t => {
+                const s = await t.get(cntRef);
+                clienteId = (s.exists ? (parseInt(s.data().count) || 0) : 0) + 1;
+                t.set(cntRef, { count: clienteId });
+            });
+        } catch(e) { console.warn('clienteId error:', e); }
         /* Nuevo cliente — crear doc básico */
         await ref.set({
             email: user.email,
@@ -728,11 +740,12 @@ async function _onUserLogin(user, showModal=false) {
             apellido: '',
             telefono: '',
             direcciones: [],
+            clienteId: clienteId,
             creadoEn: firebase.firestore.FieldValue.serverTimestamp()
         });
-        clienteAuth = { uid: user.uid, email: user.email, nombre: '', apellido: '', telefono: '', direcciones: [] };
+        clienteAuth = { uid: user.uid, email: user.email, nombre: '', apellido: '', telefono: '', direcciones: [], clienteId };
     } else {
-        clienteAuth = { uid: user.uid, ...snap.data() };
+        clienteAuth = { uid: user.uid, ...snap.data(), clienteId: snap.data().clienteId || null };
     }
     _updateNavAuth(user);
     /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */

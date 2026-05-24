@@ -92,7 +92,8 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin()
         || doc == 'pedidosCount'
-        || doc == 'ventasMayCount';
+        || doc == 'ventasMayCount'
+        || doc == 'clientesAuthCount';
     }
 
     /* ===== RESEÑAS ===== */
