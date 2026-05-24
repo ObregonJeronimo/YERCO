@@ -1220,7 +1220,7 @@
         function removePedItem(id){markPedidoDirty();pedItems=pedItems.filter(i=>i.id!==id);renderPedItems();}
         function updatePedQty(id,val){markPedidoDirty();const it=pedItems.find(i=>i.id===id);if(it){it.cantidad=Math.max(1,parseInt(val)||1);}renderPedItems();}
         function togglePedDsc(id){var w=document.getElementById('dscwrap-ped-'+id);if(!w)return;if(w.style.display==='none'){w.style.display='flex';w.querySelector('input').focus();}else{w.style.display='none';setPedItemDsc(id,0);w.querySelector('input').value=0;}}
-        function setPedItemDsc(id,val){markPedidoDirty();var pct=Math.min(100,Math.max(0,parseInt(val)||0));var inp=document.getElementById('dscwrap-ped-'+id)?.querySelector('input');if(inp&&parseInt(inp.value)!==pct)inp.value=pct;var it=pedItems.find(function(x){return x.id===id;});if(!it)return;it.descuento=pct;var sub=Math.round(it.precio*(1-pct/100))*it.cantidad;var item=document.getElementById('dscwrap-ped-'+id)?.closest('.venta-item');if(item){var subEl=item.querySelector('.vi-sub');if(subEl)subEl.textContent='$'+sub.toLocaleString('es-AR');var badgeEl=document.getElementById('badge-ped-'+id);if(badgeEl){badgeEl.textContent=pct>0?'-'+pct+'%':'';badgeEl.style.display=pct>0?'inline':'none';}}var t=calcPedTotales();var totEl=document.getElementById('pedTotal');if(totEl)totEl.textContent='$'+t.total.toLocaleString('es-AR');}
+        function setPedItemDsc(id,val){markPedidoDirty();var pct=Math.min(100,Math.max(0,parseInt(val)||0));var inp=document.getElementById('dscwrap-ped-'+id)?.querySelector('input');if(inp&&parseInt(inp.value)!==pct)inp.value=pct;var it=pedItems.find(function(x){return x.id===id;});if(!it)return;it.descuento=pct;var sub=Math.round(it.precio*(1-pct/100))*it.cantidad;var item=document.getElementById('dscwrap-ped-'+id)?.closest('.venta-item');if(item){var subEl=item.querySelector('.vi-sub');if(subEl)subEl.textContent='$'+sub.toLocaleString('es-AR');var badgeEl=document.getElementById('badge-ped-'+id);if(badgeEl){badgeEl.textContent=pct>0?'-'+pct+'%':'';badgeEl.style.display=pct>0?'inline':'none';}}var t=calcPedTotales();var totEl=document.getElementById('pedTotal');if(totEl){var tfinal=_pedidoCupon?Math.max(0,t.total-Number(_pedidoCupon.monto||0)):t.total;totEl.textContent='$'+tfinal.toLocaleString('es-AR');}}
         function renderPedItems(){
             const c=document.getElementById('pedItems');
             const bd=document.getElementById('pedTotalBreakdown');
@@ -1251,13 +1251,12 @@
                 }
                 if(_pedidoCupon){
                     bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.88rem;color:#2d6b4a;padding:3px 0;font-weight:600"><span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(_pedidoCupon.codigo)+' (-'+_pedidoCupon.porcentaje+'%)</span><span>-$'+Number(_pedidoCupon.monto||0).toLocaleString('es-AR')+'</span></div>';
-                    var totalConDesc=t.total-Number(_pedidoCupon.monto||0);
-                    bdHtml+='<div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;color:var(--accent-light);padding:4px 0;border-top:1px solid var(--border);margin-top:4px"><span>TOTAL CON DESCUENTO</span><span>$'+totalConDesc.toLocaleString('es-AR')+'</span></div>';
                 }
                 bdHtml+='</div>';
                 bd.innerHTML=bdHtml;
             }
-            document.getElementById('pedTotal').textContent='$'+t.total.toLocaleString('es-AR');
+            var totalFinal=_pedidoCupon?Math.max(0,t.total-Number(_pedidoCupon.monto||0)):t.total;
+            document.getElementById('pedTotal').textContent='$'+totalFinal.toLocaleString('es-AR');
         }
         function refreshPedInsumosSelect(){const s=document.getElementById('pedInsumoSelect');if(!s)return;const usados=new Set(pedInsumosUsados.map(u=>u.id));s.innerHTML='<option value="">+ Agregar insumo...</option>'+insumosData.filter(i=>!usados.has(i.id)).map(i=>'<option value="'+i.id+'">'+i.nombre+' (stock: '+(i.stockActual||0)+')</option>').join('');}
         function addPedInsumoFromSelect(){markPedidoDirty();const s=document.getElementById('pedInsumoSelect');const id=s.value;if(!id)return;const i=insumosData.find(x=>x.id===id);if(!i)return;pedInsumosUsados.push({id:i.id,nombre:i.nombre,cantidad:1,stockActual:i.stockActual||0});renderPedInsumosUsados();refreshPedInsumosSelect();s.value='';}
