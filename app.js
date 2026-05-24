@@ -380,7 +380,7 @@ function openCheckoutModal(){
         if (loginRequired) loginRequired.style.display = 'none';
         if (datosSection) datosSection.style.display = 'block';
         if (confirmBtn) confirmBtn.style.display = '';
-        /* Pre-llenar con datos del cliente */
+        /* Pre-llenar campos ocultos con datos del cliente */
         document.getElementById('chkNombre').value = clienteAuth.nombre || '';
         document.getElementById('chkApellido').value = clienteAuth.apellido || '';
         document.getElementById('chkTelefono').value = clienteAuth.telefono || '';
@@ -388,21 +388,21 @@ function openCheckoutModal(){
         const dirs = clienteAuth.direcciones || [];
         const wrap = document.getElementById('chkDirGuardadasWrap');
         const sel = document.getElementById('chkDirSelect');
+        const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
+        const nomDirWrap = document.getElementById('chkNombreDirWrap');
         if (dirs.length && wrap && sel) {
-            sel.innerHTML = '<option value="">Escribir nueva dirección...</option>' +
-                dirs.map((d,i) => `<option value="${i}">${d.nombre} — ${d.texto}</option>`).join('');
+            sel.innerHTML = dirs.map((d,i) => `<option value="${i}">${d.nombre} — ${d.texto}</option>`).join('') +
+                '<option value="nueva">+ Nueva dirección...</option>';
             wrap.style.display = 'block';
+            /* Pre-seleccionar la primera dirección */
+            const primeraDir = dirs[0];
+            document.getElementById('chkDireccion').value = primeraDir.texto;
+            if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
         } else if (wrap) {
             wrap.style.display = 'none';
+            if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
         }
-        /* Intentar precargar de localStorage también */
-        try {
-            const saved = JSON.parse(localStorage.getItem('yerco_checkout_data') || '{}');
-            if (saved.direccion) document.getElementById('chkDireccion').value = saved.direccion;
-            if (saved.notas) document.getElementById('chkNotas').value = saved.notas;
-            if (saved.tipoEntrega) setCheckoutEntrega(saved.tipoEntrega);
-            else setCheckoutEntrega('envio');
-        } catch(e) { setCheckoutEntrega('envio'); }
+        setCheckoutEntrega('envio');
     }
     updateCheckoutResumen();
     document.getElementById('checkoutOverlay').classList.add('show');
@@ -414,10 +414,17 @@ function openCheckoutModal(){
 function onSelectDireccion(val) {
     const dirs = clienteAuth?.direcciones || [];
     const input = document.getElementById('chkDireccion');
-    if (val === '' || !dirs[val]) {
+    const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
+    const nomDirWrap = document.getElementById('chkNombreDirWrap');
+    if (val === 'nueva') {
         if (input) input.value = '';
-    } else {
-        if (input) input.value = dirs[parseInt(val)].texto;
+        if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
+        /* Mostrar campo nombre si no tiene 5 direcciones */
+        if (nomDirWrap) nomDirWrap.style.display = dirs.length < 5 ? 'block' : 'none';
+    } else if (dirs[parseInt(val)]) {
+        const dir = dirs[parseInt(val)];
+        if (input) input.value = dir.texto;
+        if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
     }
 }
 
@@ -459,7 +466,14 @@ function updateCheckoutResumen(){
         ?'<div class="chk-resumen-row"><span><i class="bi bi-shop"></i> Retiro en local</span><span style="color:#2d4a22">sin cargo</span></div>'
         :('<div class="chk-resumen-row"><span><i class="bi bi-truck"></i> Envío</span><span'+(envio===0?' style="color:#2d4a22;font-weight:600"':'')+'>'+(envio===0?'GRATIS':'$'+formatPrice(envio))+'</span></div>');
     const cuponRow=_cuponAplicado?'<div class="chk-resumen-row" style="color:#2d6b4a"><span><i class="bi bi-ticket-perforated"></i> Cupón '+_cuponAplicado.codigo+' (-'+_cuponAplicado.porcentaje+'%)</span><span>-$'+formatPrice(dcMonto)+'</span></div>':'';
-    el.innerHTML='<div class="chk-resumen-row"><span>Subtotal ('+carrito.length+' '+(carrito.length===1?'producto':'productos')+')</span><span>$'+formatPrice(subtotal)+'</span></div>'+
+    /* Lista de productos */
+    const itemsList = carrito.map(i => {
+        const cant = i.cantidad > 1 ? '<span style="background:#e8f5e9;color:#2d4a22;border-radius:10px;padding:1px 7px;font-size:0.75rem;font-weight:700">x'+i.cantidad+'</span> ' : '';
+        return '<div class="chk-resumen-item">'+cant+'<span class="chk-resumen-item-name">'+i.nombre+'</span><span>$'+formatPrice(i.precio*i.cantidad)+'</span></div>';
+    }).join('');
+    el.innerHTML=
+        '<div style="margin-bottom:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid #eee">'+itemsList+'</div>'+
+        '<div class="chk-resumen-row"><span>Subtotal ('+carrito.length+' '+(carrito.length===1?'producto':'productos')+')</span><span>$'+formatPrice(subtotal)+'</span></div>'+
         envioRow+cuponRow+
         '<div class="chk-resumen-total"><span>TOTAL</span><span>$'+formatPrice(total)+'</span></div>';
 }
@@ -481,6 +495,18 @@ function sanitizePhone(val) {
 }
 
 async function confirmCheckout(){
+    /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
+    const selDir = document.getElementById('chkDirSelect');
+    const nomDir = sanitizeText(document.getElementById('chkNombreDir')?.value, 60);
+    if (clienteAuth && selDir && selDir.value === 'nueva' && nomDir) {
+        const dirs = clienteAuth.direcciones || [];
+        const dirTexto = sanitizeText(document.getElementById('chkDireccion').value, 200);
+        if (dirs.length < 5 && dirTexto) {
+            dirs.push({ nombre: nomDir, texto: dirTexto });
+            db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs }).catch(() => {});
+            clienteAuth.direcciones = dirs;
+        }
+    }
     const nombre=sanitizeText(document.getElementById('chkNombre').value, 80);
     const apellido=sanitizeText(document.getElementById('chkApellido').value, 80);
     const telefono=sanitizePhone(document.getElementById('chkTelefono').value);

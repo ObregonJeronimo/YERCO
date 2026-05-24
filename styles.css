@@ -521,3 +521,7 @@ img { max-width: 100%; height: auto; }
   .brand-text-img{height:38px !important}
   .logo-img{width:50px !important;height:50px !important}
 }
+
+/* Resumen checkout - lista de productos */
+.chk-resumen-item{display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0;font-size:0.82rem;color:#555;justify-content:space-between}
+.chk-resumen-item-name{flex:1;color:#333}
