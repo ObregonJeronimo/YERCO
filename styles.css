@@ -504,9 +504,14 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 991px) {
   .btn-login-desktop{display:none !important}
   #loginNavBtnMobile{display:flex !important}
-  .navbar .container{flex-wrap:nowrap}
+  #authNavBtn .btn-auth-icon-mobile{display:flex !important}
+  .navbar .container{flex-wrap:nowrap;position:relative}
   #authNavBtn{order:3;margin-right:0.25rem !important}
   .cart-btn{order:4}
+  /* Menú desplegable Bootstrap debajo del header */
+  .navbar-collapse{position:absolute;top:100%;left:0;right:0;background:rgba(248,245,240,0.98);backdrop-filter:blur(10px);box-shadow:0 8px 20px rgba(0,0,0,0.1);z-index:999;padding:0.5rem 1rem 1rem;border-top:1px solid rgba(0,0,0,0.08)}
+  .navbar-nav .nav-link{padding:0.75rem 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:1rem}
+  .navbar-nav .nav-item:last-child .nav-link{border-bottom:none}
 }
 
 @media (min-width: 992px) {
