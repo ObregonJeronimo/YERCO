@@ -514,13 +514,16 @@ async function confirmCheckout(){
     /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
     const selDir = document.getElementById('chkDirSelect');
     const nomDir = sanitizeText(document.getElementById('chkNombreDir')?.value, 60);
-    if (clienteAuth && selDir && selDir.value === 'nueva' && nomDir) {
+    const esNueva = !selDir || selDir.style.display === 'none' || selDir.value === 'nueva';
+    if (clienteAuth && esNueva && nomDir) {
         const dirs = clienteAuth.direcciones || [];
         const dirTexto = sanitizeText(document.getElementById('chkDireccion').value, 200);
         if (dirs.length < 5 && dirTexto) {
             dirs.push({ nombre: nomDir, texto: dirTexto });
-            db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs }).catch(() => {});
-            clienteAuth.direcciones = dirs;
+            try {
+                await db.collection('clientesAuth').doc(clienteAuth.uid).update({ direcciones: dirs });
+                clienteAuth.direcciones = dirs;
+            } catch(e) { console.warn('Error guardando dirección:', e); }
         }
     }
     const nombre=sanitizeText(document.getElementById('chkNombre').value, 80);
