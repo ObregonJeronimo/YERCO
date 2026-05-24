@@ -1046,7 +1046,7 @@ function _renderPedidosCliente() {
     c.innerHTML = pedidos.map(p => {
         const num = '#' + String(p.numero || 0).padStart(6, '0');
         const fecha = p.creadoEn.toLocaleDateString('es-AR');
-        const items = (p.items || []).map(i => i.nombre + ' x' + i.cantidad).join(', ');
+        const items = (p.items || []).map(i => '<div style="font-size:0.8rem;color:#555;padding:1px 0">• '+i.nombre+' <span style="color:#888">x'+i.cantidad+'</span></div>').join('');
         const estadoClass = 'estado-' + (p.estado || 'pendiente');
         const estadoLabel = { pendiente: 'Pendiente', confirmado: 'Confirmado', entregado: 'Entregado' }[p.estado] || p.estado;
         return `<div class="pedido-hist-card">
