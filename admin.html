@@ -897,7 +897,7 @@
         }
 
         let pedidosData=[],pedidosFiltered=[],pedidosPage=0,pedidoFiltroEstado='';
-        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;pedidoDirty=false;
+        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;pedidoDirty=false;let _pedidoCupon=null;
 
 
         let _pedidosUnsubscribe=null;
@@ -1104,7 +1104,7 @@
         // Modal pedido
         function openPedidoModal(docId){
             editingPedidoId=docId||null;
-            pedItems=[];pedInsumosUsados=[];pedTipoEntrega='envio';pedClienteSelected=false;pedidoDirty=false;
+            pedItems=[];pedInsumosUsados=[];pedTipoEntrega='envio';pedClienteSelected=false;pedidoDirty=false;_pedidoCupon=null;
             document.getElementById('pedFecha').value=new Date().toISOString().split('T')[0];
             document.getElementById('pedCliente').value='';
             document.getElementById('pedClienteId').value='';
@@ -1156,8 +1156,7 @@
                     pedClienteSelected=true;
                     pedItems=(p.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0}));
                     /* Mostrar cupón si el pedido lo tiene */
-                    const bdEl=document.getElementById('pedTotalBreakdown');
-                    if(bdEl&&p.cupon){bdEl.innerHTML='<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:#2d6b4a;padding:4px 0;border-top:1px solid var(--border)"><span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(p.cupon.codigo)+' (-'+p.cupon.porcentaje+'%)</span><span>-$'+Number(p.cupon.monto||0).toLocaleString('es-AR')+'</span></div>';}else if(bdEl){bdEl.innerHTML='';}
+                    _pedidoCupon=p.cupon||null;
                     pedInsumosUsados=(p.insumosUsados||[]).map(u=>{const ins=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:ins?Number(ins.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});
                     pedTipoEntrega=p.tipoEntrega||'envio';
                     document.querySelectorAll('[data-ped-entrega]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-ped-entrega')===pedTipoEntrega));
@@ -1222,7 +1221,17 @@
                     '</div>';
             }).join('');
             const t=calcPedTotales();
-            if(bd){bd.innerHTML=pedTipoEntrega==='envio'&&t.envio>0?'<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dim);padding:4px 0"><span>Subtotal</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div><div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dim);padding:4px 0"><span>Envio</span><span>$'+t.envio.toLocaleString('es-AR')+'</span></div>':'';}
+            if(bd){
+                var bdHtml='';
+                if(pedTipoEntrega==='envio'&&t.envio>0){
+                    bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dim);padding:4px 0"><span>Subtotal</span><span>$'+t.subtotal.toLocaleString('es-AR')+'</span></div>';
+                    bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dim);padding:4px 0"><span>Envío</span><span>$'+t.envio.toLocaleString('es-AR')+'</span></div>';
+                }
+                if(_pedidoCupon){
+                    bdHtml+='<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:#2d6b4a;padding:4px 0;border-top:1px solid var(--border)"><span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(_pedidoCupon.codigo)+' (-'+_pedidoCupon.porcentaje+'%)</span><span>-$'+Number(_pedidoCupon.monto||0).toLocaleString('es-AR')+'</span></div>';
+                }
+                bd.innerHTML=bdHtml;
+            }
             document.getElementById('pedTotal').textContent='$'+t.total.toLocaleString('es-AR');
         }
         function refreshPedInsumosSelect(){const s=document.getElementById('pedInsumoSelect');if(!s)return;const usados=new Set(pedInsumosUsados.map(u=>u.id));s.innerHTML='<option value="">+ Agregar insumo...</option>'+insumosData.filter(i=>!usados.has(i.id)).map(i=>'<option value="'+i.id+'">'+i.nombre+' (stock: '+(i.stockActual||0)+')</option>').join('');}
