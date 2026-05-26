@@ -132,6 +132,20 @@
         .kanban-card:active { cursor: grabbing; }
         .kanban-card.dragging { opacity: 0.4; }
         .kanban-card:hover { border-color: var(--accent-light); }
+        /* Tabs mobile kanban */
+        .kanban-mobile-tabs { display: none; }
+        @media (max-width: 700px) {
+            #pedidosKanban { display: block !important; }
+            .kanban-mobile-tabs { display: flex; gap: 0; margin-bottom: 0.75rem; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); grid-column: 1 / -1; }
+            .kmtab { flex: 1; padding: 0.55rem 0.25rem; font-size: 0.75rem; font-weight: 600; background: var(--bg-card); color: var(--text-dim); border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: background 0.15s, color 0.15s; }
+            .kmtab i { font-size: 1rem; }
+            .kmtab.active { background: var(--accent); color: #fff; }
+            .kmtab-count { background: rgba(255,255,255,0.25); border-radius: 10px; padding: 0px 6px; font-size: 0.68rem; }
+            .kmtab:not(.active) .kmtab-count { background: var(--border); color: var(--text-dim); }
+            .kanban-col { display: none; }
+            .kanban-col.kmactive { display: block; }
+            .kanban-col-header { display: none; }
+        }
         .kcard-top { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; }
         .kcard-nro { font-size: 0.72rem; color: var(--accent-light); font-family: var(--mono); font-weight: 700; }
         .kcard-cliente { font-size: 0.82rem; font-weight: 600; color: var(--text-main); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -256,6 +270,12 @@
         <button class="btn btn-secondary" style="width:auto" onclick="loadPedidos()"><i class="bi bi-arrow-clockwise"></i></button>
       </div>
       <div id="pedidosKanban" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;align-items:start">
+        <!-- Tabs solo visible en mobile -->
+        <div class="kanban-mobile-tabs" id="kanbanMobileTabs">
+          <button class="kmtab active" data-col="pendiente" onclick="switchKanbanTab('pendiente')"><i class="bi bi-clock"></i> Pendiente <span id="kmcount-pendiente" class="kmtab-count">0</span></button>
+          <button class="kmtab" data-col="confirmado" onclick="switchKanbanTab('confirmado')"><i class="bi bi-check-circle"></i> Confirmado <span id="kmcount-confirmado" class="kmtab-count">0</span></button>
+          <button class="kmtab" data-col="entregado" onclick="switchKanbanTab('entregado')"><i class="bi bi-bag-check"></i> Entregado <span id="kmcount-entregado" class="kmtab-count">0</span></button>
+        </div>
         <div class="kanban-col" id="kanban-pendiente">
           <div class="kanban-col-header" style="background:#e6a817">
             <i class="bi bi-clock"></i> Pendiente
@@ -949,6 +969,7 @@
 
         let _pedidosUnsubscribe=null;
         function loadPedidos(){_buildMesOptions('pedidoMesFiltro');
+            if(window.innerWidth<=700)switchKanbanTab('pendiente');
             /* Mostrar cargando solo la primera vez */
             if(!pedidosData.length){
                 ['pendiente','confirmado','entregado'].forEach(function(est){
@@ -1027,6 +1048,15 @@
                     });
                 });
             });
+            /* Sync contadores tabs mobile */
+            ['pendiente','confirmado','entregado'].forEach(function(est){
+                var el=document.getElementById('kmcount-'+est);
+                if(el)el.textContent=grupos[est].length;
+            });
+        }
+        function switchKanbanTab(col){
+            document.querySelectorAll('.kmtab').forEach(function(t){t.classList.toggle('active',t.dataset.col===col);});
+            document.querySelectorAll('.kanban-col').forEach(function(c){c.classList.toggle('kmactive',c.id==='kanban-'+col);});
         }
         function kanbanDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
         function kanbanDragLeave(e){e.currentTarget.classList.remove('drag-over');}
