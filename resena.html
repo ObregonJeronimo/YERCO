@@ -145,7 +145,12 @@
 
         function loginGoogle(){
             const provider=new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider).catch(e=>showToast('Error al iniciar sesión'));
+            const isMobile=/iPad|iPhone|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if(isMobile){
+                firebase.auth().signInWithRedirect(provider);
+            }else{
+                firebase.auth().signInWithPopup(provider).catch(e=>showToast('Error al iniciar sesión'));
+            }
         }
 
         async function checkAlreadyReviewed(uid){
@@ -161,6 +166,12 @@
             const params=new URLSearchParams(window.location.search);
             tokenId=params.get('id');
             if(!tokenId){showView('invalidArea');return;}
+
+            /* En mobile, puede volver de un redirect de Google */
+            try{
+                const redirectResult=await firebase.auth().getRedirectResult();
+                if(redirectResult&&redirectResult.user) currentUser=redirectResult.user;
+            }catch(e){console.error('getRedirectResult:',e);}
 
             /* Esperar estado de auth antes de continuar */
             firebase.auth().onAuthStateChanged(async user=>{

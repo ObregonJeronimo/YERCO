@@ -711,22 +711,24 @@ document.addEventListener('DOMContentLoaded', function() {
 let clienteAuth = null; // datos del cliente en Firestore
 let _pedidosListener = null;
 
-/* Detectar iOS */
+/* Detectar mobile (iOS, Android, cualquier browser móvil) */
 const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const _isMobileAuth = _isIOS || /Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 /* Inicializar auth */
 let _loginActivo = sessionStorage.getItem('_authLoginActivo') === '1';
 
-authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-    authClient.getRedirectResult().then(result => {
-        if (result && result.user) {
-            sessionStorage.setItem('_authLoginActivo', '1');
-            _loginActivo = true;
-            _onUserLogin(result.user, true);
-            sessionStorage.removeItem('_authLoginActivo');
-        }
-    }).catch(e => { console.error('getRedirectResult error:', e); });
-});
+/* getRedirectResult ANTES de setPersistence para no perderse el resultado en iOS */
+authClient.getRedirectResult().then(result => {
+    if (result && result.user) {
+        sessionStorage.setItem('_authLoginActivo', '1');
+        _loginActivo = true;
+        _onUserLogin(result.user, true);
+        sessionStorage.removeItem('_authLoginActivo');
+    }
+}).catch(e => { console.error('getRedirectResult error:', e); });
+
+authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => console.error('setPersistence error:', e));
 
 authClient.onAuthStateChanged(async user => {
     if (user) {
@@ -824,7 +826,7 @@ function authLogin() {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        if (_isIOS) {
+        if (_isMobileAuth) {
             firebase.auth().signInWithRedirect(provider);
         } else {
             firebase.auth().signInWithPopup(provider)
