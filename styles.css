@@ -256,7 +256,29 @@ img { max-width: 100%; height: auto; }
 .chk-resumen-total { display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: 700; color: var(--color-primary-dark); padding-top: 8px; margin-top: 4px; border-top: 1.5px solid #e0e0e0; }
 .chk-info-wa { background: #e8f5e8; border-left: 3px solid var(--color-whatsapp); padding: 0.75rem 0.9rem; border-radius: 8px; font-size: 0.82rem; color: var(--color-text); line-height: 1.45; }
 .chk-info-wa i { color: var(--color-whatsapp); margin-right: 4px; }
-.chk-footer { display: flex; gap: 0.5rem; padding: 0.85rem 1.25rem; border-top: 1px solid #eee; flex-shrink: 0; }
+.chk-footer { display: flex; gap: 0.5rem; padding: 0.85rem 1.25rem; border-top: 1px solid #eee; flex-shrink: 0; padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px)); }
+
+@media (max-width: 600px) {
+    .checkout-modal {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: translateY(100%);
+        width: 100%;
+        max-width: 100%;
+        max-height: 92dvh;
+        border-radius: 20px 20px 0 0;
+    }
+    .checkout-modal.show {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+    .chk-footer {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 12px));
+    }
+}
 .chk-cancel-btn { flex: 1; background: white; border: 1.5px solid #e0e0e0; color: var(--color-text); padding: 0.85rem; border-radius: 10px; font-weight: 500; font-size: 0.92rem; cursor: pointer; transition: background 0.15s; }
 .chk-cancel-btn:active { background: #f3f3f3; }
 @media(hover:hover){.chk-cancel-btn:hover { background: #f3f3f3; }}
