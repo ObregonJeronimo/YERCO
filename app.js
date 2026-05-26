@@ -826,25 +826,27 @@ function authLogin() {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        if (_isMobileAuth) {
-            firebase.auth().signInWithRedirect(provider);
-        } else {
-            firebase.auth().signInWithPopup(provider)
-                .then(result => {
-                    if (result.user) {
-                        _loginActivo = true;
-                        _onUserLogin(result.user, true);
+        firebase.auth().signInWithPopup(provider)
+            .then(result => {
+                if (result.user) {
+                    _loginActivo = true;
+                    _onUserLogin(result.user, true);
+                }
+            })
+            .catch(e => {
+                console.error('popup error:', e);
+                /* En iOS Safari el popup puede fallar por restricciones - intentar redirect como fallback */
+                if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+                    if (e.code === 'auth/popup-blocked') {
+                        firebase.auth().signInWithRedirect(provider);
+                        return;
                     }
-                })
-                .catch(e => {
-                    console.error('popup error:', e);
-                    if (e.code !== 'auth/popup-closed-by-user') {
-                        showToast('Error: ' + e.message, 'error');
-                    }
-                    _loginActivo = false;
-                    sessionStorage.removeItem('_authLoginActivo');
-                });
-        }
+                } else {
+                    showToast('Error: ' + e.message, 'error');
+                }
+                _loginActivo = false;
+                sessionStorage.removeItem('_authLoginActivo');
+            });
     } catch(e) {
         console.error('authLogin error:', e);
         showToast('Error al iniciar sesión: ' + e.message, 'error');
