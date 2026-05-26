@@ -2827,7 +2827,13 @@
             const c=document.getElementById('clientesAuthList');
             c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';
             try{
-                const snap=await db.collection('clientesAuth').orderBy('creadoEn','desc').get();
+                let snap;
+                try{
+                    snap=await db.collection('clientesAuth').orderBy('creadoEn','desc').get();
+                }catch(e2){
+                    console.warn('orderBy creadoEn falló, usando get() simple:',e2.message);
+                    snap=await db.collection('clientesAuth').get();
+                }
                 clientesAuthData=snap.docs.map(d=>({uid:d.id,...d.data(),_totalVentas:0}));
                 /* Calcular ventas por cliente Auth */
                 const ventSnap=await db.collection('ventas').get();
