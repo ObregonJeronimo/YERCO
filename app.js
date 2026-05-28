@@ -288,6 +288,9 @@ function openProductDetailModal(id){
         (!desc&&!vn?'<div class="pdm-section pdm-no-info"><i class="bi bi-info-circle"></i> Próximamente más información sobre este producto</div>':'')+
         (qty===0||noStock?'<button class="pdm-add-btn'+(noStock?' disabled':'')+'" id="pdmAddBtn-'+id+'" onclick="'+(qty===0&&!noStock?'addToCart(\''+id+'\');refreshProductDetailModal(\''+id+'\')'  :'event.stopPropagation()')+'"'+(noStock?' disabled':'')+'>'+btnContent+'</button>':'<div class="pdm-add-btn added" id="pdmAddBtn-'+id+'">'+btnContent+'</div>')+
         '</div>';
+    const footerEl=document.getElementById('productDetailFooter');
+    const btnEl=document.getElementById('productDetailBody').querySelector('.pdm-add-btn');
+    if(btnEl&&footerEl){footerEl.innerHTML='';footerEl.appendChild(btnEl);}
     document.getElementById('productDetailModal').classList.add('show');
     document.getElementById('productDetailOverlay').classList.add('show');
     document.body.style.overflow='hidden';
@@ -295,7 +298,7 @@ function openProductDetailModal(id){
 function refreshProductDetailModal(id){
     /* Solo actualizar el boton (no re-renderizar todo el modal para evitar bugs y perder handlers) */
     const p=productos.find(x=>x.id===id);if(!p)return;
-    const btnEl=document.getElementById('pdmAddBtn-'+id);
+    const btnEl=document.getElementById('pdmAddBtn-'+id)||(document.getElementById('productDetailFooter')&&document.getElementById('productDetailFooter').querySelector('#pdmAddBtn-'+id));
     if(!btnEl)return;
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;

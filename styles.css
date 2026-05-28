@@ -177,7 +177,8 @@ img { max-width: 100%; height: auto; }
 .pdm-back:hover { background: #f3f3f3; }
 .pdm-close { background: transparent; border: none; color: var(--color-text-light); font-size: 1.2rem; padding: 4px 8px; cursor: pointer; border-radius: 6px; }
 .pdm-close:hover { background: #f3f3f3; color: #333; }
-.pdm-body { overflow-y: auto; flex: 1; }
+.pdm-body { overflow-y: auto; flex: 1; min-height: 0; }
+.pdm-footer { padding: 0.75rem 1rem; border-top: 1px solid #eee; flex-shrink: 0; background: white; padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
 .pdm-carousel { position: relative; background: #fff; height: 380px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .pdm-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.3s; }
 .pdm-img.active { opacity: 1; }
