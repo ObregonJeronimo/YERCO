@@ -781,10 +781,55 @@ async function _onUserLogin(user, showModal=false) {
     if (showModal && (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono)) {
         _showModalDatos();
     }
-    /* Si el checkout estaba abierto, refrescarlo con los datos */
+    /* Si el checkout estaba abierto, refrescar solo la parte de auth sin resetear el formulario */
     if (document.getElementById('checkoutModal')?.classList.contains('show')) {
-        openCheckoutModal();
+        _refreshCheckoutAuth();
     }
+}
+
+function _refreshCheckoutAuth() {
+    const loginRequired = document.getElementById('chkLoginRequired');
+    const datosSection = document.getElementById('chkDatosSection');
+    const confirmBtn = document.getElementById('chkConfirmBtn');
+    if (!clienteAuth) {
+        if (loginRequired) loginRequired.style.display = 'block';
+        if (datosSection) datosSection.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+        return;
+    }
+    if (loginRequired) loginRequired.style.display = 'none';
+    if (datosSection) datosSection.style.display = 'block';
+    if (confirmBtn) confirmBtn.style.display = '';
+    /* Pre-llenar solo si el campo está vacío (no pisar lo que el usuario escribió) */
+    const n = document.getElementById('chkNombre');
+    const a = document.getElementById('chkApellido');
+    const t = document.getElementById('chkTelefono');
+    if (n && !n.value) n.value = clienteAuth.nombre || '';
+    if (a && !a.value) a.value = clienteAuth.apellido || '';
+    if (t && !t.value) t.value = clienteAuth.telefono || '';
+    /* Cargar direcciones guardadas */
+    const dirs = clienteAuth.direcciones || [];
+    const wrap = document.getElementById('chkDirGuardadasWrap');
+    const sel = document.getElementById('chkDirSelect');
+    const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
+    const nomDirWrap = document.getElementById('chkNombreDirWrap');
+    if (dirs.length) {
+        sel.innerHTML = dirs.map((d,i) =>
+            `<option value="${i}">${d.nombre} — ${d.texto}</option>`
+        ).join('') + '<option value="nueva">+ Nueva dirección...</option>';
+        if (wrap) wrap.style.display = 'block';
+        if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
+        /* Solo pre-seleccionar si no hay dirección ya elegida */
+        if (!document.getElementById('chkDireccion').value) {
+            document.getElementById('chkDireccion').value = dirs[0].texto;
+            sel.value = '0';
+        }
+    } else {
+        if (wrap) wrap.style.display = 'none';
+        if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
+        if (nomDirWrap) nomDirWrap.style.display = 'block';
+    }
+    updateCheckoutResumen();
 }
 
 function _onUserLogout() {
