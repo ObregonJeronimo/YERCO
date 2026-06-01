@@ -60,12 +60,17 @@ function getCategoriasConSub(prods) {
     const m = {}; prods.forEach(p => { if(!p.categoria)return; if(!m[p.categoria])m[p.categoria]=new Set(); if(p.subcategoria)m[p.categoria].add(p.subcategoria); }); return m;
 }
 
+function _norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function _levenshtein(a,b){if(!a.length)return b.length;if(!b.length)return a.length;if(a[0]===b[0])return _levenshtein(a.slice(1),b.slice(1));return 1+Math.min(_levenshtein(a.slice(1),b),_levenshtein(a,b.slice(1)),_levenshtein(a.slice(1),b.slice(1)));}
+const _STOPWORDS=new Set(['de','la','el','los','las','un','una','unos','unas','con','sin','y','o','en','a','al','del']);
+function _matchPalabra(palabra,texto){if(texto.includes(palabra))return true;const words=texto.split(/\s+/);for(const w of words){if(w.startsWith(palabra)||palabra.startsWith(w))return true;if(palabra.length>=4&&w.length>=4&&_levenshtein(palabra,w)<=1)return true;}return false;}
+function _searchScore(q,p){const norm=_norm;const texto=norm(p.nombre)+' '+norm(p.categoria)+' '+norm(p.subcategoria)+' '+norm(p.descripcion);const palabras=norm(q).split(/\s+/).filter(w=>w.length>1&&!_STOPWORDS.has(w));if(!palabras.length)return 1;return palabras.every(pal=>_matchPalabra(pal,texto))?1:0;}
 function aplicarFiltros() {
     let r = [...productos];
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
-    if (busquedaTexto) { const q=busquedaTexto.toLowerCase(); r=r.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.categoria||'').toLowerCase().includes(q)||(p.subcategoria||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q)); }
+    if (busquedaTexto) { r=r.filter(p=>_searchScore(busquedaTexto,p)>0); }
     r.sort((a,b)=>{
         if(ordenAlfa){const cmp=(a.nombre||'').localeCompare(b.nombre||'','es');if(cmp!==0)return ordenAlfa==='asc'?cmp:-cmp;}
         if(ordenPrecio){const cmp=a.precio-b.precio;if(cmp!==0)return ordenPrecio==='asc'?cmp:-cmp;}
