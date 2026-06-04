@@ -54,6 +54,13 @@ async function loadProductsFromFirebase(retries) {
         let carritoActualizado=false;
         carrito=carrito.map(item=>{const prod=productos.find(p=>p.id===item.id);if(prod&&prod.precio!==item.precio){carritoActualizado=true;return{...item,precio:prod.precio,nombre:prod.nombreMostrado||prod.nombre};}return item;});
         if(carritoActualizado){saveCart();updateCartUI();}
+        /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
+        if(!window._autoScrollDone){
+            window._autoScrollDone=true;
+            const hash=window.location.hash;
+            const target=hash==='#productos'?'productos':'productos';
+            setTimeout(()=>{const s=document.getElementById(target);if(s)s.scrollIntoView({behavior:'smooth',block:'start'});},600);
+        }
     } catch(e) { console.error(e); if(retries>0){setTimeout(()=>loadProductsFromFirebase(retries-1),1500);return;} showToast('Error al cargar productos.','error'); }
     finally { if (loading) loading.classList.remove('show'); }
 }
@@ -190,6 +197,12 @@ function renderProducts(list) {
         const atcAttrs=qty>0
             ?'class="add-to-cart-btn added"'
             :'class="add-to-cart-btn"'+(noStock?' disabled':'')+' onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"';
+        /* Gramajes: hijos de este producto */
+        const hijos=productos.filter(h=>h.padreId===p.id&&h.gramaje);
+        const gramajeHTML=hijos.length>0?'<div class="gramaje-btns">'+
+            '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
+            hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
+            '</div>':'';
         const dscPct=p.descuento||0;
         const nombreDisplay=p.nombreMostrado||p.nombre;
         const badgeDesc=dscPct>0?'<span class="product-discount-badge">-'+dscPct+'% OFF</span>':'';
@@ -212,6 +225,7 @@ function renderProducts(list) {
             '<'+atcTag+' '+atcAttrs+'>' +
             btnContent +
             '</'+atcTag+'>' +
+            gramajeHTML+
             '</div></article>';
     }).join('');
 }
@@ -1210,8 +1224,8 @@ async function aplicarCupon() {
         }
         /* Verificar límite de compra */
         const subtotal = carrito.reduce((s,i) => s + i.precio * i.cantidad, 0);
-        if (cup.limiteCompra && subtotal > Number(cup.limiteCompra)) {
-            if(msg) msg.innerHTML='<span style="color:#e53e3e">Este cupón solo aplica en pedidos hasta $'+Number(cup.limiteCompra).toLocaleString('es-AR')+'.</span>';
+        if (cup.limiteCompra && subtotal < Number(cup.limiteCompra)) {
+            if(msg) msg.innerHTML='<span style="color:#e53e3e">Este cupón requiere una compra mínima de $'+Number(cup.limiteCompra).toLocaleString('es-AR')+'.</span>';
             if(btn){btn.disabled=false;btn.textContent='Aplicar';}
             return;
         }
