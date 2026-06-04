@@ -474,9 +474,10 @@
             }catch(e){showAdminToast('Error al subir: '+e.message,'error');}
         }
 
+        function verImgExtra(url){if(!url)return;const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';const img=document.createElement('img');img.src=url;img.style.cssText='max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5)';ov.appendChild(img);ov.onclick=()=>ov.remove();document.body.appendChild(ov);}
         function compressImage(file,maxWidth,quality){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*(maxWidth/w));w=maxWidth;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);const tryWebP=()=>{canvas.toBlob(blob=>{if(blob)resolve(blob);else canvas.toBlob(blob2=>{if(blob2)resolve(blob2);else reject(new Error('Error al comprimir'));},'image/jpeg',quality);},'image/webp',quality);};tryWebP();};img.onerror=()=>reject(new Error('Error al leer imagen'));img.src=URL.createObjectURL(file);});}
         async function uploadImage(file){
-            const compressed=await compressImage(file,600,0.6);
+            const compressed=await compressImage(file,1200,0.85);
             const name='productos/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9.]/g,'_').replace(/\.[^.]+$/,'')+'.jpg';
             const ref=storage.ref(name);
             const metadata={contentType:'image/jpeg'};
@@ -1029,6 +1030,7 @@
                     cards+='<div class="kcard-bottom">';
                     cards+='<span class="kcard-date">'+fecha+'</span>';
                     cards+='<span class="kcard-items">'+itemsTxt+'</span>';
+                    cards+='<button onclick="event.stopPropagation();deletePedido(\''+p.docId+'\','+String(p.numero||0)+')" style="background:none;border:none;color:#f56c6c;cursor:pointer;padding:0 2px;font-size:0.85rem;opacity:0.7" title="Eliminar"><i class="bi bi-trash"></i></button>';
                     cards+=badge;
                     cards+='</div>';
                     cards+='</div>';
@@ -2380,7 +2382,8 @@
             var totalPags=Math.ceil(ventasMayFiltered.length/VENTAS_MAY_PAGE_SIZE);
             if(pg)pg.innerHTML=totalPags>1?'<button class="btn btn-secondary btn-sm" style="width:auto" onclick="ventasMayPage=Math.max(0,ventasMayPage-1);renderVentasMay()" '+(ventasMayPage===0?'disabled':'')+'>&#8249;</button><span style="font-size:0.82rem;color:var(--text-dim);padding:0 0.75rem">'+(ventasMayPage+1)+'/'+totalPags+'</span><button class="btn btn-secondary btn-sm" style="width:auto" onclick="ventasMayPage=Math.min(totalPags-1,ventasMayPage+1);renderVentasMay()" '+(ventasMayPage>=totalPags-1?'disabled':'')+'>&#8250;</button>':'';
         }
-        function openVentaMayModal(id){
+        async function openVentaMayModal(id){
+            if(!allProducts.length)await loadProducts();
             editingVentaMayId=id||null;
             ventaMayItems=[];ventaMayInsumosUsados=[];ventaMayTipoEntrega='envio';ventaMayClienteSelected=false;
             document.getElementById('ventaMayCliente').value='';

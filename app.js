@@ -620,9 +620,6 @@ async function confirmCheckout(){
             try {
                 const cupSnap = await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get();
                 if (!cupSnap.empty) {
-                    const cupRef = cupSnap.docs[0].ref;
-                    const batch = db.batch();
-                    batch.update(cupRef, { usos: firebase.firestore.FieldValue.increment(1) });
                     const usoData = {
                         cuponId: cupSnap.docs[0].id,
                         codigo: _cuponAplicado.codigo,
@@ -631,8 +628,7 @@ async function confirmCheckout(){
                     };
                     if (clienteAuth) { usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email; }
                     else if (nombre && apellido) { usoData.nombreCliente = nombre+' '+apellido; usoData.telefono = telefono; }
-                    batch.set(db.collection('cuponesUsos').doc(), usoData);
-                    await batch.commit();
+                    await db.collection('cuponesUsos').doc().set(usoData);
                 }
             } catch(e) { console.warn('Error registrando uso de cupón:', e); }
         }

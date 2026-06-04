@@ -116,7 +116,39 @@ exports.notifyTelegramOnNewOrder = onDocumentCreated(
 
 
 /**
- * RATE LIMITING: bloquea creacion de pedidos si el usuario hizo mas de 5 en la ultima hora
+ * CUPONES: incrementa usos y desactiva si llega al máximo
+ * Se ejecuta cuando se registra un uso en /cuponesUsos
+ */
+exports.procesarUsoCupon = onDocumentCreated(
+  {
+    document: 'cuponesUsos/{usoId}',
+    region: 'southamerica-east1',
+    memory: '256MiB',
+    timeoutSeconds: 30
+  },
+  async (event) => {
+    const uso = event.data?.data();
+    if (!uso || !uso.cuponId) return;
+    try {
+      const cupRef = db.collection('cupones').doc(uso.cuponId);
+      await db.runTransaction(async tx => {
+        const snap = await tx.get(cupRef);
+        if (!snap.exists) return;
+        const cup = snap.data();
+        const nuevosUsos = (parseInt(cup.usos) || 0) + 1;
+        const updates = { usos: nuevosUsos };
+        if (cup.maxUsos && nuevosUsos >= parseInt(cup.maxUsos)) {
+          updates.activo = false;
+          logger.info(`Cupón ${cup.codigo} desactivado por alcanzar maxUsos (${nuevosUsos}/${cup.maxUsos})`);
+        }
+        tx.update(cupRef, updates);
+      });
+    } catch (e) {
+      logger.error('Error procesando uso de cupón:', e);
+    }
+  }
+);
+
  * Se ejecuta cuando se crea un documento en /pedidos
  */
 const {onDocumentCreated: onPedidoCreated} = require('firebase-functions/v2/firestore');
