@@ -51,6 +51,7 @@ async function loadProductsFromFirebase(retries) {
         const snap = await db.collection('productos').get();
         productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', precio:r.precio||0, stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
+        _searchCache.clear();
         let carritoActualizado=false;
         carrito=carrito.map(item=>{const prod=productos.find(p=>p.id===item.id);if(prod&&prod.precio!==item.precio){carritoActualizado=true;return{...item,precio:prod.precio,nombre:prod.nombreMostrado||prod.nombre};}return item;});
         if(carritoActualizado){saveCart();updateCartUI();}
@@ -71,10 +72,17 @@ function getCategoriasConSub(prods) {
 }
 
 function _norm(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
-function _levenshtein(a,b){if(!a.length)return b.length;if(!b.length)return a.length;if(a[0]===b[0])return _levenshtein(a.slice(1),b.slice(1));return 1+Math.min(_levenshtein(a.slice(1),b),_levenshtein(a,b.slice(1)),_levenshtein(a.slice(1),b.slice(1)));}
-const _STOPWORDS=new Set(['de','la','el','los','las','un','una','unos','unas','con','sin','y','o','en','a','al','del']);
-function _matchPalabra(palabra,texto){if(texto.includes(palabra))return true;const words=texto.split(/\s+/);for(const w of words){if(w.startsWith(palabra)||palabra.startsWith(w))return true;if(palabra.length>=4&&w.length>=4&&_levenshtein(palabra,w)<=1)return true;}return false;}
-function _searchScore(q,p){const norm=_norm;const texto=norm(p.nombre)+' '+norm(p.categoria)+' '+norm(p.subcategoria)+' '+norm(p.descripcion);const palabras=norm(q).split(/\s+/).filter(w=>w.length>1&&!_STOPWORDS.has(w));if(!palabras.length)return 1;return palabras.every(pal=>_matchPalabra(pal,texto))?1:0;}
+/* Levenshtein iterativo - sin recursión, mucho más rápido */
+function _levenshtein(a,b){const la=a.length,lb=b.length;if(!la)return lb;if(!lb)return la;if(Math.abs(la-lb)>2)return 3;/* atajo: si difieren mucho en largo, no vale la pena */const row=Array.from({length:lb+1},(_,i)=>i);for(let i=1;i<=la;i++){let prev=i;for(let j=1;j<=lb;j++){const val=a[i-1]===b[j-1]?row[j-1]:1+Math.min(prev,row[j],row[j-1]);row[j-1]=prev;prev=val;}row[lb]=prev;}return row[lb];}
+const _STOPWORDS=new Set(['de','la','el','los','las','un','una','unos','unas','con','sin','y','o','en','a','al','del','x']);
+/* Cache de textos normalizados por producto */
+const _searchCache=new Map();
+function _getTexto(p){if(_searchCache.has(p.id))return _searchCache.get(p.id);const t=_norm((p.nombreMostrado||p.nombre)+' '+p.categoria+' '+(p.subcategoria||'')+' '+(p.descripcion||''));_searchCache.set(p.id,t);return t;}
+function _matchPalabra(pal,texto){if(texto.includes(pal))return true;/* solo fuzzy para palabras >= 5 letras */if(pal.length<5)return false;const words=texto.split(/\s+/);for(const w of words){if(Math.abs(w.length-pal.length)<=2&&_levenshtein(pal,w)<=1)return true;}return false;}
+function _searchScore(q,p){const texto=_getTexto(p);const palabras=_norm(q).split(/\s+/).filter(w=>w.length>1&&!_STOPWORDS.has(w));if(!palabras.length)return 1;return palabras.every(pal=>_matchPalabra(pal,texto))?1:0;}
+/* Debounce: espera 200ms desde el último keystroke antes de filtrar */
+let _searchTimer=null;
+function onSearchInput(v){busquedaTexto=v;clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{paginaActual=1;aplicarFiltros();},200);}
 function aplicarFiltros() {
     let r = [...productos];
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
@@ -92,7 +100,6 @@ function aplicarFiltros() {
 
 function filterByCategory(cat) { categoriaActual=cat; subcategoriaActual=null; paginaActual=1; aplicarFiltros(); }
 function filterBySubCategory(cat,sub) { categoriaActual=cat; subcategoriaActual=sub; paginaActual=1; aplicarFiltros(); }
-function onSearchInput(v) { busquedaTexto=v; paginaActual=1; aplicarFiltros(); }
 function toggleSortPrice() { if(!ordenPrecio)ordenPrecio='asc';else if(ordenPrecio==='asc')ordenPrecio='desc';else ordenPrecio='asc'; paginaActual=1; aplicarFiltros(); }
 function toggleSortAlfa() { if(!ordenAlfa)ordenAlfa='asc';else if(ordenAlfa==='asc')ordenAlfa='desc';else ordenAlfa='asc'; paginaActual=1; aplicarFiltros(); }
 function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=document.getElementById('sortAlfaBtn'); if(b){b.innerHTML=ordenPrecio==='desc'?'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio':'<i class="bi bi-sort-numeric-up"></i> Menor precio';b.style.borderColor=ordenPrecio?'var(--color-primary)':'';b.style.opacity=ordenPrecio?'1':'0.5';} if(a){a.innerHTML=ordenAlfa==='desc'?'<i class="bi bi-sort-alpha-up-alt"></i> Z-A':'<i class="bi bi-sort-alpha-down"></i> A-Z';a.style.borderColor=ordenAlfa?'var(--color-primary)':'';a.style.opacity=ordenAlfa?'1':'0.5';} }
