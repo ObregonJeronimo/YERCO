@@ -149,6 +149,7 @@ exports.procesarUsoCupon = onDocumentCreated(
   }
 );
 
+/**
  * Se ejecuta cuando se crea un documento en /pedidos
  */
 const {onDocumentCreated: onPedidoCreated} = require('firebase-functions/v2/firestore');
