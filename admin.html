@@ -485,12 +485,14 @@
         }
 
         function verImgExtra(url){if(!url)return;const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';const img=document.createElement('img');img.src=url;img.style.cssText='max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5)';ov.appendChild(img);ov.onclick=()=>ov.remove();document.body.appendChild(ov);}
-        function compressImage(file,maxWidth,quality){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*(maxWidth/w));w=maxWidth;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);const tryWebP=()=>{canvas.toBlob(blob=>{if(blob)resolve(blob);else canvas.toBlob(blob2=>{if(blob2)resolve(blob2);else reject(new Error('Error al comprimir'));},'image/jpeg',quality);},'image/webp',quality);};tryWebP();};img.onerror=()=>reject(new Error('Error al leer imagen'));img.src=URL.createObjectURL(file);});}
+        function compressImage(file,maxWidth,quality){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxWidth){h=Math.round(h*(maxWidth/w));w=maxWidth;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);const tryWebP=()=>{canvas.toBlob(blob=>{if(blob){blob._ext='webp';blob._mime='image/webp';resolve(blob);}else canvas.toBlob(blob2=>{if(blob2){blob2._ext='jpg';blob2._mime='image/jpeg';resolve(blob2);}else reject(new Error('Error al comprimir'));},'image/jpeg',quality);},'image/webp',quality);};tryWebP();};img.onerror=()=>reject(new Error('Error al leer imagen'));img.src=URL.createObjectURL(file);});}
         async function uploadImage(file){
             const compressed=await compressImage(file,1200,0.85);
-            const name='productos/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9.]/g,'_').replace(/\.[^.]+$/,'')+'.jpg';
+            const ext=compressed._ext||'jpg';
+            const mime=compressed._mime||'image/jpeg';
+            const name='productos/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9.]/g,'_').replace(/\.[^.]+$/,'')+'.'+ext;
             const ref=storage.ref(name);
-            const metadata={contentType:'image/jpeg'};
+            const metadata={contentType:mime,cacheControl:'public,max-age=31536000'};
             try{
                 const snapshot=await ref.put(compressed,metadata);
                 const url=await snapshot.ref.getDownloadURL();
