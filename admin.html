@@ -1746,7 +1746,7 @@
                         const precio='$'+_p.toLocaleString('es-AR');
                         const precioW=doc.getTextWidth(precio);
                         const maxNameW=colW-precioW-4;
-                        let nombre=p.nombre||'';
+                        let nombre=(mayorista?p.nombre:(p.nombreMostrado||p.nombre))||'';
                         /* Truncar nombre si no entra */
                         while(doc.getTextWidth(nombre)>maxNameW&&nombre.length>4){
                             nombre=nombre.slice(0,-1);
