@@ -96,7 +96,7 @@ function aplicarFiltros() {
     if (busquedaTexto) { r=r.filter(p=>_searchScore(busquedaTexto,p)>0); }
     r.sort((a,b)=>{
         if(ordenAlfa){const cmp=(a.nombre||'').localeCompare(b.nombre||'','es');if(cmp!==0)return ordenAlfa==='asc'?cmp:-cmp;}
-        if(ordenPrecio){const cmp=a.precio-b.precio;if(cmp!==0)return ordenPrecio==='asc'?cmp:-cmp;}
+        if(ordenPrecio){const cmp=precioFinal(a)-precioFinal(b);if(cmp!==0)return ordenPrecio==='asc'?cmp:-cmp;}
         return 0;
     });
     renderProductsPaginated(r); updateSortButtonUI();
