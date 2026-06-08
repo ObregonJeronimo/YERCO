@@ -4,7 +4,7 @@
  */
 const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
-function optImg(url,w){if(!url||!url.startsWith('http'))return url;return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&q=85&output=webp';}
+function optImg(url,w){return url||'';}
 let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
