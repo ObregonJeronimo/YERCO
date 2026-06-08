@@ -4,7 +4,7 @@
  */
 const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
-function optImg(url,w){if(!url||!url.startsWith('http'))return url;return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&q=70&output=webp&default=img/default-product.jpg';}
+function optImg(url,w){if(!url||!url.startsWith('http'))return url;return 'https://wsrv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&q=85&output=webp';}
 let productos = [];
 let carrito = [];
 let categoriaActual = 'Todos';
@@ -220,7 +220,7 @@ function renderProducts(list) {
             '<div class="product-image" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">' +
             badgeDesc +
             '<div class="img-skeleton"></div>' +
-            '<img src="'+esc(img)+'" alt="'+esc(nombreDisplay)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="this.src=\'img/default-product.jpg\';this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" style="opacity:0;transition:opacity 0.3s">' +
+            '<img src="'+esc(img)+'" alt="'+esc(nombreDisplay)+'" loading="lazy" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="if(this.dataset.orig&&this.src!==this.dataset.orig){this.src=this.dataset.orig;}else{this.src=\'img/default-product.jpg\';}this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" data-orig="'+esc(p.imagen||'')+'" style="opacity:0;transition:opacity 0.3s">' +
             '<span class="product-category">'+esc(p.categoria)+(p.subcategoria?' - '+esc(p.subcategoria):'')+'</span>' +
             (noStock?'<span class="product-stock out">Sin stock</span>':'') +
             '</div>' +
