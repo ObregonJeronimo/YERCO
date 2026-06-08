@@ -53,7 +53,7 @@ async function loadProductsFromFirebase(retries) {
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
         let carritoActualizado=false;
-        carrito=carrito.map(item=>{const prod=productos.find(p=>p.id===item.id);if(prod&&prod.precio!==item.precio){carritoActualizado=true;return{...item,precio:prod.precio,nombre:prod.nombreMostrado||prod.nombre};}return item;});
+        carrito=carrito.map(item=>{const prod=productos.find(p=>p.id===item.id);if(prod){const pf=precioFinal(prod);if(pf!==item.precio){carritoActualizado=true;return{...item,precio:pf,nombre:prod.nombreMostrado||prod.nombre};}}return item;});
         if(carritoActualizado){saveCart();updateCartUI();}
         /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
         if(!window._autoScrollDone){
@@ -150,7 +150,9 @@ function renderCategoryFilters(mapa) {
 function setActiveFilter(btn) { document.querySelectorAll('#categoryFilters .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
 function hideAllSubFilters() { document.querySelectorAll('.sub-filters-row').forEach(r=>r.classList.remove('show')); }
 
-function formatPrice(v) { return v.toLocaleString('es-AR',{minimumFractionDigits:0}); }
+function formatPrice(v) { const n=Number(v)||0; return n.toLocaleString('es-AR',{minimumFractionDigits:0}); }
+/* Precio final que paga el cliente (aplica descuento del producto si tiene) */
+function precioFinal(p){const dsc=Math.min(95,p.descuento||0);return dsc>0?Math.round(p.precio*(1-dsc/100)):p.precio;}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 function renderProductsPaginated(list) {
@@ -217,8 +219,9 @@ function renderProducts(list) {
         const dscPct=Math.min(95,p.descuento||0);
         const nombreDisplay=p.nombreMostrado||p.nombre;
         const badgeDesc=dscPct>0?'<span class="product-discount-badge">-'+(p.descuento||0)+'% OFF</span>':'';
+        const precioConDesc=dscPct>0?Math.round(p.precio*(1-dscPct/100)):p.precio;
         const precioHtml=dscPct>0
-            ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(Math.round(p.precio/(1-dscPct/100)))+'</span> $'+formatPrice(p.precio)+'</span>'
+            ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(p.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
             :'<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>';
         return '<article class="product-card" data-id="'+p.id+'">' +
             '<div class="product-image" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">' +
@@ -258,7 +261,7 @@ function closeCart(){document.getElementById('cartSidebar')?.classList.remove('s
 function updateProductQuantity(id,ch) {
     const p=productos.find(x=>x.id===id); if(!p)return;
     let idx=carrito.findIndex(i=>i.id===id);
-    if(idx===-1&&ch>0){carrito.push({id:p.id,nombre:p.nombre,precio:p.precio,imagen:p.imagen,cantidad:1});showToast(p.nombre+' agregado','success');}
+    if(idx===-1&&ch>0){carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:precioFinal(p),imagen:p.imagen,cantidad:1});showToast((p.nombreMostrado||p.nombre)+' agregado','success');}
     else if(idx!==-1){const nq=carrito[idx].cantidad+ch;if(nq<=0){carrito.splice(idx,1);showToast(p.nombre+' eliminado','info');}else if(nq<=p.stock){carrito[idx].cantidad=nq;}else{showToast('Stock máximo','error');return;}}
     saveCart();updateCartUI();updateProductCard(id);
 }
@@ -268,7 +271,7 @@ function addToCart(id) {
     if(existing){
         if(existing.cantidad<p.stock){existing.cantidad++;}else{showToast('Stock máximo','error');return;}
     }else{
-        carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:p.precio,imagen:p.imagen,cantidad:1});
+        carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:precioFinal(p),imagen:p.imagen,cantidad:1});
         showToast(p.nombre+' agregado','success');
     }
     saveCart();updateCartUI();updateProductCard(id);
@@ -297,7 +300,7 @@ function updateProductCard(id) {
     newEl.innerHTML=btnContent;
     oldEl.parentNode.replaceChild(newEl,oldEl);
 }
-function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=p.stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+p.stock,'error');}
+function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const stock=p?p.stock:carrito[idx].cantidad;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
 function saveCart(){try{localStorage.setItem('yercoCart',JSON.stringify(carrito));}catch(e){console.warn('No se pudo guardar el carrito:',e);}}
 function clearCart(){if(carrito.length===0)return;if(!confirm('Vaciar todo el carrito?'))return;const ids=carrito.map(i=>i.id);carrito=[];saveCart();updateCartUI();ids.forEach(id=>updateProductCard(id));showToast('Carrito vaciado','info');}
@@ -325,12 +328,24 @@ function openProductDetailModal(id){
     else{btnContent='<span class="pdm-qty-wrap"><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',-1);refreshProductDetailModal(\''+id+'\')"><i class="bi bi-dash"></i></button><span class="pdm-qty-num">'+qty+'</span><button class="pdm-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',1);refreshProductDetailModal(\''+id+'\')"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';}
     const desc=p.descripcion||'';
     const vn=p.valoresNutricionales||p.infoNutricional||p.tablaNutricional||'';
+    const nombreDisplay=p.nombreMostrado||p.nombre;
+    const dscPct=Math.min(95,p.descuento||0);
+    const precioRowHtml=dscPct>0
+        ?'<div class="pdm-price-row"><span class="pdm-price product-price-off">$'+formatPrice(Math.round(p.precio*(1-dscPct/100)))+'</span><span class="price-original" style="font-size:1rem">$'+formatPrice(p.precio)+'</span><span class="product-discount-badge" style="position:static;margin-left:6px">-'+(p.descuento||0)+'% OFF</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'
+        :'<div class="pdm-price-row"><span class="pdm-price">$'+formatPrice(p.precio)+'</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>';
+    /* Gramajes asociados */
+    const pdmHijos=productos.filter(h=>h.gramajePadreId===p.id);
+    const pdmGramajeHtml=pdmHijos.length>0?'<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
+        '<button class="gramaje-btn active" onclick="addToCart(\''+p.id+'\');showToast(\''+esc((p.nombreMostrado||p.nombre)).replace(/'/g,"")+'\'+\' agregado\',\'success\')">'+esc(p.gramaje||'Base')+'</button>'+
+        pdmHijos.map(h=>'<button class="gramaje-btn" onclick="addToCart(\''+h.id+'\');showToast(\'Agregado\',\'success\')">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
+        '</div></div>':'';
     document.getElementById('productDetailBody').innerHTML=
         '<div class="pdm-carousel">'+imgsHtml+carouselNav+'</div>'+
         '<div class="pdm-info">'+
         '<div class="pdm-cat">'+esc(p.categoria||'')+(p.subcategoria?' &middot; '+esc(p.subcategoria):'')+'</div>'+
-        '<h2 class="pdm-name">'+esc(p.nombre)+'</h2>'+
-        '<div class="pdm-price-row"><span class="pdm-price">$'+formatPrice(p.precio)+'</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'+
+        '<h2 class="pdm-name">'+esc(nombreDisplay)+'</h2>'+
+        precioRowHtml+
+        pdmGramajeHtml+
         (desc?'<div class="pdm-section"><h4>Descripción</h4><p>'+esc(desc).replace(/\n/g,'<br>')+'</p></div>':'')+
         (vn?'<div class="pdm-section"><h4>Información nutricional</h4><div class="pdm-nutritional">'+esc(vn).replace(/\n/g,'<br>')+'</div></div>':'')+
         (!desc&&!vn?'<div class="pdm-section pdm-no-info"><i class="bi bi-info-circle"></i> Próximamente más información sobre este producto</div>':'')+
