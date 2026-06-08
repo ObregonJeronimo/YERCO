@@ -33,8 +33,8 @@ renderStockList = function() {
     const start = (adminStockPage - 1) * ADMIN_PER_PAGE;
     const pageItems = f.slice(start, start + ADMIN_PER_PAGE);
     c.innerHTML = pageItems.map(p => {
-        const img = p.imagen || 'https://via.placeholder.com/40x40?text=?';
-        return '<div class="stock-row"><img src="' + img + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=?\'"><div class="stock-row-info"><strong>' + p.nombre + '</strong><small>' + (p.categoria || '') + (p.subcategoria ? ' / ' + p.subcategoria : '') + '</small></div><input type="number" class="stock-input" id="stock-' + p.id + '" value="' + (p.stock || 0) + '" min="0"><button class="stock-save" onclick="saveStock(\'' + p.id + '\')"><i class="bi bi-check-lg"></i></button></div>';
+        const img = p.imagen || 'img/default-product.jpg';
+        return '<div class="stock-row"><img src="' + img + '" onerror="this.src=\'img/default-product.jpg\'"><div class="stock-row-info"><strong>' + p.nombre + '</strong><small>' + (p.categoria || '') + (p.subcategoria ? ' / ' + p.subcategoria : '') + '</small></div><input type="number" class="stock-input" id="stock-' + p.id + '" value="' + (p.stock || 0) + '" min="0"><button class="stock-save" onclick="saveStock(\'' + p.id + '\')"><i class="bi bi-check-lg"></i></button></div>';
     }).join('');
     renderAdminPagination('sec-stock', adminStockPage, totalPages, f.length, 'stock');
 };
