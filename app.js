@@ -262,7 +262,7 @@ function updateProductQuantity(id,ch) {
     const p=productos.find(x=>x.id===id); if(!p)return;
     let idx=carrito.findIndex(i=>i.id===id);
     if(idx===-1&&ch>0){carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:precioFinal(p),imagen:p.imagen,cantidad:1});showToast((p.nombreMostrado||p.nombre)+' agregado','success');}
-    else if(idx!==-1){const nq=carrito[idx].cantidad+ch;if(nq<=0){carrito.splice(idx,1);showToast(p.nombre+' eliminado','info');}else if(nq<=p.stock){carrito[idx].cantidad=nq;}else{showToast('Stock máximo','error');return;}}
+    else if(idx!==-1){const nq=carrito[idx].cantidad+ch;if(nq<=0){carrito.splice(idx,1);showToast((p.nombreMostrado||p.nombre)+' eliminado','info');}else if(nq<=p.stock){carrito[idx].cantidad=nq;}else{showToast('Stock máximo','error');return;}}
     saveCart();updateCartUI();updateProductCard(id);
 }
 function addToCart(id) {
@@ -272,7 +272,7 @@ function addToCart(id) {
         if(existing.cantidad<p.stock){existing.cantidad++;}else{showToast('Stock máximo','error');return;}
     }else{
         carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:precioFinal(p),imagen:p.imagen,cantidad:1});
-        showToast(p.nombre+' agregado','success');
+        showToast((p.nombreMostrado||p.nombre)+' agregado','success');
     }
     saveCart();updateCartUI();updateProductCard(id);
 }
