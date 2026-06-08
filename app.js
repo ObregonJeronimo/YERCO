@@ -87,8 +87,8 @@ let _searchTimer=null;
 function onSearchInput(v){busquedaTexto=v;clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{paginaActual=1;aplicarFiltros();},200);}
 function aplicarFiltros() {
     let r = [...productos];
-    /* Excluir productos hijos: solo se muestran como botones de gramaje dentro del padre */
-    r = r.filter(p => !p.padreId);
+    /* Excluir productos hijos de gramaje: solo se muestran como botones dentro del padre de gramaje */
+    r = r.filter(p => !p.gramajePadreId);
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual === 'Ofertas') r = r.filter(p => (p.descuento||0) > 0);
     else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
@@ -208,8 +208,8 @@ function renderProducts(list) {
         const atcAttrs=qty>0
             ?'class="add-to-cart-btn added"'
             :'class="add-to-cart-btn"'+(noStock?' disabled':'')+' onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"';
-        /* Gramajes: hijos de este producto (envasado propio / gramajes asociados) */
-        const hijos=productos.filter(h=>h.padreId===p.id);
+        /* Gramajes asociados: hijos de este producto (sistema independiente de envasado propio) */
+        const hijos=productos.filter(h=>h.gramajePadreId===p.id);
         const gramajeHTML=hijos.length>0?'<div class="gramaje-btns">'+
             '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
             hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
