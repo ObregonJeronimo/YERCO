@@ -78,13 +78,17 @@ const _STOPWORDS=new Set(['de','la','el','los','las','un','una','unos','unas','c
 /* Cache de textos normalizados por producto */
 const _searchCache=new Map();
 function _getTexto(p){if(_searchCache.has(p.id))return _searchCache.get(p.id);const t=_norm((p.nombreMostrado||p.nombre)+' '+p.categoria+' '+(p.subcategoria||'')+' '+(p.descripcion||''));_searchCache.set(p.id,t);return t;}
-function _matchPalabra(pal,texto){if(texto.includes(pal))return true;/* solo fuzzy para palabras >= 5 letras */if(pal.length<5)return false;const words=texto.split(/\s+/);for(const w of words){if(Math.abs(w.length-pal.length)<=2&&_levenshtein(pal,w)<=1)return true;}return false;}
+/* Quita plurales y sufijos comunes para comparar raíces (nueces→nuez, aceites→aceit) */
+function _raiz(w){w=w.replace(/ces$/,'z');w=w.replace(/es$/,'');w=w.replace(/s$/,'');return w;}
+function _matchPalabra(pal,texto){const words=texto.split(/\s+/);/* palabras cortas (<=3 letras): solo match al inicio de alguna palabra, evita falsos positivos como 'te' en 'inTEgral' */if(pal.length<=3){return words.some(w=>w.startsWith(pal));}if(texto.includes(pal))return true;const palR=_raiz(pal);for(const w of words){const wR=_raiz(w);if(wR===palR)return true;if(wR.length>=3&&palR.length>=3&&(wR.startsWith(palR)||palR.startsWith(wR)))return true;/* fuzzy solo para typos en palabras largas */if(pal.length>=5&&Math.abs(w.length-pal.length)<=2&&_levenshtein(pal,w)<=1)return true;}return false;}
 function _searchScore(q,p){const texto=_getTexto(p);const palabras=_norm(q).split(/\s+/).filter(w=>w.length>1&&!_STOPWORDS.has(w));if(!palabras.length)return 1;return palabras.every(pal=>_matchPalabra(pal,texto))?1:0;}
 /* Debounce: espera 200ms desde el último keystroke antes de filtrar */
 let _searchTimer=null;
 function onSearchInput(v){busquedaTexto=v;clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{paginaActual=1;aplicarFiltros();},200);}
 function aplicarFiltros() {
     let r = [...productos];
+    /* Excluir productos hijos de gramaje: solo se muestran como botones dentro del padre */
+    r = r.filter(p => !(p.padreId && p.gramaje));
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual === 'Ofertas') r = r.filter(p => (p.descuento||0) > 0);
     else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
@@ -210,9 +214,9 @@ function renderProducts(list) {
             '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
             hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
             '</div>':'';
-        const dscPct=p.descuento||0;
+        const dscPct=Math.min(95,p.descuento||0);
         const nombreDisplay=p.nombreMostrado||p.nombre;
-        const badgeDesc=dscPct>0?'<span class="product-discount-badge">-'+dscPct+'% OFF</span>':'';
+        const badgeDesc=dscPct>0?'<span class="product-discount-badge">-'+(p.descuento||0)+'% OFF</span>':'';
         const precioHtml=dscPct>0
             ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(Math.round(p.precio/(1-dscPct/100)))+'</span> $'+formatPrice(p.precio)+'</span>'
             :'<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>';
@@ -313,7 +317,7 @@ function openProductDetailModal(id){
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;
     const maxOut=qty>=p.stock;
-    const imgsHtml=_pdmImages.length?_pdmImages.map((url,i)=>'<img src="'+esc(optImg(url,800)||url)+'" class="pdm-img'+(i===0?' active':'')+'" data-idx="'+i+'" alt="'+esc(p.nombre)+'" onerror="this.src=\'img/default-product.jpg\'">').join(''):'<div class="pdm-img-placeholder"><i class="bi bi-image"></i> Sin imagen</div>';
+    const imgsHtml=_pdmImages.length?_pdmImages.map((url,i)=>'<img src="'+esc(optImg(url,800)||url)+'" class="pdm-img'+(i===0?' active':'')+'" data-idx="'+i+'" alt="'+esc(p.nombre)+'" data-orig="'+esc(url||'')+'" onerror="if(this.dataset.orig&&this.src!==this.dataset.orig){this.src=this.dataset.orig;}else{this.src=\'img/default-product.jpg\';}">').join(''):'<div class="pdm-img-placeholder"><i class="bi bi-image"></i> Sin imagen</div>';
     const carouselNav=_pdmImages.length>1?'<button class="pdm-carousel-btn pdm-prev" onclick="pdmCarouselNav(-1)"><i class="bi bi-chevron-left"></i></button><button class="pdm-carousel-btn pdm-next" onclick="pdmCarouselNav(1)"><i class="bi bi-chevron-right"></i></button><div class="pdm-carousel-dots">'+_pdmImages.map((_,i)=>'<span class="pdm-dot'+(i===0?' active':'')+'" onclick="pdmCarouselGoTo('+i+')"></span>').join('')+'</div>':'';
     let btnContent;
     if(noStock){btnContent='<i class="bi bi-x-circle"></i> Sin stock';}
