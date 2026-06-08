@@ -681,7 +681,7 @@
             if(wrapEl)wrapEl.style.display='none';
         }
         function filterVentaProducts(){const c=document.getElementById('ventaProdList');const q=(document.getElementById('ventaProdSearch')?.value||'').toLowerCase();if(!q){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Escribi para buscar productos...</div>';return;}let f=allProducts.filter(p=>(p.nombre||'').toLowerCase().includes(q));if(!f.length){c.innerHTML='<div style="padding:10px;color:var(--text-dim);font-size:0.82rem">Sin resultados</div>';return;}c.innerHTML=f.slice(0,15).map(p=>'<div class="venta-prod-item" onclick="addVentaItem(\''+p.id+'\')"><span>'+p.nombre+'</span><span style="color:var(--accent-light);font-family:var(--mono)">$'+(p.precio||0).toLocaleString('es-AR')+'</span></div>').join('');}
-        function addVentaItem(id){const existing=ventaItems.find(i=>i.id===id);if(existing){existing.cantidad++;renderVentaItems();return;}const p=allProducts.find(x=>x.id===id);if(!p)return;ventaItems.push({id:p.id,nombre:p.nombre,precio:p.precio,costo:p.costo||0,cantidad:1,descuento:0});renderVentaItems();}
+        function addVentaItem(id){const existing=ventaItems.find(i=>i.id===id);if(existing){existing.cantidad++;renderVentaItems();return;}const p=allProducts.find(x=>x.id===id);if(!p)return;ventaItems.push({id:p.id,nombre:p.nombre,precio:p.precio,costo:p.costo||0,cantidad:1,descuento:p.descuento||0});renderVentaItems();}
         function removeVentaItem(id){ventaItems=ventaItems.filter(i=>i.id!==id);renderVentaItems();}
         function updateVentaQty(id,val){const item=ventaItems.find(i=>i.id===id);if(item){item.cantidad=Math.max(1,parseInt(val)||1);}renderVentaItems();}
         function onChangeDescuento(){

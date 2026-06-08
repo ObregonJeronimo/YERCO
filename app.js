@@ -218,7 +218,7 @@ function renderProducts(list) {
             '</div>':'';
         const dscPct=Math.min(95,p.descuento||0);
         const nombreDisplay=p.nombreMostrado||p.nombre;
-        const badgeDesc=dscPct>0?'<span class="product-discount-badge">-'+(p.descuento||0)+'% OFF</span>':'';
+        const badgeDesc=dscPct>0?'<span class="product-discount-ribbon">-'+(p.descuento||0)+'%</span>':'';
         const precioConDesc=dscPct>0?Math.round(p.precio*(1-dscPct/100)):p.precio;
         const precioHtml=dscPct>0
             ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(p.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
@@ -331,7 +331,7 @@ function openProductDetailModal(id){
     const nombreDisplay=p.nombreMostrado||p.nombre;
     const dscPct=Math.min(95,p.descuento||0);
     const precioRowHtml=dscPct>0
-        ?'<div class="pdm-price-row"><span class="pdm-price product-price-off">$'+formatPrice(Math.round(p.precio*(1-dscPct/100)))+'</span><span class="price-original" style="font-size:1rem">$'+formatPrice(p.precio)+'</span><span class="product-discount-badge" style="position:static;margin-left:6px">-'+(p.descuento||0)+'% OFF</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'
+        ?'<div class="pdm-price-row"><span class="pdm-price product-price-off">$'+formatPrice(Math.round(p.precio*(1-dscPct/100)))+'</span><span class="price-original" style="font-size:1rem">$'+formatPrice(p.precio)+'</span><span style="background:linear-gradient(135deg,#e6a23c,#d97706);color:#fff;font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:6px;margin-left:6px">-'+(p.descuento||0)+'% OFF</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'
         :'<div class="pdm-price-row"><span class="pdm-price">$'+formatPrice(p.precio)+'</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>';
     /* Gramajes asociados */
     const pdmHijos=productos.filter(h=>h.gramajePadreId===p.id);
