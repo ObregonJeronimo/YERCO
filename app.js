@@ -655,7 +655,12 @@ async function confirmCheckout(){
             origen:'web',
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
-        await db.collection('pedidos').add(pedido);
+        try{
+            await db.collection('pedidos').add(pedido);
+        }catch(e){
+            /* Si falla el guardado (billing, red, reglas), NO frenar: el pedido por WhatsApp es lo importante */
+            console.warn('No se pudo guardar el pedido en BDD, se continua con WhatsApp:',e);
+        }
         /* Construir mensaje de WhatsApp con el numero de pedido */
         const numeroFmt=String(pedidoNum).padStart(3,'0');
         let msg='Hola! *Pedido confirmado N°'+numeroFmt+'*\n\n';
@@ -672,8 +677,11 @@ async function confirmCheckout(){
         idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
-        /* Abrir WhatsApp con el mensaje preparado */
-        /* Registrar uso del cupón - ANTES de abrir WhatsApp */
+        /* Abrir WhatsApp YA - antes de cualquier await que en iOS rompa el user-gesture y bloquee la apertura */
+        const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
+        const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+        if(isIOS){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
+        /* Registrar uso del cupón DESPUÉS de abrir WhatsApp (no debe bloquear el envío) */
         if (_cuponAplicado) {
             try {
                 const cupSnap = await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get();
@@ -690,9 +698,6 @@ async function confirmCheckout(){
                 }
             } catch(e) { console.warn('Error registrando uso de cupón:', e); }
         }
-        const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
-        const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-        if(isIOS){window.location.href=waUrl;}else{setTimeout(()=>{window.open(waUrl,'_blank');},300);}
     }catch(e){
         console.error('Error en checkout:',e);
         showToast('Error: '+(e.message||'No se pudo confirmar'),'error');
@@ -933,6 +938,16 @@ function authLogin() {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
+        /* En iOS/móvil el popup de Google suele ser bloqueado por Safari - usar redirect directo */
+        if (_isMobileAuth) {
+            firebase.auth().signInWithRedirect(provider).catch(e => {
+                console.error('redirect error:', e);
+                showToast('Error al iniciar sesión: ' + e.message, 'error');
+                _loginActivo = false;
+                sessionStorage.removeItem('_authLoginActivo');
+            });
+            return;
+        }
         firebase.auth().signInWithPopup(provider)
             .then(result => {
                 if (result.user) {
@@ -942,13 +957,11 @@ function authLogin() {
             })
             .catch(e => {
                 console.error('popup error:', e);
-                /* En iOS Safari el popup puede fallar por restricciones - intentar redirect como fallback */
-                if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-                    if (e.code === 'auth/popup-blocked') {
-                        firebase.auth().signInWithRedirect(provider);
-                        return;
-                    }
-                } else {
+                /* Fallback a redirect ante cualquier problema de popup */
+                if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || e.code === 'auth/operation-not-supported-in-this-environment') {
+                    firebase.auth().signInWithRedirect(provider);
+                    return;
+                } else if (e.code !== 'auth/popup-closed-by-user') {
                     showToast('Error: ' + e.message, 'error');
                 }
                 _loginActivo = false;
