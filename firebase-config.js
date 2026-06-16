@@ -3,7 +3,7 @@
  */
 const firebaseConfig = {
     apiKey: "AIzaSyCYTYtrsLipyXeWbOUR7sUm3NPLA0mHvgs",
-    authDomain: "yerco.ar",
+    authDomain: (location.hostname === 'yerco.ar' || location.hostname === 'www.yerco.ar') ? location.hostname : "yerco-bb620.firebaseapp.com",
     projectId: "yerco-bb620",
     storageBucket: "yerco-bb620.firebasestorage.app",
     messagingSenderId: "1035002416128",
