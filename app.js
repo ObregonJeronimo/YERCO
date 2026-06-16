@@ -695,15 +695,23 @@ async function confirmCheckout(){
             try {
                 const cuponId = _cuponAplicado.id || (await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get()).docs[0]?.id;
                 if (cuponId) {
-                    const usoData = {
-                        cuponId: cuponId,
-                        codigo: _cuponAplicado.codigo,
-                        fecha: firebase.firestore.FieldValue.serverTimestamp(),
-                        pedidoNum: pedidoNum
-                    };
-                    if (clienteAuth) { usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email; }
-                    else if (nombre && apellido) { usoData.nombreCliente = nombre+' '+apellido; usoData.telefono = telefono; }
-                    await db.collection('cuponesUsos').doc().set(usoData);
+                    /* Doble verificación: que este cliente no haya usado ya el cupón (evita doble uso en pestañas paralelas) */
+                    let yaUso = false;
+                    if (clienteAuth) {
+                        const chk = await db.collection('cuponesUsos').where('cuponId','==',cuponId).where('uid','==',clienteAuth.uid).get();
+                        yaUso = !chk.empty;
+                    }
+                    if (!yaUso) {
+                        const usoData = {
+                            cuponId: cuponId,
+                            codigo: _cuponAplicado.codigo,
+                            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+                            pedidoNum: pedidoNum
+                        };
+                        if (clienteAuth) { usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email; }
+                        else if (nombre && apellido) { usoData.nombreCliente = nombre+' '+apellido; usoData.telefono = telefono; }
+                        await db.collection('cuponesUsos').doc().set(usoData);
+                    }
                 }
             } catch(e) { console.warn('Error registrando uso de cupón:', e); }
         }
