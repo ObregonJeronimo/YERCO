@@ -3,7 +3,7 @@
  */
 const firebaseConfig = {
     apiKey: "AIzaSyCYTYtrsLipyXeWbOUR7sUm3NPLA0mHvgs",
-    authDomain: "yerco-bb620.firebaseapp.com",
+    authDomain: "yerco.ar",
     projectId: "yerco-bb620",
     storageBucket: "yerco-bb620.firebasestorage.app",
     messagingSenderId: "1035002416128",
