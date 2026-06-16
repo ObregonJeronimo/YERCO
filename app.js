@@ -259,13 +259,22 @@ function openCart(){document.getElementById('cartSidebar')?.classList.add('show'
 function closeCart(){document.getElementById('cartSidebar')?.classList.remove('show');document.getElementById('cartOverlay')?.classList.remove('show');document.body.style.overflow='';}
 
 function updateProductQuantity(id,ch) {
+    if(!clienteAuth&&ch>0){requireLoginToBuy();return;}
     const p=productos.find(x=>x.id===id); if(!p)return;
     let idx=carrito.findIndex(i=>i.id===id);
     if(idx===-1&&ch>0){carrito.push({id:p.id,nombre:p.nombreMostrado||p.nombre,precio:precioFinal(p),imagen:p.imagen,cantidad:1});showToast((p.nombreMostrado||p.nombre)+' agregado','success');}
     else if(idx!==-1){const nq=carrito[idx].cantidad+ch;if(nq<=0){carrito.splice(idx,1);showToast((p.nombreMostrado||p.nombre)+' eliminado','info');}else if(nq<=p.stock){carrito[idx].cantidad=nq;}else{showToast('Stock máximo','error');return;}}
     saveCart();updateCartUI();updateProductCard(id);
 }
+function requireLoginToBuy(){
+    showToast('Iniciá sesión para agregar productos','info');
+    /* Marcar que venía a comprar - al volver del login (redirect en móvil) se abre el carrito */
+    try{sessionStorage.setItem('_intentoCompra','1');}catch(e){}
+    /* Abrir el login directamente */
+    if(typeof authLogin==='function')authLogin();
+}
 function addToCart(id) {
+    if(!clienteAuth){requireLoginToBuy();return;}
     const p=productos.find(x=>x.id===id); if(!p||p.stock===0)return;
     const existing=carrito.find(i=>i.id===id);
     if(existing){
@@ -428,6 +437,7 @@ function updateShippingBar(total) {
 
 function checkout() {
     if(carrito.length===0){showToast('Carrito vacío','error');return;}
+    if(!clienteAuth){requireLoginToBuy();return;}
     openCheckoutModal();
 }
 
@@ -436,51 +446,54 @@ function openCheckoutModal(){
     const datosSection = document.getElementById('chkDatosSection');
     const confirmBtn = document.getElementById('chkConfirmBtn');
 
-    if (!clienteAuth) {
-        /* No logueado: mostrar bloque de login */
-        if (loginRequired) loginRequired.style.display = 'block';
-        if (datosSection) datosSection.style.display = 'none';
-        if (confirmBtn) confirmBtn.style.display = 'none';
-    } else {
-        /* Logueado: pre-llenar datos */
+    /* El botón y los campos SIEMPRE visibles - no obligamos a login */
+    if (datosSection) datosSection.style.display = 'block';
+    if (confirmBtn) confirmBtn.style.display = '';
+
+    const wrap = document.getElementById('chkDirGuardadasWrap');
+    const sel = document.getElementById('chkDirSelect');
+    const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
+    const nomDirWrap = document.getElementById('chkNombreDirWrap');
+
+    if (clienteAuth) {
+        /* Logueado: ocultar aviso de login y pre-llenar datos */
         if (loginRequired) loginRequired.style.display = 'none';
-        if (datosSection) datosSection.style.display = 'block';
-        if (confirmBtn) confirmBtn.style.display = '';
-        /* Pre-llenar campos ocultos con datos del cliente */
-        document.getElementById('chkNombre').value = clienteAuth.nombre || '';
-        document.getElementById('chkApellido').value = clienteAuth.apellido || '';
-        document.getElementById('chkTelefono').value = clienteAuth.telefono || '';
+        const nEl=document.getElementById('chkNombre'),aEl=document.getElementById('chkApellido'),tEl=document.getElementById('chkTelefono');
+        if(nEl&&!nEl.value)nEl.value = clienteAuth.nombre || '';
+        if(aEl&&!aEl.value)aEl.value = clienteAuth.apellido || '';
+        if(tEl&&!tEl.value)tEl.value = clienteAuth.telefono || '';
         /* Cargar direcciones guardadas */
         const dirs = clienteAuth.direcciones || [];
-        const wrap = document.getElementById('chkDirGuardadasWrap');
-        const sel = document.getElementById('chkDirSelect');
-        const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
-        const nomDirWrap = document.getElementById('chkNombreDirWrap');
         if (dirs.length) {
-            /* Tiene direcciones: mostrar selector */
-            sel.innerHTML = dirs.map((d,i) =>
-                `<option value="${i}">${d.nombre}\n${d.texto}</option>`
-            ).join('') + '<option value="nueva">+ Nueva dirección...</option>';
-            /* Usar optgroup visual con nombre y dirección */
             sel.innerHTML = dirs.map((d,i) =>
                 `<option value="${i}">${d.nombre} — ${d.texto}</option>`
             ).join('') + '<option value="nueva">+ Nueva dirección...</option>';
             if (wrap) wrap.style.display = 'block';
             if (nuevaDirWrap) nuevaDirWrap.style.display = 'none';
-            /* Pre-seleccionar la primera */
             document.getElementById('chkDireccion').value = dirs[0].texto;
             sel.value = '0';
         } else {
-            /* Sin direcciones: mostrar campo directo + nombre para guardar */
             if (wrap) wrap.style.display = 'none';
             if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
             if (nomDirWrap) nomDirWrap.style.display = 'block';
-            document.getElementById('chkDireccion').value = '';
-            const nomDirInput = document.getElementById('chkNombreDir');
-            if (nomDirInput) nomDirInput.value = '';
         }
-        setCheckoutEntrega('envio');
+    } else {
+        /* No logueado: mostrar aviso opcional de login, campos vacíos editables */
+        if (loginRequired) loginRequired.style.display = 'block';
+        if (wrap) wrap.style.display = 'none';
+        if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
+        if (nomDirWrap) nomDirWrap.style.display = 'none';
+        /* Pre-llenar desde localStorage si compró antes (sin login) */
+        try{
+            const saved=JSON.parse(localStorage.getItem('yerco_checkout_data')||'{}');
+            const nEl=document.getElementById('chkNombre'),aEl=document.getElementById('chkApellido'),tEl=document.getElementById('chkTelefono'),dEl=document.getElementById('chkDireccion');
+            if(nEl&&!nEl.value&&saved.nombre)nEl.value=saved.nombre;
+            if(aEl&&!aEl.value&&saved.apellido)aEl.value=saved.apellido;
+            if(tEl&&!tEl.value&&saved.telefono)tEl.value=saved.telefono;
+            if(dEl&&!dEl.value&&saved.direccion)dEl.value=saved.direccion;
+        }catch(e){}
     }
+    setCheckoutEntrega('envio');
     /* Limpiar cupón al abrir nuevo checkout */
     quitarCupon();
     updateCheckoutResumen();
@@ -677,10 +690,11 @@ async function confirmCheckout(){
         idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
-        /* Abrir WhatsApp YA - antes de cualquier await que en iOS rompa el user-gesture y bloquee la apertura */
+        /* Abrir WhatsApp YA - antes de cualquier await que en móvil rompa el user-gesture */
         const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
-        const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-        if(isIOS){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
+        const esMovil=/iPad|iPhone|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        /* En móvil (Android e iOS) location.href es más confiable que window.open para abrir la app de WhatsApp */
+        if(esMovil){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
         /* Registrar uso del cupón DESPUÉS de abrir WhatsApp (no debe bloquear el envío) */
         if (_cuponAplicado) {
             try {
@@ -792,6 +806,11 @@ authClient.getRedirectResult().then(result => {
         _loginActivo = true;
         _onUserLogin(result.user, true);
         sessionStorage.removeItem('_authLoginActivo');
+        /* Si el usuario venía intentando comprar, abrir el carrito al volver del login */
+        if(sessionStorage.getItem('_intentoCompra')==='1'){
+            sessionStorage.removeItem('_intentoCompra');
+            setTimeout(()=>{if(carrito.length>0&&typeof openCart==='function')openCart();},800);
+        }
     }
 }).catch(e => { console.error('getRedirectResult error:', e); });
 
@@ -855,15 +874,14 @@ function _refreshCheckoutAuth() {
     const loginRequired = document.getElementById('chkLoginRequired');
     const datosSection = document.getElementById('chkDatosSection');
     const confirmBtn = document.getElementById('chkConfirmBtn');
+    /* El botón y los datos siempre visibles. El login solo pre-llena y oculta el aviso. */
+    if (datosSection) datosSection.style.display = 'block';
+    if (confirmBtn) confirmBtn.style.display = '';
     if (!clienteAuth) {
         if (loginRequired) loginRequired.style.display = 'block';
-        if (datosSection) datosSection.style.display = 'none';
-        if (confirmBtn) confirmBtn.style.display = 'none';
         return;
     }
     if (loginRequired) loginRequired.style.display = 'none';
-    if (datosSection) datosSection.style.display = 'block';
-    if (confirmBtn) confirmBtn.style.display = '';
     /* Pre-llenar solo si el campo está vacío (no pisar lo que el usuario escribió) */
     const n = document.getElementById('chkNombre');
     const a = document.getElementById('chkApellido');

@@ -100,19 +100,26 @@
                 </div>
                 <p class="chk-retiro-info" id="chkRetiroInfo">Dirección de retiro: <strong>Tablada 16, Villa Allende</strong> · <a href="https://www.google.com/maps/place/Maxi+Kiosco+Dof/@-31.2922992,-64.3001027,17z/data=!3m1!4b1!4m6!3m5!1s0x94329d19667bbe3f:0x39cd168bd783ea1e!8m2!3d-31.2922992!4d-64.2975278!16s%2Fg%2F11bw68crnw?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" class="chk-mapa-link"><i class="bi bi-geo-alt-fill"></i> Ubicación</a></p>
             </div>
-            <!-- Login requerido -->
-            <div id="chkLoginRequired" style="display:none" class="chk-section">
-                <div style="text-align:center;padding:1rem 0">
-                    <i class="bi bi-person-lock" style="font-size:2rem;color:var(--color-primary);display:block;margin-bottom:0.75rem"></i>
-                    <p style="margin-bottom:1rem;color:#666;font-size:0.95rem">Iniciá sesión para confirmar tu pedido</p>
-                    <button onclick="authLogin()" style="background:var(--color-primary);color:#fff;border:none;border-radius:10px;padding:0.75rem 1.5rem;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem"><i class="bi bi-google"></i> Iniciar sesión con Google</button>
+            <!-- Login OPCIONAL: solo un aviso para quien quiera guardar sus datos -->
+            <div id="chkLoginRequired" class="chk-section" style="display:none">
+                <div style="background:#f0f7f2;border-radius:10px;padding:0.7rem 0.9rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
+                    <span style="color:#555;font-size:0.85rem"><i class="bi bi-person-circle"></i> Opcional: iniciá sesión para guardar tus datos</span>
+                    <button onclick="authLogin()" style="background:var(--color-primary);color:#fff;border:none;border-radius:8px;padding:0.45rem 0.9rem;font-size:0.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:0.4rem;white-space:nowrap"><i class="bi bi-google"></i> Ingresar</button>
                 </div>
             </div>
             <div id="chkDatosSection" class="chk-section">
-                <!-- Campos ocultos necesarios para confirmCheckout -->
-                <input type="hidden" id="chkNombre">
-                <input type="hidden" id="chkApellido">
-                <input type="hidden" id="chkTelefono">
+                <div class="chk-field">
+                    <label for="chkNombre">Nombre *</label>
+                    <input type="text" id="chkNombre" placeholder="Tu nombre" autocomplete="given-name">
+                </div>
+                <div class="chk-field">
+                    <label for="chkApellido">Apellido *</label>
+                    <input type="text" id="chkApellido" placeholder="Tu apellido" autocomplete="family-name">
+                </div>
+                <div class="chk-field">
+                    <label for="chkTelefono">Teléfono / WhatsApp *</label>
+                    <input type="tel" id="chkTelefono" placeholder="Ej: 3511234567" autocomplete="tel" inputmode="numeric">
+                </div>
                 <div class="chk-field" id="chkDireccionGroup">
                     <label>Dirección de envío *</label>
                     <!-- Selector cuando tiene direcciones guardadas -->
@@ -123,7 +130,7 @@
                     <!-- Campo cuando no tiene o elige nueva -->
                     <div id="chkNuevaDirWrap" style="margin-top:0.4rem">
                         <input type="text" id="chkDireccion" placeholder="Calle, número, barrio" autocomplete="street-address">
-                        <div id="chkNombreDirWrap" style="margin-top:0.4rem">
+                        <div id="chkNombreDirWrap" style="margin-top:0.4rem;display:none">
                             <input type="text" id="chkNombreDir" class="auth-input" placeholder="Nombre de esta dirección (ej: Mi casa)" style="font-size:0.88rem">
                             <small style="color:#888;font-size:0.75rem">Se guardará en tu perfil para próximos pedidos</small>
                         </div>
