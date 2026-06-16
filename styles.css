@@ -307,6 +307,9 @@ img { max-width: 100%; height: auto; }
 }
 
 .chk-confirm-btn { flex: 2; background: var(--color-whatsapp); color: white; border: none; padding: 0.85rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: background 0.15s; }
+.chk-cupon-btn { background: #2d6b4a; color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.chk-cupon-btn:hover:not(:disabled) { background: #245a3d; }
+.chk-cupon-btn:disabled { background: #2d6b4a; color: #fff; opacity: 0.7; cursor: default; }
 .chk-confirm-btn:active:not(:disabled) { background: #1da851; }
 @media(hover:hover){.chk-confirm-btn:hover:not(:disabled) { background: #1da851; }}
 .chk-confirm-btn:disabled { background: var(--color-beige); color: var(--color-text-light); cursor: not-allowed; }
