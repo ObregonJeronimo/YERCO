@@ -152,7 +152,7 @@ function hideAllSubFilters() { document.querySelectorAll('.sub-filters-row').for
 
 function formatPrice(v) { const n=Number(v)||0; return n.toLocaleString('es-AR',{minimumFractionDigits:0}); }
 /* Precio final que paga el cliente (aplica descuento del producto si tiene) */
-function precioFinal(p){const dsc=Math.min(95,p.descuento||0);return dsc>0?Math.round(p.precio*(1-dsc/100)):p.precio;}
+function precioFinal(p){const dsc=Math.min(100,Math.max(0,p.descuento||0));return dsc>0?Math.round(p.precio*(1-dsc/100)):p.precio;}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 function renderProductsPaginated(list) {
@@ -216,7 +216,7 @@ function renderProducts(list) {
             '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
             hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
             '</div>':'';
-        const dscPct=Math.min(95,p.descuento||0);
+        const dscPct=Math.min(100,Math.max(0,p.descuento||0));
         const nombreDisplay=p.nombreMostrado||p.nombre;
         const badgeDesc=dscPct>0?'<span class="product-discount-ribbon">-'+(p.descuento||0)+'%</span>':'';
         const precioConDesc=dscPct>0?Math.round(p.precio*(1-dscPct/100)):p.precio;
@@ -338,7 +338,7 @@ function openProductDetailModal(id){
     const desc=p.descripcion||'';
     const vn=p.valoresNutricionales||p.infoNutricional||p.tablaNutricional||'';
     const nombreDisplay=p.nombreMostrado||p.nombre;
-    const dscPct=Math.min(95,p.descuento||0);
+    const dscPct=Math.min(100,Math.max(0,p.descuento||0));
     const precioRowHtml=dscPct>0
         ?'<div class="pdm-price-row"><span class="pdm-price product-price-off">$'+formatPrice(Math.round(p.precio*(1-dscPct/100)))+'</span><span class="price-original" style="font-size:1rem">$'+formatPrice(p.precio)+'</span><span style="background:linear-gradient(135deg,#e6a23c,#d97706);color:#fff;font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:6px;margin-left:6px">-'+(p.descuento||0)+'% OFF</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'
         :'<div class="pdm-price-row"><span class="pdm-price">$'+formatPrice(p.precio)+'</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>';
