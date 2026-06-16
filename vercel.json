@@ -1,17 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.yerco.ar"
-        }
-      ],
-      "destination": "https://yerco.ar/:path*",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/__/auth/:path*",
