@@ -963,16 +963,9 @@ function authLogin() {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        /* En iOS/móvil el popup de Google suele ser bloqueado por Safari - usar redirect directo */
-        if (_isMobileAuth) {
-            firebase.auth().signInWithRedirect(provider).catch(e => {
-                console.error('redirect error:', e);
-                showToast('Error al iniciar sesión: ' + e.message, 'error');
-                _loginActivo = false;
-                sessionStorage.removeItem('_authLoginActivo');
-            });
-            return;
-        }
+        provider.setCustomParameters({ prompt: 'select_account' });
+        /* Popup primero (funciona en móviles modernos y evita el bug de cookies de terceros del redirect).
+           Si el popup falla por bloqueo, recién ahí caemos a redirect. */
         firebase.auth().signInWithPopup(provider)
             .then(result => {
                 if (result.user) {
@@ -981,13 +974,26 @@ function authLogin() {
                 }
             })
             .catch(e => {
-                console.error('popup error:', e);
-                /* Fallback a redirect ante cualquier problema de popup */
-                if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || e.code === 'auth/operation-not-supported-in-this-environment') {
-                    firebase.auth().signInWithRedirect(provider);
+                console.error('popup error:', e.code, e.message);
+                /* Estos errores significan que el popup no se pudo abrir → usar redirect */
+                const necesitaRedirect = [
+                    'auth/popup-blocked',
+                    'auth/cancelled-popup-request',
+                    'auth/operation-not-supported-in-this-environment',
+                    'auth/web-storage-unsupported'
+                ].includes(e.code);
+                if (necesitaRedirect) {
+                    firebase.auth().signInWithRedirect(provider).catch(er => {
+                        console.error('redirect error:', er);
+                        showToast('No se pudo iniciar sesión. Probá con otro navegador.', 'error');
+                        _loginActivo = false;
+                        sessionStorage.removeItem('_authLoginActivo');
+                    });
                     return;
-                } else if (e.code !== 'auth/popup-closed-by-user') {
-                    showToast('Error: ' + e.message, 'error');
+                }
+                /* popup-closed-by-user = el usuario cerró, no mostrar error feo */
+                if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/user-cancelled') {
+                    showToast('Error al iniciar sesión: ' + (e.message || e.code), 'error');
                 }
                 _loginActivo = false;
                 sessionStorage.removeItem('_authLoginActivo');
@@ -995,6 +1001,8 @@ function authLogin() {
     } catch(e) {
         console.error('authLogin error:', e);
         showToast('Error al iniciar sesión: ' + e.message, 'error');
+        _loginActivo = false;
+        sessionStorage.removeItem('_authLoginActivo');
     }
 }
 
