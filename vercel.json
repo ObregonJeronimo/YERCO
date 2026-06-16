@@ -51,7 +51,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; object-src 'none'; base-uri 'self'; frame-src 'self' https://yerco-bb620.firebaseapp.com https://*.firebaseapp.com https://accounts.google.com https://*.google.com; connect-src 'self' https:;"
+          "value": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; object-src 'none'; base-uri 'self'; frame-src 'self' https://yerco.ar https://www.yerco.ar https://yerco-bb620.firebaseapp.com https://*.firebaseapp.com https://accounts.google.com https://*.google.com https://apis.google.com; connect-src 'self' https:;"
         },
         {
           "key": "Strict-Transport-Security",
