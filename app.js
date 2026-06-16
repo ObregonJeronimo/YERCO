@@ -690,18 +690,13 @@ async function confirmCheckout(){
         idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
-        /* Abrir WhatsApp YA - antes de cualquier await que en móvil rompa el user-gesture */
-        const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
-        const esMovil=/iPad|iPhone|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        /* En móvil (Android e iOS) location.href es más confiable que window.open para abrir la app de WhatsApp */
-        if(esMovil){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
-        /* Registrar uso del cupón DESPUÉS de abrir WhatsApp (no debe bloquear el envío) */
+        /* Registrar uso del cupón ANTES de abrir WhatsApp (en móvil location.href corta la ejecución del código que sigue) */
         if (_cuponAplicado) {
             try {
-                const cupSnap = await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get();
-                if (!cupSnap.empty) {
+                const cuponId = _cuponAplicado.id || (await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get()).docs[0]?.id;
+                if (cuponId) {
                     const usoData = {
-                        cuponId: cupSnap.docs[0].id,
+                        cuponId: cuponId,
                         codigo: _cuponAplicado.codigo,
                         fecha: firebase.firestore.FieldValue.serverTimestamp(),
                         pedidoNum: pedidoNum
@@ -712,6 +707,10 @@ async function confirmCheckout(){
                 }
             } catch(e) { console.warn('Error registrando uso de cupón:', e); }
         }
+        /* Abrir WhatsApp - en móvil location.href, en desktop nueva pestaña */
+        const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
+        const esMovil=/iPad|iPhone|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if(esMovil){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
     }catch(e){
         console.error('Error en checkout:',e);
         showToast('Error: '+(e.message||'No se pudo confirmar'),'error');
@@ -1287,7 +1286,7 @@ async function aplicarCupon() {
             return;
         }
         /* Aplicar — deshabilitar input y botón para evitar doble aplicación */
-        _cuponAplicado = { codigo, porcentaje: pct };
+        _cuponAplicado = { codigo, porcentaje: pct, id: cupDoc.id };
         if(input){input.disabled=true;input.style.opacity='0.6';}
         if(btn){btn.disabled=true;btn.textContent='Aplicado ✓';btn.style.background='#2d6b4a';}
         if(msg) msg.innerHTML='<span style="color:#2d6b4a;font-weight:600">✓ '+pct+'% de descuento aplicado.</span> <button onclick="quitarCupon()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.8rem;text-decoration:underline">Quitar</button>';
