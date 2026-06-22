@@ -591,6 +591,8 @@ function sanitizePhone(val) {
 }
 
 async function confirmCheckout(){
+    /* Capturar el cupón AHORA, porque closeCheckoutModal() más abajo limpia _cuponAplicado */
+    const cuponParaRegistrar = _cuponAplicado ? {..._cuponAplicado} : null;
     /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
     const nomDirInput = document.getElementById('chkNombreDir');
     const nomDir = sanitizeText(nomDirInput?.value, 60);
@@ -631,7 +633,7 @@ async function confirmCheckout(){
         if(!firebase||!firebase.firestore){throw new Error('Firebase no inicializado');}
         const db=firebase.firestore();
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-        const dcMonto=_cuponAplicado?Math.min(_cuponAplicado.monto||0,subtotal):0;
+        const dcMonto=cuponParaRegistrar?Math.min(cuponParaRegistrar.monto||0,subtotal):0;
         const subtotalConDesc=subtotal-dcMonto;
         const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
         const total=subtotalConDesc+envio;
@@ -664,7 +666,7 @@ async function confirmCheckout(){
             envio:envio,
             envioGratis:tipoEntrega==='envio'&&envio===0,
             total:total,
-            cupon:_cuponAplicado?{codigo:_cuponAplicado.codigo,monto:dcMonto}:null,
+            cupon:cuponParaRegistrar?{codigo:cuponParaRegistrar.codigo,monto:dcMonto}:null,
             origen:'web',
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -681,7 +683,7 @@ async function confirmCheckout(){
         msg+='*Tel:* '+telefonoLimpio+'\n';
         msg+='*Entrega:* '+(tipoEntrega==='retiro'?'Retiro en local':'Envío a domicilio')+'\n';
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
-        if(_cuponAplicado)msg+='*Cupón:* '+_cuponAplicado.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
+        if(cuponParaRegistrar)msg+='*Cupón:* '+cuponParaRegistrar.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
         msg+='\nGracias!';
         /* Limpiar carrito y resetear las cards de productos */
@@ -691,9 +693,9 @@ async function confirmCheckout(){
         closeCheckoutModal();closeCart();
         showToast('Pedido N°'+numeroFmt+' confirmado','success');
         /* Registrar uso del cupón ANTES de abrir WhatsApp (en móvil location.href corta la ejecución del código que sigue) */
-        if (_cuponAplicado) {
+        if (cuponParaRegistrar) {
             try {
-                const cuponId = _cuponAplicado.id || (await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get()).docs[0]?.id;
+                const cuponId = cuponParaRegistrar.id || (await db.collection('cupones').where('codigo','==',cuponParaRegistrar.codigo).get()).docs[0]?.id;
                 if (cuponId) {
                     /* Verificaciones finales con datos frescos de la BDD */
                     let puedeUsar = true;
@@ -714,7 +716,7 @@ async function confirmCheckout(){
                     if (puedeUsar) {
                         const usoData = {
                             cuponId: cuponId,
-                            codigo: _cuponAplicado.codigo,
+                            codigo: cuponParaRegistrar.codigo,
                             fecha: firebase.firestore.FieldValue.serverTimestamp(),
                             pedidoNum: pedidoNum
                         };
