@@ -84,7 +84,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /cuponesUsos/{doc} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
       allow create: if validString(request.resource.data.codigo, 30)
         && (
           !('uid' in request.resource.data)

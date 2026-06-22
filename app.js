@@ -695,13 +695,23 @@ async function confirmCheckout(){
             try {
                 const cuponId = _cuponAplicado.id || (await db.collection('cupones').where('codigo','==',_cuponAplicado.codigo).get()).docs[0]?.id;
                 if (cuponId) {
-                    /* Doble verificación: que este cliente no haya usado ya el cupón (evita doble uso en pestañas paralelas) */
-                    let yaUso = false;
-                    if (clienteAuth) {
+                    /* Verificaciones finales con datos frescos de la BDD */
+                    let puedeUsar = true;
+                    /* 1. Máximo de usos global (lee el cupón actualizado) */
+                    try {
+                        const cupFresh = await db.collection('cupones').doc(cuponId).get();
+                        if (cupFresh.exists) {
+                            const cd = cupFresh.data();
+                            if (cd.activo === false) puedeUsar = false;
+                            if (cd.maxUsos && (parseInt(cd.usos||0) >= parseInt(cd.maxUsos))) puedeUsar = false;
+                        }
+                    } catch(e) {}
+                    /* 2. Que este cliente no lo haya usado ya (por cuponId, no por código) */
+                    if (puedeUsar && clienteAuth) {
                         const chk = await db.collection('cuponesUsos').where('cuponId','==',cuponId).where('uid','==',clienteAuth.uid).get();
-                        yaUso = !chk.empty;
+                        if (!chk.empty) puedeUsar = false;
                     }
-                    if (!yaUso) {
+                    if (puedeUsar) {
                         const usoData = {
                             cuponId: cuponId,
                             codigo: _cuponAplicado.codigo,
