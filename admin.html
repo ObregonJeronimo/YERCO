@@ -697,7 +697,7 @@
             if(descuentoPct<0)descuentoPct=0;
             if(descuentoPct>100)descuentoPct=100;
             const descuentoMonto=Math.round(subtotal*descuentoPct/100);
-            const cuponMonto=window._pedidoCuponVenta?Math.round(subtotal*(window._pedidoCuponVenta.porcentaje||0)/100):0;
+            const cuponMonto=window._pedidoCuponVenta?Math.min((window._pedidoCuponVenta.monto||0),subtotal):0;
             const subtotalConDesc=subtotal-descuentoMonto-cuponMonto;
             const envio=ventaTipoEntrega==='envio'?(subtotalConDesc>=ENVIO_GRATIS_DESDE?0:ENVIO_PRECIO):0;
             return {subtotal,descuentoPct,descuentoMonto,subtotalConDesc,envio,total:subtotalConDesc+envio};
@@ -711,7 +711,7 @@
                 const row=document.createElement('div');
                 row.id='ventaCuponRow';
                 row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:4px 0;color:#2d6b4a;font-size:0.85rem;border-top:1px solid var(--border);margin-top:4px';
-                row.innerHTML='<span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(v.cupon.codigo)+' (-'+v.cupon.porcentaje+'%)</span><span style="font-weight:700">-$'+(v.cupon.monto||0).toLocaleString('es-AR')+'</span>';
+                row.innerHTML='<span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(v.cupon.codigo)+'</span><span style="font-weight:700">-$'+(v.cupon.monto||0).toLocaleString('es-AR')+'</span>';
                 const totalRow=document.querySelector('#ventaModal .venta-total-row');
                 if(totalRow)totalRow.parentNode.insertBefore(row,totalRow);
             }
@@ -1098,7 +1098,7 @@
                     var nitems=(p.items||[]).length;
                     var itemsTxt=nitems+' item'+(nitems!==1?'s':'');
                     var badge=p.tipoEntrega==='retiro'?'<span class="kcard-badge retiro">Retiro</span>':'<span class="kcard-badge envio">Envio</span>';
-                    var cuponBadge=p.cupon?'<span style="background:#f0fdf4;color:#2d6b4a;border:1px solid #bbf7d0;border-radius:4px;font-size:0.65rem;padding:1px 5px;font-weight:700">-'+p.cupon.porcentaje+'%</span>':'';
+                    var cuponBadge=p.cupon?'<span style="background:#f0fdf4;color:#2d6b4a;border:1px solid #bbf7d0;border-radius:4px;font-size:0.65rem;padding:1px 5px;font-weight:700">-$'+(p.cupon.monto||0).toLocaleString('es-AR')+'</span>':'';
                     cards+='<div class="kanban-card" draggable="true" data-id="'+p.docId+'">';
                     cards+='<div class="kcard-top">';
                     cards+='<span class="kcard-nro">'+nro+'</span>';
@@ -1263,11 +1263,11 @@
             const cuponRow=document.getElementById('ventaCuponRow');
             if(cuponRow)cuponRow.remove();
             if(p.cupon){
-                const dcMonto=p.cupon.monto||Math.round((p.items||[]).reduce((s,i)=>s+i.precio*i.cantidad,0)*p.cupon.porcentaje/100);
+                const dcMonto=p.cupon.monto||0;
                 const row=document.createElement('div');
                 row.id='ventaCuponRow';
                 row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:4px 0;color:#2d6b4a;font-size:0.85rem;border-top:1px solid var(--border);margin-top:4px';
-                row.innerHTML='<span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(p.cupon.codigo)+' (-'+p.cupon.porcentaje+'%)</span><span style="font-weight:700">-$'+dcMonto.toLocaleString('es-AR')+'</span>';
+                row.innerHTML='<span><i class="bi bi-ticket-perforated"></i> Cupón '+esc(p.cupon.codigo)+'</span><span style="font-weight:700">-$'+dcMonto.toLocaleString('es-AR')+'</span>';
                 const totalRow=document.querySelector('#ventaModal .venta-total-row');
                 if(totalRow)totalRow.parentNode.insertBefore(row,totalRow);
             }
@@ -3128,14 +3128,15 @@
                 var row=document.createElement('div');
                 row.style.cssText='background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
                 var activo=cup.activo!==false;
-                var limiteText=cup.limiteCompra?'máx $'+Number(cup.limiteCompra).toLocaleString('es-AR'):'sin límite';
+                var limiteText=cup.limiteCompra?'mín $'+Number(cup.limiteCompra).toLocaleString('es-AR'):'sin mínimo';
                 var usos=cup.usos||0;var maxU=cup.maxUsos;var usosText=maxU?usos+'/'+maxU+' usos':usos?usos+' uso'+(usos!==1?'s':''):'sin usos';
+                var descText=cup.monto?'$'+Number(cup.monto).toLocaleString('es-AR')+' desc':(cup.porcentaje?cup.porcentaje+'% desc':'');
                 row.innerHTML='<div style="flex:1">'+
                     '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem">'+
                     '<strong style="font-family:var(--mono);font-size:1.1rem;letter-spacing:2px">'+esc(cup.codigo||'')+'</strong>'+
                     '<span style="background:'+(activo?'#1a3a2a':'#3a1a1a')+';color:'+(activo?'#67c23a':'#f56c6c')+';font-size:0.7rem;padding:1px 8px;border-radius:10px;font-weight:700">'+(activo?'ACTIVO':'INACTIVO')+'</span>'+
                     '</div>'+
-                    '<div style="font-size:0.82rem;color:var(--text-dim)">'+cup.porcentaje+'% desc · '+limiteText+' · '+usosText+'</div>'+
+                    '<div style="font-size:0.82rem;color:var(--text-dim)">'+descText+' · '+limiteText+' · '+usosText+'</div>'+
                     '</div>'+
                     '<div style="display:flex;gap:0.5rem">'+
                     '<button class="btn btn-sm btn-secondary" style="width:auto"><i class="bi bi-pencil"></i></button>'+
@@ -3151,12 +3152,9 @@
             editingCuponId=id||null;
             const cup=id?cuponesData.find(x=>x.id===id):null;
             document.getElementById('cuponCodigo').value=cup?cup.codigo:'';
-            document.getElementById('cuponPct').value=cup?cup.porcentaje:'';
+            document.getElementById('cuponMonto').value=cup?(cup.monto||''):'';
             document.getElementById('cuponActivo').checked=cup?cup.activo!==false:true;
-            const tieneLimit=cup&&cup.limiteCompra;
-            document.getElementById('cuponToggleLimite').checked=!!tieneLimit;
-            document.getElementById('cuponLimiteGroup').style.display=tieneLimit?'block':'none';
-            document.getElementById('cuponLimite').value=tieneLimit?cup.limiteCompra:'';
+            document.getElementById('cuponLimite').value=cup&&cup.limiteCompra?cup.limiteCompra:'';
             const tieneMax=cup&&cup.maxUsos;
             document.getElementById('cuponToggleMaxUsos').checked=!!tieneMax;
             document.getElementById('cuponMaxUsosGroup').style.display=tieneMax?'block':'none';
@@ -3166,10 +3164,6 @@
 
         function closeCuponModal(){document.getElementById('cuponModal').classList.remove('show');editingCuponId=null;}
 
-        function toggleCuponLimite(){
-            const on=document.getElementById('cuponToggleLimite').checked;
-            document.getElementById('cuponLimiteGroup').style.display=on?'block':'none';
-        }
         function toggleCuponMaxUsos(){
             const on=document.getElementById('cuponToggleMaxUsos').checked;
             document.getElementById('cuponMaxUsosGroup').style.display=on?'block':'none';
@@ -3177,20 +3171,20 @@
 
         async function saveCupon(){
             let codigo=document.getElementById('cuponCodigo').value.trim().toUpperCase();
-            const pct=parseInt(document.getElementById('cuponPct').value);
+            const monto=parseInt(document.getElementById('cuponMonto').value);
             const activo=document.getElementById('cuponActivo').checked;
-            const tieneLimit=document.getElementById('cuponToggleLimite').checked;
-            const limite=tieneLimit?parseInt(document.getElementById('cuponLimite').value):null;
+            const limite=parseInt(document.getElementById('cuponLimite').value);
             const tieneMax=document.getElementById('cuponToggleMaxUsos').checked;
             const maxUsos=tieneMax?parseInt(document.getElementById('cuponMaxUsos').value):null;
             if(!codigo){showAdminToast('Ingresá el código del cupón','error');return;}
-            if(isNaN(pct)||pct<1||pct>100){showAdminToast('El porcentaje debe ser entre 1 y 100','error');return;}
-            if(tieneLimit&&(isNaN(limite)||limite<1)){showAdminToast('La compra mínima debe ser mayor a 0','error');return;}
+            if(isNaN(monto)||monto<1){showAdminToast('El monto de descuento debe ser mayor a 0','error');return;}
+            if(isNaN(limite)||limite<1){showAdminToast('Ingresá el monto mínimo de compra','error');return;}
+            if(limite<monto){showAdminToast('El mínimo de compra debe ser mayor al descuento','error');return;}
             if(tieneMax&&(isNaN(maxUsos)||maxUsos<1)){showAdminToast('El máximo de usos debe ser mayor a 0','error');return;}
-            const data={codigo,porcentaje:pct,activo,limiteCompra:limite||null,maxUsos:maxUsos||null,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};
+            const data={codigo,monto,tipo:'monto',activo,limiteCompra:limite,maxUsos:maxUsos||null,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};
             try{
                 if(editingCuponId){
-                    await db.collection('cupones').doc(editingCuponId).update({codigo,porcentaje:pct,activo,limiteCompra:limite||null});
+                    await db.collection('cupones').doc(editingCuponId).update({codigo,monto,tipo:'monto',activo,limiteCompra:limite});
                     showAdminToast('Cupón actualizado','success');
                 }else{
                     /* Verificar que no exista el código */
@@ -3432,11 +3426,10 @@
     <div class="modal-overlay" id="cuponModal"><div class="modal-box" style="max-width:460px"><div class="modal-header"><h3><i class="bi bi-ticket-perforated"></i> Cupón de descuento</h3><button class="modal-close" onclick="closeCuponModal()"><i class="bi bi-x-lg"></i></button></div>
     <div class="form-group"><label>Código del cupón <span style="font-size:0.75rem;color:var(--text-dim)">(siempre en mayúsculas)</span></label><input type="text" class="form-input" id="cuponCodigo" placeholder="Ej: VERANO20" oninput="this.value=this.value.toUpperCase()" style="font-family:var(--mono);letter-spacing:2px"></div>
     <div class="form-row" style="grid-template-columns:1fr 1fr">
-      <div class="form-group"><label>% de descuento (1-100)</label><input type="number" class="form-input" id="cuponPct" min="1" max="100" placeholder="Ej: 10"></div>
+      <div class="form-group"><label>Monto de descuento ($)</label><input type="number" class="form-input" id="cuponMonto" min="1" placeholder="Ej: 5000"></div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.25rem"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponActivo" checked><span class="toggle-slider"></span></label> Activo</label></div>
     </div>
-    <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleLimite" onchange="toggleCuponLimite()"><span class="toggle-slider"></span></label> Compra mínima para activar</label></div>
-    <div class="form-group" id="cuponLimiteGroup" style="display:none"><label>Monto mínimo de compra requerido <span style="font-size:0.75rem;color:var(--text-dim)">(ej: $20.000 = solo aplica si el carrito supera ese monto)</span></label><input type="number" class="form-input" id="cuponLimite" min="1" placeholder="Ej: 20000" oninput="if(this.value<0)this.value=0"></div>
+    <div class="form-group"><label>Monto mínimo de compra ($) <span style="font-size:0.75rem;color:var(--text-dim)">(el cliente debe superar este monto para usar el cupón)</span></label><input type="number" class="form-input" id="cuponLimite" min="1" placeholder="Ej: 50000" oninput="if(this.value<0)this.value=0"></div>
     <div class="form-group"><label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><label class="toggle-switch"><input type="checkbox" id="cuponToggleMaxUsos" onchange="toggleCuponMaxUsos()"><span class="toggle-slider"></span></label> Límite de usos totales</label></div>
     <div class="form-group" id="cuponMaxUsosGroup" style="display:none"><label>Máximo de usos totales del cupón</label><input type="number" class="form-input" id="cuponMaxUsos" min="1" placeholder="Ej: 50" oninput="if(this.value<1)this.value=1"></div>
     <div class="form-actions"><button class="btn btn-secondary" onclick="closeCuponModal()">Cancelar</button><button class="btn btn-primary" onclick="saveCupon()"><i class="bi bi-check-lg"></i> Guardar</button></div>

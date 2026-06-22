@@ -552,7 +552,7 @@ function setCheckoutEntrega(tipo){
 function updateCheckoutResumen(){
     const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
     const tipoEntrega=window._chkTipoEntrega||'envio';
-    const dcMonto=_cuponAplicado?Math.round(subtotal*_cuponAplicado.porcentaje/100):0;
+    const dcMonto=_cuponAplicado?Math.min(_cuponAplicado.monto||0,subtotal):0;
     const subtotalConDesc=subtotal-dcMonto;
     const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
     const total=subtotalConDesc+envio;
@@ -561,7 +561,7 @@ function updateCheckoutResumen(){
     const envioRow=tipoEntrega==='retiro'
         ?'<div class="chk-resumen-row"><span><i class="bi bi-shop"></i> Retiro en local</span><span style="color:#2d4a22">sin cargo</span></div>'
         :('<div class="chk-resumen-row"><span><i class="bi bi-truck"></i> Envío</span><span'+(envio===0?' style="color:#2d4a22;font-weight:600"':'')+'>'+(envio===0?'GRATIS':'$'+formatPrice(envio))+'</span></div>');
-    const cuponRow=_cuponAplicado?'<div class="chk-resumen-row" style="color:#2d6b4a"><span><i class="bi bi-ticket-perforated"></i> Cupón '+_cuponAplicado.codigo+' (-'+_cuponAplicado.porcentaje+'%)</span><span>-$'+formatPrice(dcMonto)+'</span></div>':'';
+    const cuponRow=_cuponAplicado?'<div class="chk-resumen-row" style="color:#2d6b4a"><span><i class="bi bi-ticket-perforated"></i> Cupón '+_cuponAplicado.codigo+'</span><span>-$'+formatPrice(dcMonto)+'</span></div>':'';
     /* Lista de productos */
     const itemsList = carrito.map(i => {
         const cant = i.cantidad > 1 ? '<span style="background:#e8f5e9;color:#2d4a22;border-radius:10px;padding:1px 7px;font-size:0.75rem;font-weight:700">x'+i.cantidad+'</span> ' : '';
@@ -631,7 +631,7 @@ async function confirmCheckout(){
         if(!firebase||!firebase.firestore){throw new Error('Firebase no inicializado');}
         const db=firebase.firestore();
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-        const dcMonto=_cuponAplicado?Math.round(subtotal*_cuponAplicado.porcentaje/100):0;
+        const dcMonto=_cuponAplicado?Math.min(_cuponAplicado.monto||0,subtotal):0;
         const subtotalConDesc=subtotal-dcMonto;
         const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
         const total=subtotalConDesc+envio;
@@ -664,7 +664,7 @@ async function confirmCheckout(){
             envio:envio,
             envioGratis:tipoEntrega==='envio'&&envio===0,
             total:total,
-            cupon:_cuponAplicado?{codigo:_cuponAplicado.codigo,porcentaje:_cuponAplicado.porcentaje,monto:dcMonto}:null,
+            cupon:_cuponAplicado?{codigo:_cuponAplicado.codigo,monto:dcMonto}:null,
             origen:'web',
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -681,7 +681,7 @@ async function confirmCheckout(){
         msg+='*Tel:* '+telefonoLimpio+'\n';
         msg+='*Entrega:* '+(tipoEntrega==='retiro'?'Retiro en local':'Envío a domicilio')+'\n';
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
-        if(_cuponAplicado)msg+='*Cupón:* '+_cuponAplicado.codigo+' (-'+_cuponAplicado.porcentaje+'% = -$'+dcMonto.toLocaleString('es-AR')+')\n';
+        if(_cuponAplicado)msg+='*Cupón:* '+_cuponAplicado.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
         msg+='\nGracias!';
         /* Limpiar carrito y resetear las cards de productos */
@@ -1276,8 +1276,8 @@ async function aplicarCupon() {
         }
         const cupDoc = snap.docs[0];
         const cup = cupDoc.data();
-        const pct = parseInt(cup.porcentaje);
-        if (isNaN(pct) || pct < 1 || pct > 100) {
+        const monto = parseInt(cup.monto || 0);
+        if (isNaN(monto) || monto < 1) {
             if(msg) msg.innerHTML='<span style="color:#e53e3e">Cupón inválido.</span>';
             if(btn){btn.disabled=false;btn.textContent='Aplicar';}
             return;
@@ -1309,10 +1309,10 @@ async function aplicarCupon() {
             return;
         }
         /* Aplicar — deshabilitar input y botón para evitar doble aplicación */
-        _cuponAplicado = { codigo, porcentaje: pct, id: cupDoc.id };
+        _cuponAplicado = { codigo, monto: monto, id: cupDoc.id };
         if(input){input.disabled=true;input.style.opacity='0.6';}
         if(btn){btn.disabled=true;btn.textContent='Aplicado ✓';btn.style.background='#2d6b4a';}
-        if(msg) msg.innerHTML='<span style="color:#2d6b4a;font-weight:600">✓ '+pct+'% de descuento aplicado.</span> <button onclick="quitarCupon()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.8rem;text-decoration:underline">Quitar</button>';
+        if(msg) msg.innerHTML='<span style="color:#2d6b4a;font-weight:600">✓ $'+monto.toLocaleString('es-AR')+' de descuento aplicado.</span> <button onclick="quitarCupon()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.8rem;text-decoration:underline">Quitar</button>';
         updateCheckoutResumen();
     } catch(e) {
         if(msg) msg.innerHTML='<span style="color:#e53e3e">Error al verificar el cupón.</span>';
