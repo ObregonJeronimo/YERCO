@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/producto/[slug].js": {
+      "includeFiles": "index.html"
+    }
+  },
   "rewrites": [
     {
       "source": "/__/auth/:path*",
