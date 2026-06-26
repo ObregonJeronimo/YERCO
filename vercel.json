@@ -10,7 +10,7 @@
     },
     {
       "source": "/producto/:slug",
-      "destination": "/index.html"
+      "destination": "/api/producto/:slug"
     },
     {
       "source": "/admin",
