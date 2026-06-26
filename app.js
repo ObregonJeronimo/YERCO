@@ -223,7 +223,7 @@ function renderProducts(list) {
         if(p.grupoId){
             const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
             if(miembros.length>1){
-                grupoHTML='<div class="gramaje-btns" data-grupo="'+p.grupoId+'">'+
+                grupoHTML='<div class="gramaje-btns" data-grupo="'+p.grupoId+'"><span class="gramaje-label">Presentación:</span>'+
                     miembros.map(m=>{
                         const lbl=m.grupoMascara||m.gramaje||m.nombre;
                         const act=m.id===p.id?' active':'';
