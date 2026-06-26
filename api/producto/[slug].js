@@ -1,16 +1,27 @@
 /**
  * Función serverless de Vercel: preview Open Graph de un producto.
- * Agregar ?debug=1 a la URL para ver el diagnóstico en JSON.
+ * Usa Firebase Admin SDK (lee Firestore del lado servidor, sin App Check ni reglas).
+ * Requiere la variable de entorno FIREBASE_SERVICE_ACCOUNT (JSON del service account).
+ * Agregar ?debug=1 para ver diagnóstico.
  */
 
 const fs = require('fs');
 const path = require('path');
+const admin = require('firebase-admin');
 
-const PROJECT_ID = 'yerco-bb620';
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-const API_KEY = 'AIzaSyCYTYtrsLipyXeWbOUR7sUm3NPLA0mHvgs';
 const SITE_URL = 'https://www.yerco.ar';
 const LOGO_FALLBACK = 'https://www.yerco.ar/img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg';
+
+/* Inicializa Admin SDK una sola vez (reutiliza la instancia entre invocaciones) */
+function getDb() {
+  if (!admin.apps.length) {
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT no configurada');
+    const cred = JSON.parse(raw);
+    admin.initializeApp({ credential: admin.credential.cert(cred) });
+  }
+  return admin.firestore();
+}
 
 function escapeHtml(str) {
   return (str || '')
@@ -28,108 +39,48 @@ function leerIndexHtml() {
   ];
   for (const ruta of candidatos) {
     try {
-      if (fs.existsSync(ruta)) return { html: fs.readFileSync(ruta, 'utf-8'), ruta };
+      if (fs.existsSync(ruta)) return fs.readFileSync(ruta, 'utf-8');
     } catch (e) { /* sigue */ }
   }
-  return { html: null, ruta: null };
-}
-
-function parseDoc(fields) {
-  const getStr = (f) => (fields[f] && fields[f].stringValue !== undefined) ? fields[f].stringValue : null;
-  return {
-    nombre: getStr('nombreMostrado') || getStr('nombre') || 'Producto',
-    imagen: getStr('imagen') || null,
-    categoria: getStr('categoria') || '',
-    oculto: fields.oculto && fields.oculto.booleanValue === true,
-    slug: getStr('slug')
-  };
+  return null;
 }
 
 async function buscarProductoPorSlug(slug) {
-  const diag = {};
-  // MÉTODO 1: runQuery con key
-  try {
-    const query = {
-      structuredQuery: {
-        from: [{ collectionId: 'productos' }],
-        where: { fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: slug } } },
-        limit: 1
-      }
-    };
-    const resp = await fetch(`${FIRESTORE_BASE}:runQuery?key=${API_KEY}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
-    });
-    diag.m1_status = resp.status;
-    if (resp.ok) {
-      const data = await resp.json();
-      const row = Array.isArray(data) ? data.find(r => r.document) : null;
-      if (row && row.document) {
-        return { producto: parseDoc(row.document.fields || {}), fsStatus: resp.status, encontrado: true, metodo: 'runQuery', diag };
-      }
-      diag.m1_encontrado = false;
-    } else {
-      let e=''; try { e = await resp.text(); } catch(_){}
-      diag.m1_error = e.slice(0,200);
-    }
-  } catch (e) { diag.m1_excepcion = e.message; }
-
-  // MÉTODO 2: GET de la colección (lista documentos) y filtrar por slug en JS
-  try {
-    let pageToken = '';
-    for (let i = 0; i < 12; i++) {
-      const url = `${FIRESTORE_BASE}/productos?key=${API_KEY}&pageSize=300${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
-      const resp = await fetch(url);
-      diag.m2_status = resp.status;
-      if (!resp.ok) {
-        let e=''; try { e = await resp.text(); } catch(_){}
-        diag.m2_error = e.slice(0,200);
-        break;
-      }
-      const data = await resp.json();
-      const docs = data.documents || [];
-      for (const d of docs) {
-        const p = parseDoc(d.fields || {});
-        if (p.slug === slug) {
-          return { producto: p, fsStatus: 200, encontrado: true, metodo: 'getCollection', diag };
-        }
-      }
-      if (!data.nextPageToken) break;
-      pageToken = data.nextPageToken;
-    }
-    diag.m2_encontrado = false;
-  } catch (e) { diag.m2_excepcion = e.message; }
-
-  return { producto: null, fsStatus: diag.m1_status || diag.m2_status || 0, encontrado: false, fsError: JSON.stringify(diag), diag };
+  const db = getDb();
+  const snap = await db.collection('productos').where('slug', '==', slug).limit(1).get();
+  if (snap.empty) return null;
+  const d = snap.docs[0].data();
+  return {
+    nombre: d.nombreMostrado || d.nombre || 'Producto',
+    imagen: d.imagen || null,
+    categoria: d.categoria || '',
+    oculto: d.oculto === true
+  };
 }
 
 module.exports = async function handler(req, res) {
   const slug = (req.query.slug || '').toString();
   const debug = req.query.debug === '1';
 
-  const idx = leerIndexHtml();
-  let html = idx.html;
-  let viaHttp = false;
+  let html = leerIndexHtml();
   if (!html) {
     try {
       const idxResp = await fetch(`${SITE_URL}/index.html`);
       html = await idxResp.text();
-      viaHttp = true;
     } catch (e) {
       html = '<html><body>Yerco</body></html>';
     }
   }
 
-  let resultado = { producto: null };
+  let producto = null;
+  let errMsg = null;
   try {
-    if (slug) resultado = await buscarProductoPorSlug(slug);
+    if (slug) producto = await buscarProductoPorSlug(slug);
   } catch (e) {
-    resultado = { producto: null, error: e.message };
+    errMsg = e.message;
   }
-  const producto = resultado.producto;
 
-  const teniaMarcador = html && html.indexOf('<!--OG_START-->') !== -1;
   let reemplazado = false;
-
   if (producto && !producto.oculto && html) {
     const titulo = escapeHtml(producto.nombre) + ' | Yerco Dietética';
     const desc = escapeHtml('Conseguilo en Yerco Dietética. Productos naturales y de calidad a la puerta de tu casa.');
@@ -158,19 +109,11 @@ module.exports = async function handler(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.status(200).send(JSON.stringify({
       slug,
-      indexLeido: !!idx.html,
-      indexRuta: idx.ruta,
-      viaHttp,
-      cwd: process.cwd(),
-      teniaMarcador,
-      firestoreStatus: resultado.fsStatus,
-      encontrado: resultado.encontrado,
-      fsError: resultado.fsError || null,
-      metodo: resultado.metodo || null,
-      diag: resultado.diag || null,
+      indexLeido: !!html,
+      adminConfigurado: !!process.env.FIREBASE_SERVICE_ACCOUNT,
       producto: producto ? { nombre: producto.nombre, imagen: producto.imagen, oculto: producto.oculto } : null,
       reemplazado,
-      error: resultado.error || null
+      error: errMsg
     }, null, 2));
     return;
   }
