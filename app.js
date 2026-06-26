@@ -230,6 +230,12 @@ function renderProducts(list) {
                         return '<button class="presentacion-seg'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
                     }).join('')+
                     '</div>';
+                /* Precargar imágenes de las otras presentaciones (diferido) para que el cambio sea instantáneo */
+                if('requestIdleCallback' in window){
+                    requestIdleCallback(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});});
+                }else{
+                    setTimeout(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});},1500);
+                }
             }
         }
         const dscPct=Math.min(100,Math.max(0,p.descuento||0));
@@ -303,9 +309,22 @@ function selectGrupoMiembro(cardId, miembroId){
     /* Título */
     const h3=card.querySelector('.product-name');
     if(h3)h3.textContent=m.nombreMostrado||m.nombre;
-    /* Imagen */
+    /* Imagen: precargar y cambiar con fade suave para evitar el parpadeo */
     const imgEl=card.querySelector('.product-image img');
-    if(imgEl){const nuevaImg=optImg(m.imagen,500)||m.imagen||'img/default-product.jpg';imgEl.src=nuevaImg;imgEl.setAttribute('data-orig',m.imagen||'');imgEl.alt=m.nombreMostrado||m.nombre;}
+    if(imgEl){
+        const nuevaImg=optImg(m.imagen,500)||m.imagen||'img/default-product.jpg';
+        imgEl.alt=m.nombreMostrado||m.nombre;
+        imgEl.setAttribute('data-orig',m.imagen||'');
+        /* Si es la misma imagen, no hacer nada */
+        if(imgEl.src!==nuevaImg && !imgEl.src.endsWith(nuevaImg)){
+            const skel=card.querySelector('.img-skeleton');
+            if(skel)skel.style.display='none';
+            const pre=new Image();
+            pre.onload=()=>{imgEl.style.opacity='0';setTimeout(()=>{imgEl.src=nuevaImg;imgEl.style.opacity='1';},120);};
+            pre.onerror=()=>{imgEl.src=m.imagen||'img/default-product.jpg';imgEl.style.opacity='1';};
+            pre.src=nuevaImg;
+        }
+    }
     /* Cinta de descuento */
     const imgWrap=card.querySelector('.product-image');
     let ribbon=imgWrap?imgWrap.querySelector('.product-discount-ribbon'):null;
