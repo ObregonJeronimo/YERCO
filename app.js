@@ -52,9 +52,10 @@ async function loadProductsFromFirebase(retries) {
         productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
-        let carritoActualizado=false;
-        carrito=carrito.map(item=>{const prod=productos.find(p=>p.id===item.id);if(prod){const pf=precioFinal(prod);if(pf!==item.precio){carritoActualizado=true;return{...item,precio:pf,nombre:prod.nombreMostrado||prod.nombre};}}return item;});
-        if(carritoActualizado){saveCart();updateCartUI();}
+        /* Sincronizar carrito guardado con productos actuales (precio, stock, disponibilidad) */
+        const cambiosCarrito=reconciliarCarrito();
+        updateCartUI();
+        if(cambiosCarrito.length){avisarCambiosCarrito(cambiosCarrito);}
         /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
         if(!window._autoScrollDone){
             window._autoScrollDone=true;
@@ -401,6 +402,65 @@ function updateProductCard(id) {
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const stock=p?p.stock:carrito[idx].cantidad;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
 function saveCart(){try{localStorage.setItem('yercoCart',JSON.stringify(carrito));}catch(e){console.warn('No se pudo guardar el carrito:',e);}}
+
+/* Sincroniza el carrito guardado con los productos actuales:
+   - actualiza precio, nombre, imagen, descuento al valor actual
+   - marca productos que ya no están disponibles (ocultos, eliminados o sin stock)
+   - ajusta cantidades que superan el stock disponible
+   Devuelve un array con los cambios detectados para avisar al usuario. */
+function reconciliarCarrito(){
+    if(!carrito.length||!productos.length)return [];
+    const cambios=[];
+    carrito.forEach(item=>{
+        const p=productos.find(x=>x.id===item.id);
+        if(!p){
+            /* Producto eliminado u oculto (productos solo tiene los visibles) */
+            item._noDisponible=true;
+            item._motivo='no_disponible';
+            cambios.push({nombre:item.nombre,tipo:'no_disponible'});
+            return;
+        }
+        item._noDisponible=false;
+        item._motivo=null;
+        /* Actualizar datos al valor actual */
+        const precioActual=precioFinal(p);
+        if(item.precio!==precioActual){cambios.push({nombre:p.nombreMostrado||p.nombre,tipo:'precio',anterior:item.precio,nuevo:precioActual});}
+        item.nombre=p.nombreMostrado||p.nombre;
+        item.precio=precioActual;
+        item.precioOriginal=p.precio||0;
+        item.descuento=Math.min(100,Math.max(0,p.descuento||0));
+        item.imagen=p.imagen;
+        /* Stock */
+        if(p.stock<=0){
+            item._sinStock=true;
+            cambios.push({nombre:item.nombre,tipo:'sin_stock'});
+        }else{
+            item._sinStock=false;
+            if(item.cantidad>p.stock){
+                cambios.push({nombre:item.nombre,tipo:'stock_ajustado',nuevo:p.stock});
+                item.cantidad=p.stock;
+            }
+        }
+    });
+    saveCart();
+    return cambios;
+}
+
+/* Muestra un aviso al usuario sobre los cambios detectados en su carrito al volver */
+function avisarCambiosCarrito(cambios){
+    const noDisp=cambios.filter(c=>c.tipo==='no_disponible').length;
+    const sinStock=cambios.filter(c=>c.tipo==='sin_stock').length;
+    const precios=cambios.filter(c=>c.tipo==='precio').length;
+    const stockAjust=cambios.filter(c=>c.tipo==='stock_ajustado').length;
+    let msgs=[];
+    if(noDisp)msgs.push(noDisp+' producto'+(noDisp>1?'s ya no están':' ya no está')+' disponible'+(noDisp>1?'s':''));
+    if(sinStock)msgs.push(sinStock+' producto'+(sinStock>1?'s sin':' sin')+' stock');
+    if(stockAjust)msgs.push('cantidades ajustadas por stock');
+    if(precios)msgs.push('precios actualizados');
+    if(msgs.length){
+        showToast('Tu carrito se actualizó: '+msgs.join(', '),'info');
+    }
+}
 function clearCart(){if(carrito.length===0)return;if(!confirm('Vaciar todo el carrito?'))return;const ids=carrito.map(i=>i.id);carrito=[];saveCart();updateCartUI();ids.forEach(id=>updateProductCard(id));showToast('Carrito vaciado','info');}
 
 let _pdmCurrentImgIdx=0;
@@ -517,7 +577,7 @@ document.addEventListener('keydown',e=>{
 
 function updateCartUI() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty'),footer=document.getElementById('cartFooter'),count=document.getElementById('cartCount'),total=document.getElementById('cartTotal'),cta=document.getElementById('ctaCartCount'),ckBtn=document.getElementById('checkoutBtn');
-    const ti=carrito.reduce((s,i)=>s+i.cantidad,0),tp=carrito.reduce((s,i)=>s+(i.precio*i.cantidad),0);
+    const ti=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+i.cantidad,0),tp=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+(i.precio*i.cantidad),0);
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
@@ -527,7 +587,22 @@ function updateCartUI() {
 function renderCartItems() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
     body.querySelectorAll('.cart-item').forEach(i=>i.remove());
-    carrito.forEach(item=>{const p=productos.find(x=>x.id===item.id),ms=p?p.stock:item.cantidad;const el=document.createElement('div');el.className='cart-item';el.innerHTML='<img src="'+esc(optImg(item.imagen,200)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';body.insertBefore(el,empty);});
+    carrito.forEach(item=>{
+        const p=productos.find(x=>x.id===item.id);
+        const ms=p?p.stock:0;
+        const noDisp=item._noDisponible||!p;
+        const sinStock=item._sinStock||(p&&p.stock<=0);
+        const problema=noDisp||sinStock;
+        const avisoHtml=noDisp?'<span class="cart-item-warning">Ya no disponible</span>':(sinStock?'<span class="cart-item-warning">Sin stock</span>':'');
+        const el=document.createElement('div');
+        el.className='cart-item'+(problema?' cart-item-problema':'');
+        if(problema){
+            el.innerHTML='<img src="'+esc(optImg(item.imagen,200)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image" style="opacity:0.5"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4>'+avisoHtml+'<div class="cart-item-controls"><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')" style="margin-left:0"><i class="bi bi-trash"></i> Quitar</button></div></div>';
+        }else{
+            el.innerHTML='<img src="'+esc(optImg(item.imagen,200)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';
+        }
+        body.insertBefore(el,empty);
+    });
 }
 
 function updateShippingBar(total) {
@@ -695,6 +770,21 @@ function sanitizePhone(val) {
 }
 
 async function confirmCheckout(){
+    /* Validar disponibilidad y stock con datos actuales antes de confirmar */
+    const cambiosPrev=reconciliarCarrito();
+    const conProblema=carrito.filter(i=>i._noDisponible||i._sinStock);
+    if(conProblema.length){
+        updateCartUI();
+        const nombres=conProblema.map(i=>i.nombre).join(', ');
+        showToast('No se puede confirmar: '+nombres+' ya no está'+(conProblema.length>1?'n':'')+' disponible'+(conProblema.length>1?'s':'')+'. Quitalo'+(conProblema.length>1?'s':'')+' del carrito.','error');
+        return;
+    }
+    /* Si hubo cambios de precio/stock, avisar y dejar que revise antes de seguir */
+    if(cambiosPrev.some(c=>c.tipo==='precio'||c.tipo==='stock_ajustado')){
+        updateCartUI();
+        showToast('Algunos precios o cantidades cambiaron. Revisá tu carrito antes de confirmar.','info');
+        return;
+    }
     /* Capturar el cupón AHORA, porque closeCheckoutModal() más abajo limpia _cuponAplicado */
     const cuponParaRegistrar = _cuponAplicado ? {..._cuponAplicado} : null;
     /* Si ingresó una nueva dirección con nombre, guardarla en el perfil */
