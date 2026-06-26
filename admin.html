@@ -544,11 +544,16 @@
             if(!f.length){cont.innerHTML='<div style="padding:1rem;text-align:center;color:var(--text-dim)">Sin resultados</div>';return;}
             cont.innerHTML=f.slice(0,60).map(p=>{
                 const checked=_agruparSel.has(p.id)?'checked':'';
-                const yaGrupo=p.grupoId?' <span style="font-size:0.68rem;color:#e6a23c">(ya en un grupo)</span>':'';
-                return '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border)"><input type="checkbox" class="agrupar-chk" value="'+p.id+'" '+checked+' onchange="toggleAgruparItem(\''+p.id+'\',this.checked)"><img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:32px;height:32px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'"><span style="font-size:0.85rem;flex:1">'+esc(p.nombre)+yaGrupo+'</span><span style="font-size:0.78rem;color:var(--text-dim);font-family:var(--mono)">$'+(p.precio||0).toLocaleString('es-AR')+'</span></label>';
+                const enOtroGrupo=p.grupoId?true:false;
+                const yaGrupo=enOtroGrupo?' <span style="font-size:0.68rem;color:#e6a23c">(ya en un grupo)</span>':'';
+                const disabled=enOtroGrupo?'disabled':'';
+                const op=enOtroGrupo?'opacity:0.5;cursor:not-allowed':'cursor:pointer';
+                return '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;'+op+';border-bottom:1px solid var(--border)" title="'+(enOtroGrupo?'Este producto ya pertenece a otro grupo. Deshacé ese grupo primero.':'')+'"><input type="checkbox" class="agrupar-chk" value="'+p.id+'" '+checked+' '+disabled+' onchange="toggleAgruparItem(\''+p.id+'\',this.checked)"><img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:32px;height:32px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'"><span style="font-size:0.85rem;flex:1">'+esc(p.nombre)+yaGrupo+'</span><span style="font-size:0.78rem;color:var(--text-dim);font-family:var(--mono)">$'+(p.precio||0).toLocaleString('es-AR')+'</span></label>';
             }).join('');
         }
         function toggleAgruparItem(id,checked){
+            const prod=allProducts.find(p=>p.id===id);
+            if(checked&&prod&&prod.grupoId){showAdminToast('Ese producto ya está en otro grupo. Deshacelo primero.','error');renderAgruparLista();return;}
             if(checked)_agruparSel.add(id);else _agruparSel.delete(id);
             document.getElementById('agruparSelCount').textContent=_agruparSel.size;
             const area=document.getElementById('agruparPrincipalArea');
@@ -637,6 +642,8 @@
                 if(modalBody)modalBody.scrollTop=0;
             }catch(e){showAdminToast('Error: '+e.message,'error');}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Crear grupo';}
         }
+        let _gruposExpandidos=new Set();
+        function toggleGrupoExpandido(gid){if(_gruposExpandidos.has(gid))_gruposExpandidos.delete(gid);else _gruposExpandidos.add(gid);renderGruposExistentes();}
         function renderGruposExistentes(){
             const cont=document.getElementById('agruparGruposExistentes');
             const grupos={};
@@ -648,9 +655,12 @@
             if(fq)keysFiltradas=keys.filter(gid=>grupos[gid].some(p=>(p.nombre||'').toLowerCase().includes(fq)));
             const header='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:0.82rem;font-weight:600;color:var(--text-dim)">Grupos existentes ('+keys.length+')</span><div class="search-box" style="flex:1;min-width:0"><i class="bi bi-search"></i><input type="text" id="agruparGruposFiltro" placeholder="Filtrar grupos..." value="'+esc(fq)+'" oninput="renderGruposExistentes()" style="font-size:0.8rem"></div></div>';
             const cards=keysFiltradas.length?keysFiltradas.map(gid=>{
-                const prods=grupos[gid].sort((a,b)=>(a.precio||0)-(b.precio||0));
+                const prods=grupos[gid].sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
                 const principal=prods.find(p=>p.grupoPrincipal)||prods[0];
-                return '<div style="background:rgba(45,107,138,0.1);border:1px solid #2d5a6a;border-radius:7px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.84rem;font-weight:600"><i class="bi bi-star-fill" style="color:#2d6b8a;font-size:0.7rem"></i> '+esc(principal.nombre)+' <span style="color:var(--text-dim);font-weight:400">+'+(prods.length-1)+' presentación(es)</span></span><button class="btn-icon delete" onclick="deshacerGrupo(\''+gid+'\')" title="Deshacer grupo"><i class="bi bi-x-lg"></i></button></div><div style="font-size:0.74rem;color:var(--text-dim);margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">'+prods.sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999)).map(p=>'<span style="background:'+(p.id===principal.id?'#2d6b8a':'var(--bg-card)')+';color:'+(p.id===principal.id?'#fff':'var(--text-dim)')+';padding:2px 7px;border-radius:5px;font-weight:600">'+esc(p.grupoMascara||'?')+'</span>').join('')+'</div></div>';
+                const expanded=_gruposExpandidos.has(gid);
+                const chips=prods.map(p=>'<span style="background:'+(p.id===principal.id?'#2d6b8a':'var(--bg-card)')+';color:'+(p.id===principal.id?'#fff':'var(--text-dim)')+';padding:2px 7px;border-radius:5px;font-weight:600;font-size:0.72rem">'+esc(p.grupoMascara||'?')+'</span>').join('');
+                const detalle=expanded?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid #2d5a6a;display:flex;flex-direction:column;gap:5px">'+prods.map(p=>'<div style="display:flex;align-items:center;gap:8px"><img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:34px;height:34px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'"><span style="background:'+(p.id===principal.id?'#2d6b8a':'var(--bg-input)')+';color:'+(p.id===principal.id?'#fff':'var(--text)')+';padding:2px 8px;border-radius:5px;font-weight:700;font-size:0.74rem;min-width:42px;text-align:center">'+esc(p.grupoMascara||'?')+'</span><span style="font-size:0.8rem;flex:1">'+esc(p.nombre)+(p.id===principal.id?' <i class="bi bi-star-fill" style="color:#2d6b8a;font-size:0.65rem" title="Principal"></i>':'')+'</span><span style="font-size:0.78rem;color:var(--text-dim);font-family:var(--mono)">$'+(p.precio||0).toLocaleString("es-AR")+'</span></div>').join('')+'</div>':'';
+                return '<div style="background:rgba(45,107,138,0.1);border:1px solid #2d5a6a;border-radius:7px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-size:0.84rem;font-weight:600;flex:1;cursor:pointer" onclick="toggleGrupoExpandido(\''+gid+'\')"><i class="bi bi-chevron-'+(expanded?'down':'right')+'" style="font-size:0.7rem;color:var(--text-dim)"></i> <i class="bi bi-star-fill" style="color:#2d6b8a;font-size:0.7rem"></i> '+esc(principal.nombre)+' <span style="color:var(--text-dim);font-weight:400">+'+(prods.length-1)+'</span></span><div style="display:flex;gap:3px;flex-wrap:wrap">'+chips+'</div><button class="btn-icon delete" onclick="deshacerGrupo(\''+gid+'\')" title="Eliminar grupo"><i class="bi bi-x-lg"></i></button></div>'+detalle+'</div>';
             }).join(''):'<div style="font-size:0.8rem;color:var(--text-dim);padding:0.5rem">Sin grupos que coincidan.</div>';
             cont.innerHTML=header+cards;
             /* Restaurar foco en el filtro si se estaba escribiendo */
