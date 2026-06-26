@@ -2601,7 +2601,7 @@
         }
         function addVentaMayItem(id){
             document.getElementById('ventaMayBuscaProd').value='';
-            document.getElementById('ventaMayProdList').classList.remove('open');
+            const _dd=document.getElementById('ventaMayProdListDropdown');if(_dd)_dd.innerHTML='';
             const p=allProducts.find(x=>x.id===id);if(!p)return;
             const ex=ventaMayItems.find(x=>x.id===id);
             if(ex){ex.cantidad++;renderVentaMayItems();return;}
