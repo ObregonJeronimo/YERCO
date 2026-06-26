@@ -1,8 +1,10 @@
 /**
- * Función serverless de Vercel: preview Open Graph de un producto.
- * Usa Firebase Admin SDK (lee Firestore del lado servidor, sin App Check ni reglas).
- * Requiere la variable de entorno FIREBASE_SERVICE_ACCOUNT (JSON del service account).
- * Agregar ?debug=1 para ver diagnóstico.
+ * Función serverless de Vercel: genera el preview Open Graph de un producto
+ * para que al compartir el link en WhatsApp/Instagram/Facebook se vea la foto + nombre.
+ *
+ * Usa Firebase Admin SDK para leer Firestore del lado servidor (sin verse afectado
+ * por App Check ni reglas de seguridad). Requiere la variable de entorno
+ * FIREBASE_SERVICE_ACCOUNT con el JSON del service account.
  */
 
 const fs = require('fs');
@@ -12,13 +14,12 @@ const admin = require('firebase-admin');
 const SITE_URL = 'https://www.yerco.ar';
 const LOGO_FALLBACK = 'https://www.yerco.ar/img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg';
 
-/* Inicializa Admin SDK una sola vez (reutiliza la instancia entre invocaciones) */
+/* Inicializa Admin SDK una sola vez (se reutiliza entre invocaciones de la función) */
 function getDb() {
   if (!admin.apps.length) {
     const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT no configurada');
-    const cred = JSON.parse(raw);
-    admin.initializeApp({ credential: admin.credential.cert(cred) });
+    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
   }
   return admin.firestore();
 }
@@ -31,6 +32,7 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
+/* Lee el index.html desde el filesystem del deploy */
 function leerIndexHtml() {
   const candidatos = [
     path.join(process.cwd(), 'index.html'),
@@ -40,7 +42,7 @@ function leerIndexHtml() {
   for (const ruta of candidatos) {
     try {
       if (fs.existsSync(ruta)) return fs.readFileSync(ruta, 'utf-8');
-    } catch (e) { /* sigue */ }
+    } catch (e) { /* sigue probando */ }
   }
   return null;
 }
@@ -53,14 +55,12 @@ async function buscarProductoPorSlug(slug) {
   return {
     nombre: d.nombreMostrado || d.nombre || 'Producto',
     imagen: d.imagen || null,
-    categoria: d.categoria || '',
     oculto: d.oculto === true
   };
 }
 
 module.exports = async function handler(req, res) {
   const slug = (req.query.slug || '').toString();
-  const debug = req.query.debug === '1';
 
   let html = leerIndexHtml();
   if (!html) {
@@ -68,19 +68,17 @@ module.exports = async function handler(req, res) {
       const idxResp = await fetch(`${SITE_URL}/index.html`);
       html = await idxResp.text();
     } catch (e) {
-      html = '<html><body>Yerco</body></html>';
+      html = '<html><body>Yerco Dietética</body></html>';
     }
   }
 
   let producto = null;
-  let errMsg = null;
   try {
     if (slug) producto = await buscarProductoPorSlug(slug);
   } catch (e) {
-    errMsg = e.message;
+    producto = null;
   }
 
-  let reemplazado = false;
   if (producto && !producto.oculto && html) {
     const titulo = escapeHtml(producto.nombre) + ' | Yerco Dietética';
     const desc = escapeHtml('Conseguilo en Yerco Dietética. Productos naturales y de calidad a la puerta de tu casa.');
@@ -99,23 +97,8 @@ module.exports = async function handler(req, res) {
     <meta name="twitter:image" content="${imagen}">
     <!--OG_END-->`;
 
-    const before = html;
     html = html.replace(/<!--OG_START-->[\s\S]*?<!--OG_END-->/, ogTags);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${titulo}</title>`);
-    reemplazado = (html !== before);
-  }
-
-  if (debug) {
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.status(200).send(JSON.stringify({
-      slug,
-      indexLeido: !!html,
-      adminConfigurado: !!process.env.FIREBASE_SERVICE_ACCOUNT,
-      producto: producto ? { nombre: producto.nombre, imagen: producto.imagen, oculto: producto.oculto } : null,
-      reemplazado,
-      error: errMsg
-    }, null, 2));
-    return;
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
