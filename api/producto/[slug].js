@@ -34,46 +34,72 @@ function leerIndexHtml() {
   return { html: null, ruta: null };
 }
 
-async function buscarProductoPorSlug(slug) {
-  const query = {
-    structuredQuery: {
-      from: [{ collectionId: 'productos' }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: 'slug' },
-          op: 'EQUAL',
-          value: { stringValue: slug }
-        }
-      },
-      limit: 1
-    }
-  };
-  const resp = await fetch(`${FIRESTORE_BASE}:runQuery?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query)
-  });
-  const status = resp.status;
-  if (!resp.ok) {
-    let errBody = '';
-    try { errBody = await resp.text(); } catch(e) {}
-    return { producto: null, fsStatus: status, fsError: errBody.slice(0, 500) };
-  }
-  const data = await resp.json();
-  const row = Array.isArray(data) ? data.find(r => r.document) : null;
-  if (!row || !row.document) return { producto: null, fsStatus: status, encontrado: false };
-  const fields = row.document.fields || {};
+function parseDoc(fields) {
   const getStr = (f) => (fields[f] && fields[f].stringValue !== undefined) ? fields[f].stringValue : null;
   return {
-    producto: {
-      nombre: getStr('nombreMostrado') || getStr('nombre') || 'Producto',
-      imagen: getStr('imagen') || null,
-      categoria: getStr('categoria') || '',
-      oculto: fields.oculto && fields.oculto.booleanValue === true
-    },
-    fsStatus: status,
-    encontrado: true
+    nombre: getStr('nombreMostrado') || getStr('nombre') || 'Producto',
+    imagen: getStr('imagen') || null,
+    categoria: getStr('categoria') || '',
+    oculto: fields.oculto && fields.oculto.booleanValue === true,
+    slug: getStr('slug')
   };
+}
+
+async function buscarProductoPorSlug(slug) {
+  const diag = {};
+  // MÉTODO 1: runQuery con key
+  try {
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'productos' }],
+        where: { fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: slug } } },
+        limit: 1
+      }
+    };
+    const resp = await fetch(`${FIRESTORE_BASE}:runQuery?key=${API_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
+    });
+    diag.m1_status = resp.status;
+    if (resp.ok) {
+      const data = await resp.json();
+      const row = Array.isArray(data) ? data.find(r => r.document) : null;
+      if (row && row.document) {
+        return { producto: parseDoc(row.document.fields || {}), fsStatus: resp.status, encontrado: true, metodo: 'runQuery', diag };
+      }
+      diag.m1_encontrado = false;
+    } else {
+      let e=''; try { e = await resp.text(); } catch(_){}
+      diag.m1_error = e.slice(0,200);
+    }
+  } catch (e) { diag.m1_excepcion = e.message; }
+
+  // MÉTODO 2: GET de la colección (lista documentos) y filtrar por slug en JS
+  try {
+    let pageToken = '';
+    for (let i = 0; i < 12; i++) {
+      const url = `${FIRESTORE_BASE}/productos?key=${API_KEY}&pageSize=300${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
+      const resp = await fetch(url);
+      diag.m2_status = resp.status;
+      if (!resp.ok) {
+        let e=''; try { e = await resp.text(); } catch(_){}
+        diag.m2_error = e.slice(0,200);
+        break;
+      }
+      const data = await resp.json();
+      const docs = data.documents || [];
+      for (const d of docs) {
+        const p = parseDoc(d.fields || {});
+        if (p.slug === slug) {
+          return { producto: p, fsStatus: 200, encontrado: true, metodo: 'getCollection', diag };
+        }
+      }
+      if (!data.nextPageToken) break;
+      pageToken = data.nextPageToken;
+    }
+    diag.m2_encontrado = false;
+  } catch (e) { diag.m2_excepcion = e.message; }
+
+  return { producto: null, fsStatus: diag.m1_status || diag.m2_status || 0, encontrado: false, fsError: JSON.stringify(diag), diag };
 }
 
 module.exports = async function handler(req, res) {
@@ -140,6 +166,8 @@ module.exports = async function handler(req, res) {
       firestoreStatus: resultado.fsStatus,
       encontrado: resultado.encontrado,
       fsError: resultado.fsError || null,
+      metodo: resultado.metodo || null,
+      diag: resultado.diag || null,
       producto: producto ? { nombre: producto.nombre, imagen: producto.imagen, oculto: producto.oculto } : null,
       reemplazado,
       error: resultado.error || null
