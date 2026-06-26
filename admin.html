@@ -1841,8 +1841,17 @@
 
         function openMayoristaPdfModal(){
             const visibles=allProducts.filter(p=>p.oculto!==true&&p.nombre&&(p.precioMayorista||0)>0);
-            if(!visibles.length){showAdminToast('No hay productos con precio mayorista. Configuralos en Productos \u2192 % Gan. Mayorista','error');return;}
-            exportMayoristaPDF();
+            if(!visibles.length){showAdminToast('No hay productos con precio mayorista. Configuralos en Productos \\u2192 % Gan. Mayorista','error');return;}
+            const groupsMap={};
+            visibles.forEach(p=>{
+                const pct=Number(p.porcentajeMayorista||0);
+                if(!groupsMap[pct])groupsMap[pct]={oldPct:pct,newPct:pct,count:0,products:[],expanded:false,search:'',page:0};
+                groupsMap[pct].count++;
+                groupsMap[pct].products.push(p);
+            });
+            mayoristaGroups=Object.values(groupsMap).sort((a,b)=>a.oldPct-b.oldPct);
+            renderMayoristaGroups();
+            document.getElementById('mayoristaModal').classList.add('show');
         }
         function closeMayoristaModal(){document.getElementById('mayoristaModal').classList.remove('show');}
 
@@ -1918,14 +1927,28 @@
         }
 
         function exportMayoristaPDF(){
-            /* Usar precioMayorista guardado en cada producto directamente */
+            /* Usar los porcentajes (posiblemente modificados) de los grupos del modal.
+               Recalcula el precio sin tocar la BDD: costo × (1 + newPct/100) */
             const priceMap={};
-            allProducts.forEach(p=>{
-                if(p.oculto===true)return;
-                const pm=Number(p.precioMayorista||0);
-                if(pm>0)priceMap[p.id]=pm;
-            });
+            if(mayoristaGroups&&mayoristaGroups.length){
+                mayoristaGroups.forEach(g=>{
+                    const newPct=Number(g.newPct||0);
+                    g.products.forEach(p=>{
+                        const costo=Number(p.costo||0);
+                        const precio=_redondearMayorista(Math.round(costo*(1+newPct/100)));
+                        if(precio>0)priceMap[p.id]=precio;
+                    });
+                });
+            }else{
+                /* Fallback: precio mayorista guardado */
+                allProducts.forEach(p=>{
+                    if(p.oculto===true)return;
+                    const pm=Number(p.precioMayorista||0);
+                    if(pm>0)priceMap[p.id]=pm;
+                });
+            }
             if(!Object.keys(priceMap).length){showAdminToast('No hay productos con precio mayorista configurado','error');return;}
+            closeMayoristaModal();
             exportCatalogoPDF(priceMap,true);
         }
 
