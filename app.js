@@ -49,7 +49,7 @@ async function loadProductsFromFirebase(retries) {
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
-        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
+        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
         let carritoActualizado=false;
@@ -89,6 +89,8 @@ function aplicarFiltros() {
     let r = [...productos];
     /* Excluir productos hijos de gramaje: solo se muestran como botones dentro del padre de gramaje */
     r = r.filter(p => !p.gramajePadreId);
+    /* Grupos de presentación: en el grid solo se muestra el producto principal de cada grupo */
+    r = r.filter(p => !p.grupoId || p.grupoPrincipal === true);
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual === 'Ofertas') r = r.filter(p => (p.descuento||0) > 0);
     else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
@@ -210,12 +212,26 @@ function renderProducts(list) {
         const atcAttrs=qty>0
             ?'class="add-to-cart-btn added"'
             :'class="add-to-cart-btn"'+(noStock?' disabled':'')+' onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"';
-        /* Gramajes asociados: hijos de este producto (sistema independiente de envasado propio) */
+        /* Gramajes asociados (sistema viejo): hijos de este producto */
         const hijos=productos.filter(h=>h.gramajePadreId===p.id);
         const gramajeHTML=hijos.length>0?'<div class="gramaje-btns">'+
             '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
             hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
             '</div>':'';
+        /* Grupos de presentación (sistema nuevo): miembros del mismo grupoId */
+        let grupoHTML='';
+        if(p.grupoId){
+            const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.precio||0)-(b.precio||0));
+            if(miembros.length>1){
+                grupoHTML='<div class="gramaje-btns" data-grupo="'+p.grupoId+'">'+
+                    miembros.map(m=>{
+                        const lbl=m.gramaje||m.nombreMostrado||m.nombre;
+                        const act=m.id===p.id?' active':'';
+                        return '<button class="gramaje-btn'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
+                    }).join('')+
+                    '</div>';
+            }
+        }
         const dscPct=Math.min(100,Math.max(0,p.descuento||0));
         const nombreDisplay=p.nombreMostrado||p.nombre;
         const badgeDesc=dscPct>0?'<span class="product-discount-ribbon">-'+(p.descuento||0)+'%</span>':'';
@@ -223,7 +239,7 @@ function renderProducts(list) {
         const precioHtml=dscPct>0
             ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(p.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
             :'<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>';
-        return '<article class="product-card" data-id="'+p.id+'">' +
+        return '<article class="product-card" data-id="'+p.id+'"'+(p.grupoId?' data-grupo="'+p.grupoId+'"':'')+'>' +
             '<div class="product-image" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">' +
             badgeDesc +
             '<div class="img-skeleton"></div>' +
@@ -240,6 +256,7 @@ function renderProducts(list) {
             btnContent +
             '</'+atcTag+'>' +
             gramajeHTML+
+            grupoHTML+
             '</div></article>';
     }).join('');
 }
@@ -272,6 +289,59 @@ function requireLoginToBuy(){
     try{sessionStorage.setItem('_intentoCompra','1');}catch(e){}
     /* Abrir el login directamente */
     if(typeof authLogin==='function')authLogin();
+}
+/* Cambia la card del grupo para mostrar el producto (presentación) seleccionado: título, imagen, precio y botón Agregar */
+function selectGrupoMiembro(cardId, miembroId){
+    const card=document.querySelector('.product-card[data-id="'+cardId+'"]');
+    if(!card)return;
+    const m=productos.find(x=>x.id===miembroId);
+    if(!m)return;
+    /* Actualizar botones activos */
+    card.querySelectorAll('.gramaje-btn').forEach(b=>{
+        b.classList.toggle('active', b.getAttribute('data-id')===miembroId);
+    });
+    /* Título */
+    const h3=card.querySelector('.product-name');
+    if(h3)h3.textContent=m.nombreMostrado||m.nombre;
+    /* Imagen */
+    const imgEl=card.querySelector('.product-image img');
+    if(imgEl){const nuevaImg=optImg(m.imagen,500)||m.imagen||'img/default-product.jpg';imgEl.src=nuevaImg;imgEl.setAttribute('data-orig',m.imagen||'');imgEl.alt=m.nombreMostrado||m.nombre;}
+    /* Cinta de descuento */
+    const imgWrap=card.querySelector('.product-image');
+    let ribbon=imgWrap?imgWrap.querySelector('.product-discount-ribbon'):null;
+    const dsc=Math.min(100,Math.max(0,m.descuento||0));
+    if(imgWrap){
+        if(dsc>0){
+            if(!ribbon){ribbon=document.createElement('span');ribbon.className='product-discount-ribbon';imgWrap.insertBefore(ribbon,imgWrap.firstChild);}
+            ribbon.textContent='-'+dsc+'%';
+        }else if(ribbon){ribbon.remove();}
+    }
+    /* Categoría */
+    const catEl=card.querySelector('.product-category');
+    if(catEl)catEl.textContent=m.categoria+(m.subcategoria?' - '+m.subcategoria:'');
+    /* Precio */
+    const footer=card.querySelector('.product-footer');
+    if(footer){
+        const precioConDesc=dsc>0?Math.round(m.precio*(1-dsc/100)):m.precio;
+        footer.innerHTML=dsc>0
+            ?'<span class="product-price product-price-off" style="cursor:pointer"><span class="price-original">$'+formatPrice(m.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
+            :'<span class="product-price" style="cursor:pointer">$'+formatPrice(m.precio)+'</span>';
+    }
+    /* Stock: deshabilitar agregar si sin stock */
+    const atcBtn=card.querySelector('.add-to-cart-btn');
+    if(atcBtn){
+        const enCarrito=carrito.find(i=>i.id===miembroId);
+        if(m.stock===0){atcBtn.classList.add('disabled');atcBtn.setAttribute('disabled','');atcBtn.onclick=null;}
+        else{atcBtn.classList.remove('disabled');atcBtn.removeAttribute('disabled');
+            if(enCarrito){atcBtn.classList.add('added');atcBtn.onclick=(e)=>e.stopPropagation();}
+            else{atcBtn.classList.remove('added');atcBtn.onclick=()=>addToCart(miembroId);}
+        }
+    }
+    /* Que el click en imagen/título/precio abra el detalle del miembro seleccionado */
+    if(imgWrap)imgWrap.onclick=()=>openProductDetailModal(miembroId);
+    if(h3)h3.onclick=()=>openProductDetailModal(miembroId);
+    /* Guardar el miembro seleccionado en la card para referencia */
+    card.setAttribute('data-selected', miembroId);
 }
 function addToCart(id) {
     if(!clienteAuth){requireLoginToBuy();return;}
@@ -348,6 +418,20 @@ function openProductDetailModal(id){
         '<button class="gramaje-btn active" onclick="addToCart(\''+p.id+'\');showToast(\''+esc((p.nombreMostrado||p.nombre)).replace(/'/g,"")+'\'+\' agregado\',\'success\')">'+esc(p.gramaje||'Base')+'</button>'+
         pdmHijos.map(h=>'<button class="gramaje-btn" onclick="addToCart(\''+h.id+'\');showToast(\'Agregado\',\'success\')">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
         '</div></div>':'';
+    /* Grupos de presentación: botones que cambian de producto en el modal */
+    let pdmGrupoHtml='';
+    if(p.grupoId){
+        const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.precio||0)-(b.precio||0));
+        if(miembros.length>1){
+            pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
+                miembros.map(m=>{
+                    const lbl=m.gramaje||m.nombreMostrado||m.nombre;
+                    const act=m.id===p.id?' active':'';
+                    return '<button class="gramaje-btn'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
+                }).join('')+
+                '</div></div>';
+        }
+    }
     document.getElementById('productDetailBody').innerHTML=
         '<div class="pdm-carousel">'+imgsHtml+carouselNav+'</div>'+
         '<div class="pdm-info">'+
@@ -355,6 +439,7 @@ function openProductDetailModal(id){
         '<h2 class="pdm-name">'+esc(nombreDisplay)+'</h2>'+
         precioRowHtml+
         pdmGramajeHtml+
+        pdmGrupoHtml+
         (desc?'<div class="pdm-section"><h4>Descripción</h4><p>'+esc(desc).replace(/\n/g,'<br>')+'</p></div>':'')+
         (vn?'<div class="pdm-section"><h4>Información nutricional</h4><div class="pdm-nutritional">'+esc(vn).replace(/\n/g,'<br>')+'</div></div>':'')+
         (!desc&&!vn?'<div class="pdm-section pdm-no-info"><i class="bi bi-info-circle"></i> Próximamente más información sobre este producto</div>':'')+
