@@ -2484,23 +2484,24 @@
         }
 
         function _ventaMayCardHtml(v){
-            var num='#'+String(v.numero||0).padStart(6,'0');
-            var numPad=String(v.numero||0).padStart(6,'0');
+            var num=String(v.numero||0).padStart(6,'0');
+            var numPad=num;
             var fecha=v.fecha.toLocaleDateString('es-AR');
             var nitems=(v.items||[]).length;
             var id=v.id;
-            var html='<div class="venta-card">';
-            html+='<div class="venta-card-header"><span class="venta-num">'+num+'</span>';
-            html+='<span class="venta-cliente">'+esc(v.cliente||'\u2014')+'</span>';
-            html+='<span class="venta-total">$'+(v.total||0).toLocaleString('es-AR')+'</span></div>';
-            html+='<div class="venta-card-meta">';
-            html+='<span>'+fecha+'</span>';
-            html+='<span>'+esc(v.medioPago||'\u2014')+'</span>';
-            html+='<span>'+nitems+' item'+(nitems!==1?'s':'')+'</span>';
-            html+='<span style="background:rgba(91,45,138,0.3);color:#c8a8f0;padding:1px 7px;border-radius:10px;font-size:0.72rem">MAYORISTA</span>';
-            html+='<span style="background:'+(v.tipoEntrega==='retiro'?'#3a2818':'#1a3a2a')+';color:'+(v.tipoEntrega==='retiro'?'#e6a817':'#67c23a')+';padding:1px 7px;border-radius:10px;font-size:0.72rem"><i class="bi bi-'+(v.tipoEntrega==='retiro'?'shop':'truck')+'"></i> '+(v.tipoEntrega==='retiro'?'Retiro':'Envío')+'</span>';
-            if((v.descuentoPct||0)>0)html+='<span style="background:#3a2a00;color:#e6a23c;padding:1px 7px;border-radius:10px;font-size:0.72rem"><i class="bi bi-tag"></i> -'+v.descuentoPct+'%</span>';
-            html+='</div>';
+            var items=(v.items||[]).map(function(i){
+                var dsc=i.descuento||0;
+                var dscTxt=dsc>0?' <span style="color:#e6a817;font-weight:700">(-'+dsc+'%)</span>':'';
+                return '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78rem;color:var(--text-dim)"><span>'+esc(i.nombre)+dscTxt+'</span><span style="font-family:var(--mono);white-space:nowrap">'+i.cantidad+' x $'+(i.precio||0).toLocaleString('es-AR')+'</span></div>';
+            }).join('');
+            var entregaBadge='<span title="'+(v.tipoEntrega==='retiro'?'Retiro en local':'Envio a domicilio')+'" style="background:'+(v.tipoEntrega==='retiro'?'#3a2818':'#1a3a2a')+';color:'+(v.tipoEntrega==='retiro'?'#e6a817':'#67c23a')+';padding:2px 8px;border-radius:10px;font-size:0.72rem"><i class="bi bi-'+(v.tipoEntrega==='retiro'?'shop':'truck')+'"></i> '+(v.tipoEntrega==='retiro'?'Retiro':'Env\u00edo')+'</span>';
+            var mayBadge='<span style="background:rgba(91,45,138,0.3);color:#c8a8f0;padding:2px 8px;border-radius:10px;font-size:0.72rem">MAYORISTA</span>';
+            var dscBadge=(v.descuentoPct||0)>0?'<span style="background:#3a2a00;color:#e6a23c;padding:2px 8px;border-radius:10px;font-size:0.72rem"><i class="bi bi-tag"></i> -'+v.descuentoPct+'%</span>':'';
+            var html='<div class="venta-card" onclick="this.querySelector(\'.v-items\').classList.toggle(\'show\')">';
+            html+='<div class="venta-card-top"><span class="venta-card-num">#'+num+'</span><span class="venta-card-total">$'+(v.total||0).toLocaleString('es-AR')+'</span></div>';
+            html+='<div class="venta-card-mid">'+esc(v.cliente||'\u2014')+'</div>';
+            html+='<div class="venta-card-bot"><span>'+fecha+'</span><span>'+esc(v.medioPago||'\u2014')+'</span>'+mayBadge+entregaBadge+dscBadge+'<span>'+nitems+' item'+(nitems!==1?'s':'')+' <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div>';
+            html+='<div class="v-items" style="display:none;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">'+items+'</div>';
             html+='<div class="venta-card-actions" onclick="event.stopPropagation()"><button class="btn btn-sm btn-secondary" onclick="openVentaMayModal(\''+id+'\')"><i class="bi bi-pencil"></i> Editar</button><button class="btn btn-sm" style="background:#f56c6c;border-color:#f56c6c;color:#fff" onclick="deleteVentaMay(\''+id+'\',\''+numPad+'\')"><i class="bi bi-trash"></i></button></div>';
             html+='</div>';
             return html;
