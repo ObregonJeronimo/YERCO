@@ -54,7 +54,11 @@ async function buscarProductoPorSlug(slug) {
     body: JSON.stringify(query)
   });
   const status = resp.status;
-  if (!resp.ok) return { producto: null, fsStatus: status };
+  if (!resp.ok) {
+    let errBody = '';
+    try { errBody = await resp.text(); } catch(e) {}
+    return { producto: null, fsStatus: status, fsError: errBody.slice(0, 500) };
+  }
   const data = await resp.json();
   const row = Array.isArray(data) ? data.find(r => r.document) : null;
   if (!row || !row.document) return { producto: null, fsStatus: status, encontrado: false };
@@ -135,6 +139,7 @@ module.exports = async function handler(req, res) {
       teniaMarcador,
       firestoreStatus: resultado.fsStatus,
       encontrado: resultado.encontrado,
+      fsError: resultado.fsError || null,
       producto: producto ? { nombre: producto.nombre, imagen: producto.imagen, oculto: producto.oculto } : null,
       reemplazado,
       error: resultado.error || null
