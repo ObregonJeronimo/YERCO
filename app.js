@@ -49,7 +49,7 @@ async function loadProductsFromFirebase(retries) {
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
-        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
+        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
         let carritoActualizado=false;
@@ -221,11 +221,11 @@ function renderProducts(list) {
         /* Grupos de presentación (sistema nuevo): miembros del mismo grupoId */
         let grupoHTML='';
         if(p.grupoId){
-            const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.precio||0)-(b.precio||0));
+            const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
             if(miembros.length>1){
                 grupoHTML='<div class="gramaje-btns" data-grupo="'+p.grupoId+'">'+
                     miembros.map(m=>{
-                        const lbl=m.gramaje||m.nombreMostrado||m.nombre;
+                        const lbl=m.grupoMascara||m.gramaje||m.nombre;
                         const act=m.id===p.id?' active':'';
                         return '<button class="gramaje-btn'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
                     }).join('')+
@@ -421,11 +421,11 @@ function openProductDetailModal(id){
     /* Grupos de presentación: botones que cambian de producto en el modal */
     let pdmGrupoHtml='';
     if(p.grupoId){
-        const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.precio||0)-(b.precio||0));
+        const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
         if(miembros.length>1){
             pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
                 miembros.map(m=>{
-                    const lbl=m.gramaje||m.nombreMostrado||m.nombre;
+                    const lbl=m.grupoMascara||m.gramaje||m.nombre;
                     const act=m.id===p.id?' active':'';
                     return '<button class="gramaje-btn'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
                 }).join('')+

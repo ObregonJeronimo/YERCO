@@ -526,7 +526,7 @@
         /* ===== AGRUPAR PRODUCTOS POR PRESENTACIÓN ===== */
         let _agruparSel=new Set();
         function openAgruparModal(){
-            _agruparSel.clear();
+            _agruparSel.clear();_agruparOrden=[];_agruparMascaras={};_agruparPrincipalId=null;
             document.getElementById('agruparSearch').value='';
             document.getElementById('agruparSelCount').textContent='0';
             document.getElementById('agruparPrincipalArea').style.display='none';
@@ -555,40 +555,84 @@
             if(_agruparSel.size>=2){area.style.display='block';renderAgruparPrincipal();}
             else area.style.display='none';
         }
+        let _agruparOrden=[]; /* orden de IDs */
+        let _agruparMascaras={}; /* id -> mascara corta */
+        function toggleAgruparItem(id,checked){
+            if(checked){_agruparSel.add(id);if(!_agruparOrden.includes(id))_agruparOrden.push(id);}
+            else{_agruparSel.delete(id);_agruparOrden=_agruparOrden.filter(x=>x!==id);delete _agruparMascaras[id];}
+            document.getElementById('agruparSelCount').textContent=_agruparSel.size;
+            const area=document.getElementById('agruparPrincipalArea');
+            if(_agruparSel.size>=2){area.style.display='block';renderAgruparPrincipal();}
+            else area.style.display='none';
+        }
         let _agruparPrincipalId=null;
+        function _agruparSelOrdenados(){
+            /* productos seleccionados en el orden actual */
+            return _agruparOrden.filter(id=>_agruparSel.has(id)).map(id=>allProducts.find(p=>p.id===id)).filter(Boolean);
+        }
         function renderAgruparPrincipal(){
             const cont=document.getElementById('agruparPrincipalList');
-            const sel=allProducts.filter(p=>_agruparSel.has(p.id));
+            const sel=_agruparSelOrdenados();
             if(!sel.find(p=>p.id===_agruparPrincipalId))_agruparPrincipalId=sel[0]?.id||null;
-            cont.innerHTML=sel.map(p=>{
+            cont.innerHTML=sel.map((p,idx)=>{
                 const isP=p.id===_agruparPrincipalId;
-                return '<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-radius:7px;border:1px solid '+(isP?'#2d6b8a':'var(--border)')+';background:'+(isP?'rgba(45,107,138,0.15)':'transparent')+'"><input type="radio" name="agruparPrincipal" value="'+p.id+'" '+(isP?'checked':'')+' onchange="_agruparPrincipalId=\''+p.id+'\';renderAgruparPrincipal()"><img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:30px;height:30px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'"><span style="font-size:0.85rem;flex:1">'+esc(p.nombre)+'</span>'+(isP?'<span style="font-size:0.7rem;color:#2d6b8a;font-weight:700">PRINCIPAL</span>':'')+'</label>';
+                const mascara=_agruparMascaras[p.id]||'';
+                return '<div class="agrupar-item-row" draggable="true" data-id="'+p.id+'" ondragstart="agruparDragStart(event,\''+p.id+'\')" ondragover="agruparDragOver(event)" ondrop="agruparDrop(event,\''+p.id+'\')" ondragend="agruparDragEnd(event)" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;border:1px solid '+(isP?'#2d6b8a':'var(--border)')+';background:'+(isP?'rgba(45,107,138,0.15)':'var(--bg-input)')+';margin-bottom:6px;cursor:default">'+
+                    '<i class="bi bi-grip-vertical" style="color:var(--text-dim);cursor:grab;font-size:1rem" title="Arrastrar para ordenar"></i>'+
+                    '<input type="radio" name="agruparPrincipal" value="'+p.id+'" '+(isP?'checked':'')+' onchange="_agruparPrincipalId=\''+p.id+'\';renderAgruparPrincipal()" title="Marcar como principal">'+
+                    '<img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:30px;height:30px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'">'+
+                    '<span style="font-size:0.82rem;flex:1;line-height:1.2">'+esc(p.nombre)+(isP?' <span style="font-size:0.65rem;color:#2d6b8a;font-weight:700">PRINCIPAL</span>':'')+'</span>'+
+                    '<input type="text" maxlength="6" placeholder="Ej: 1kg" value="'+esc(mascara)+'" oninput="_agruparMascaras[\''+p.id+'\']=this.value" style="width:70px;padding:4px 6px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:0.8rem;text-align:center;font-weight:600" title="Máscara corta (máx 6) - así se ve el botón">'+
+                    '</div>';
             }).join('');
         }
+        /* Drag & drop para reordenar */
+        let _agruparDragId=null;
+        function agruparDragStart(e,id){_agruparDragId=id;e.dataTransfer.effectAllowed='move';}
+        function agruparDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+        function agruparDrop(e,targetId){
+            e.preventDefault();
+            if(!_agruparDragId||_agruparDragId===targetId)return;
+            const ordenSel=_agruparOrden.filter(id=>_agruparSel.has(id));
+            const from=ordenSel.indexOf(_agruparDragId);
+            const to=ordenSel.indexOf(targetId);
+            if(from<0||to<0)return;
+            ordenSel.splice(from,1);
+            ordenSel.splice(to,0,_agruparDragId);
+            /* Reconstruir _agruparOrden con el nuevo orden de los seleccionados */
+            _agruparOrden=ordenSel;
+            renderAgruparPrincipal();
+        }
+        function agruparDragEnd(e){_agruparDragId=null;}
         async function guardarGrupo(){
             if(_agruparSel.size<2){showAdminToast('Seleccioná al menos 2 productos','error');return;}
             if(!_agruparPrincipalId){showAdminToast('Elegí el producto principal','error');return;}
+            const ordenSel=_agruparOrden.filter(id=>_agruparSel.has(id));
+            /* Validar que todos tengan máscara */
+            for(const id of ordenSel){
+                const m=(_agruparMascaras[id]||'').trim();
+                if(!m){const pr=allProducts.find(x=>x.id===id);showAdminToast('Falta la máscara de cantidad en: '+(pr?pr.nombre:id),'error');return;}
+                if(m.length>6){showAdminToast('La máscara no puede superar 6 caracteres','error');return;}
+            }
             const grupoId='grp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-            const ids=[..._agruparSel];
             const btn=document.getElementById('agruparGuardarBtn');btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Creando...';
             try{
                 const batch=db.batch();
-                ids.forEach(id=>{
-                    batch.update(db.collection('productos').doc(id),{grupoId:grupoId,grupoPrincipal:(id===_agruparPrincipalId)});
+                ordenSel.forEach((id,idx)=>{
+                    batch.update(db.collection('productos').doc(id),{grupoId:grupoId,grupoPrincipal:(id===_agruparPrincipalId),grupoMascara:(_agruparMascaras[id]||'').trim(),grupoOrden:idx});
                 });
                 await batch.commit();
-                ids.forEach(id=>{const pr=allProducts.find(x=>x.id===id);if(pr){pr.grupoId=grupoId;pr.grupoPrincipal=(id===_agruparPrincipalId);}});
-                const nombres=ids.map(id=>allProducts.find(x=>x.id===id)?.nombre).filter(Boolean);
+                ordenSel.forEach((id,idx)=>{const pr=allProducts.find(x=>x.id===id);if(pr){pr.grupoId=grupoId;pr.grupoPrincipal=(id===_agruparPrincipalId);pr.grupoMascara=(_agruparMascaras[id]||'').trim();pr.grupoOrden=idx;}});
+                const nombres=ordenSel.map(id=>allProducts.find(x=>x.id===id)?.nombre).filter(Boolean);
                 logAction('editar','Grupo de presentaciones creado','Productos: '+nombres.join(', '));
-                showAdminToast(ids.length+' productos agrupados. Podés crear otro grupo.','success');
-                _agruparSel.clear();_agruparPrincipalId=null;
+                showAdminToast(ordenSel.length+' productos agrupados. Podés crear otro grupo.','success');
+                _agruparSel.clear();_agruparPrincipalId=null;_agruparOrden=[];_agruparMascaras={};
                 await loadProducts();
                 document.getElementById('agruparSearch').value='';
                 document.getElementById('agruparSelCount').textContent='0';
                 document.getElementById('agruparPrincipalArea').style.display='none';
                 document.getElementById('agruparPrincipalList').innerHTML='';
                 renderAgruparLista();renderGruposExistentes();
-                /* Scroll al inicio del modal para ver el grupo recién creado */
                 const modalBody=document.querySelector('#agruparModal .modal-box > div[style*="overflow-y"]');
                 if(modalBody)modalBody.scrollTop=0;
             }catch(e){showAdminToast('Error: '+e.message,'error');}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Crear grupo';}
@@ -606,7 +650,7 @@
             const cards=keysFiltradas.length?keysFiltradas.map(gid=>{
                 const prods=grupos[gid].sort((a,b)=>(a.precio||0)-(b.precio||0));
                 const principal=prods.find(p=>p.grupoPrincipal)||prods[0];
-                return '<div style="background:rgba(45,107,138,0.1);border:1px solid #2d5a6a;border-radius:7px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.84rem;font-weight:600"><i class="bi bi-star-fill" style="color:#2d6b8a;font-size:0.7rem"></i> '+esc(principal.nombre)+' <span style="color:var(--text-dim);font-weight:400">+'+(prods.length-1)+' presentación(es)</span></span><button class="btn-icon delete" onclick="deshacerGrupo(\''+gid+'\')" title="Deshacer grupo"><i class="bi bi-x-lg"></i></button></div><div style="font-size:0.74rem;color:var(--text-dim);margin-top:3px">'+prods.map(p=>(p.id===principal.id?'<strong style="color:#7fc5e0">'+esc(p.nombre)+'</strong>':esc(p.nombre))).join(' · ')+'</div></div>';
+                return '<div style="background:rgba(45,107,138,0.1);border:1px solid #2d5a6a;border-radius:7px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.84rem;font-weight:600"><i class="bi bi-star-fill" style="color:#2d6b8a;font-size:0.7rem"></i> '+esc(principal.nombre)+' <span style="color:var(--text-dim);font-weight:400">+'+(prods.length-1)+' presentación(es)</span></span><button class="btn-icon delete" onclick="deshacerGrupo(\''+gid+'\')" title="Deshacer grupo"><i class="bi bi-x-lg"></i></button></div><div style="font-size:0.74rem;color:var(--text-dim);margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">'+prods.sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999)).map(p=>'<span style="background:'+(p.id===principal.id?'#2d6b8a':'var(--bg-card)')+';color:'+(p.id===principal.id?'#fff':'var(--text-dim)')+';padding:2px 7px;border-radius:5px;font-weight:600">'+esc(p.grupoMascara||'?')+'</span>').join('')+'</div></div>';
             }).join(''):'<div style="font-size:0.8rem;color:var(--text-dim);padding:0.5rem">Sin grupos que coincidan.</div>';
             cont.innerHTML=header+cards;
             /* Restaurar foco en el filtro si se estaba escribiendo */
