@@ -268,7 +268,6 @@ function renderProducts(list) {
             badgeDesc +
             '<div class="img-skeleton"></div>' +
             '<img src="'+esc(img)+'" alt="'+esc(nombreDisplay)+'" loading="lazy" decoding="async" onload="this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" onerror="if(this.dataset.orig&&this.src!==this.dataset.orig){this.src=this.dataset.orig;}else{this.src=\'img/default-product.jpg\';}this.style.opacity=1;this.previousElementSibling.style.display=\'none\'" data-orig="'+esc(p.imagen||'')+'" style="opacity:0;transition:opacity 0.3s">' +
-            '<span class="product-category">'+esc(p.categoria)+(p.subcategoria?' - '+esc(p.subcategoria):'')+'</span>' +
             (noStock?'<span class="product-stock out">Sin stock</span>':'') +
             '</div>' +
             '<div class="product-info">' +
