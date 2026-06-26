@@ -223,11 +223,11 @@ function renderProducts(list) {
         if(p.grupoId){
             const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
             if(miembros.length>1){
-                grupoHTML='<div class="gramaje-btns" data-grupo="'+p.grupoId+'"><span class="gramaje-label">Presentación:</span>'+
+                grupoHTML='<div class="presentacion-selector" data-grupo="'+p.grupoId+'">'+
                     miembros.map(m=>{
                         const lbl=m.grupoMascara||m.gramaje||m.nombre;
                         const act=m.id===p.id?' active':'';
-                        return '<button class="gramaje-btn'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
+                        return '<button class="presentacion-seg'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
                     }).join('')+
                     '</div>';
             }
@@ -252,11 +252,11 @@ function renderProducts(list) {
             '<div class="product-footer">' +
             precioHtml +
             '</div>' +
+            grupoHTML+
             '<'+atcTag+' '+atcAttrs+'>' +
             btnContent +
             '</'+atcTag+'>' +
             gramajeHTML+
-            grupoHTML+
             '</div></article>';
     }).join('');
 }
@@ -297,7 +297,7 @@ function selectGrupoMiembro(cardId, miembroId){
     const m=productos.find(x=>x.id===miembroId);
     if(!m)return;
     /* Actualizar botones activos */
-    card.querySelectorAll('.gramaje-btn').forEach(b=>{
+    card.querySelectorAll('.presentacion-seg').forEach(b=>{
         b.classList.toggle('active', b.getAttribute('data-id')===miembroId);
     });
     /* Título */
@@ -423,11 +423,11 @@ function openProductDetailModal(id){
     if(p.grupoId){
         const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
         if(miembros.length>1){
-            pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
+            pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="presentacion-selector">'+
                 miembros.map(m=>{
                     const lbl=m.grupoMascara||m.gramaje||m.nombre;
                     const act=m.id===p.id?' active':'';
-                    return '<button class="gramaje-btn'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
+                    return '<button class="presentacion-seg'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
                 }).join('')+
                 '</div></div>';
         }
