@@ -453,7 +453,7 @@ function avisarCambiosCarrito(cambios){
     const precios=cambios.filter(c=>c.tipo==='precio').length;
     const stockAjust=cambios.filter(c=>c.tipo==='stock_ajustado').length;
     let msgs=[];
-    if(noDisp)msgs.push(noDisp+' producto'+(noDisp>1?'s ya no están':' ya no está')+' disponible'+(noDisp>1?'s':''));
+    if(noDisp)msgs.push(noDisp+' producto'+(noDisp>1?'s no disponibles':' no disponible')+' temporalmente');
     if(sinStock)msgs.push(sinStock+' producto'+(sinStock>1?'s sin':' sin')+' stock');
     if(stockAjust)msgs.push('cantidades ajustadas por stock');
     if(precios)msgs.push('precios actualizados');
@@ -593,7 +593,7 @@ function renderCartItems() {
         const noDisp=item._noDisponible||!p;
         const sinStock=item._sinStock||(p&&p.stock<=0);
         const problema=noDisp||sinStock;
-        const avisoHtml=noDisp?'<span class="cart-item-warning">Ya no disponible</span>':(sinStock?'<span class="cart-item-warning">Sin stock</span>':'');
+        const avisoHtml=noDisp?'<span class="cart-item-warning">No disponible temporalmente</span>':(sinStock?'<span class="cart-item-warning">Sin stock</span>':'');
         const el=document.createElement('div');
         el.className='cart-item'+(problema?' cart-item-problema':'');
         if(problema){
@@ -776,7 +776,7 @@ async function confirmCheckout(){
     if(conProblema.length){
         updateCartUI();
         const nombres=conProblema.map(i=>i.nombre).join(', ');
-        showToast('No se puede confirmar: '+nombres+' ya no está'+(conProblema.length>1?'n':'')+' disponible'+(conProblema.length>1?'s':'')+'. Quitalo'+(conProblema.length>1?'s':'')+' del carrito.','error');
+        showToast('No se puede confirmar: '+nombres+' no disponible'+(conProblema.length>1?'s':'')+' temporalmente. Quitalo'+(conProblema.length>1?'s':'')+' del carrito.','error');
         return;
     }
     /* Si hubo cambios de precio/stock, avisar y dejar que revise antes de seguir */
