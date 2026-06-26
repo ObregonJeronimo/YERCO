@@ -8,6 +8,7 @@ const path = require('path');
 
 const PROJECT_ID = 'yerco-bb620';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const API_KEY = 'AIzaSyCYTYtrsLipyXeWbOUR7sUm3NPLA0mHvgs';
 const SITE_URL = 'https://www.yerco.ar';
 const LOGO_FALLBACK = 'https://www.yerco.ar/img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg';
 
@@ -47,7 +48,7 @@ async function buscarProductoPorSlug(slug) {
       limit: 1
     }
   };
-  const resp = await fetch(`${FIRESTORE_BASE}:runQuery`, {
+  const resp = await fetch(`${FIRESTORE_BASE}:runQuery?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
