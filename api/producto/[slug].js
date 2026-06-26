@@ -1,6 +1,6 @@
 /**
- * Función serverless de Vercel: genera el preview (Open Graph) de un producto
- * para que al compartir el link en WhatsApp/Instagram/Facebook se vea la foto + nombre.
+ * Función serverless de Vercel: preview Open Graph de un producto.
+ * Agregar ?debug=1 a la URL para ver el diagnóstico en JSON.
  */
 
 const fs = require('fs');
@@ -19,7 +19,6 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-/* Lee el index.html desde el filesystem del deploy (varias rutas posibles) */
 function leerIndexHtml() {
   const candidatos = [
     path.join(process.cwd(), 'index.html'),
@@ -28,10 +27,10 @@ function leerIndexHtml() {
   ];
   for (const ruta of candidatos) {
     try {
-      if (fs.existsSync(ruta)) return fs.readFileSync(ruta, 'utf-8');
-    } catch (e) { /* sigue probando */ }
+      if (fs.existsSync(ruta)) return { html: fs.readFileSync(ruta, 'utf-8'), ruta };
+    } catch (e) { /* sigue */ }
   }
-  return null;
+  return { html: null, ruta: null };
 }
 
 async function buscarProductoPorSlug(slug) {
@@ -53,43 +52,54 @@ async function buscarProductoPorSlug(slug) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
   });
-  if (!resp.ok) return null;
+  const status = resp.status;
+  if (!resp.ok) return { producto: null, fsStatus: status };
   const data = await resp.json();
   const row = Array.isArray(data) ? data.find(r => r.document) : null;
-  if (!row || !row.document) return null;
+  if (!row || !row.document) return { producto: null, fsStatus: status, encontrado: false };
   const fields = row.document.fields || {};
   const getStr = (f) => (fields[f] && fields[f].stringValue !== undefined) ? fields[f].stringValue : null;
   return {
-    nombre: getStr('nombreMostrado') || getStr('nombre') || 'Producto',
-    imagen: getStr('imagen') || null,
-    categoria: getStr('categoria') || '',
-    oculto: fields.oculto && fields.oculto.booleanValue === true
+    producto: {
+      nombre: getStr('nombreMostrado') || getStr('nombre') || 'Producto',
+      imagen: getStr('imagen') || null,
+      categoria: getStr('categoria') || '',
+      oculto: fields.oculto && fields.oculto.booleanValue === true
+    },
+    fsStatus: status,
+    encontrado: true
   };
 }
 
 module.exports = async function handler(req, res) {
   const slug = (req.query.slug || '').toString();
+  const debug = req.query.debug === '1';
 
-  let html = leerIndexHtml();
+  const idx = leerIndexHtml();
+  let html = idx.html;
+  let viaHttp = false;
   if (!html) {
     try {
       const idxResp = await fetch(`${SITE_URL}/index.html`);
       html = await idxResp.text();
+      viaHttp = true;
     } catch (e) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.status(200).send('<html><body>Yerco</body></html>');
-      return;
+      html = '<html><body>Yerco</body></html>';
     }
   }
 
-  let producto = null;
+  let resultado = { producto: null };
   try {
-    if (slug) producto = await buscarProductoPorSlug(slug);
+    if (slug) resultado = await buscarProductoPorSlug(slug);
   } catch (e) {
-    producto = null;
+    resultado = { producto: null, error: e.message };
   }
+  const producto = resultado.producto;
 
-  if (producto && !producto.oculto) {
+  const teniaMarcador = html && html.indexOf('<!--OG_START-->') !== -1;
+  let reemplazado = false;
+
+  if (producto && !producto.oculto && html) {
     const titulo = escapeHtml(producto.nombre) + ' | Yerco Dietética';
     const desc = escapeHtml('Conseguilo en Yerco Dietética. Productos naturales y de calidad a la puerta de tu casa.');
     const imagen = producto.imagen ? escapeHtml(producto.imagen) : LOGO_FALLBACK;
@@ -107,8 +117,28 @@ module.exports = async function handler(req, res) {
     <meta name="twitter:image" content="${imagen}">
     <!--OG_END-->`;
 
+    const before = html;
     html = html.replace(/<!--OG_START-->[\s\S]*?<!--OG_END-->/, ogTags);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${titulo}</title>`);
+    reemplazado = (html !== before);
+  }
+
+  if (debug) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(200).send(JSON.stringify({
+      slug,
+      indexLeido: !!idx.html,
+      indexRuta: idx.ruta,
+      viaHttp,
+      cwd: process.cwd(),
+      teniaMarcador,
+      firestoreStatus: resultado.fsStatus,
+      encontrado: resultado.encontrado,
+      producto: producto ? { nombre: producto.nombre, imagen: producto.imagen, oculto: producto.oculto } : null,
+      reemplazado,
+      error: resultado.error || null
+    }, null, 2));
+    return;
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
