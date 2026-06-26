@@ -9,6 +9,10 @@
       "destination": "https://yerco-bb620.firebaseapp.com/__/firebase/:path*"
     },
     {
+      "source": "/producto/:slug",
+      "destination": "/index.html"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },

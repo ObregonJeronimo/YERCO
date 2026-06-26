@@ -17,6 +17,21 @@ let paginaActual = 1;
 document.addEventListener('DOMContentLoaded', () => {
     initNavbar(); initParticles(); initContactForm(); initCart();
     loadProductsFromFirebase(); initScrollAnimations();
+    /* Botón atrás/adelante del navegador: abrir o cerrar el producto según la URL */
+    window.addEventListener('popstate', () => {
+        const path=window.location.pathname;
+        const modalAbierto=document.getElementById('productDetailModal')?.classList.contains('show');
+        if(path.startsWith('/producto/')){
+            const slug=decodeURIComponent(path.replace('/producto/','').replace(/\/$/,''));
+            const p=productos.find(x=>x.slug===slug);
+            if(p)openProductDetailModal(p.id);
+        }else if(modalAbierto){
+            /* Cerrar sin volver a tocar el history (ya cambió por el botón atrás) */
+            document.getElementById('productDetailModal')?.classList.remove('show');
+            document.getElementById('productDetailOverlay')?.classList.remove('show');
+            document.body.style.overflow='';
+        }
+    });
 });
 
 function initNavbar() {
@@ -49,13 +64,15 @@ async function loadProductsFromFirebase(retries) {
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
-        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
+        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), slug:r.slug||null, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
         /* Sincronizar carrito guardado con productos actuales (precio, stock, disponibilidad) */
         const cambiosCarrito=reconciliarCarrito();
         updateCartUI();
         if(cambiosCarrito.length){avisarCambiosCarrito(cambiosCarrito);}
+        /* Si la URL es /producto/{slug}, abrir ese producto */
+        abrirProductoDesdeURL();
         /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
         if(!window._autoScrollDone){
             window._autoScrollDone=true;
@@ -465,8 +482,35 @@ function clearCart(){if(carrito.length===0)return;if(!confirm('Vaciar todo el ca
 
 let _pdmCurrentImgIdx=0;
 let _pdmImages=[];
+/* Abre el producto correspondiente al slug de la URL (al entrar directo por /producto/xxx) */
+function abrirProductoDesdeURL(){
+    const path=window.location.pathname;
+    if(!path.startsWith('/producto/'))return;
+    const slug=decodeURIComponent(path.replace('/producto/','').replace(/\/$/,''));
+    if(!slug)return;
+    const p=productos.find(x=>x.slug===slug);
+    if(!p){
+        showToast('Producto no encontrado','error');
+        history.replaceState({},'','/');
+        return;
+    }
+    /* Esperar a que el grid esté renderizado, luego abrir */
+    setTimeout(()=>{
+        openProductDetailModal(p.id);
+        /* Scroll a la sección de productos */
+        const s=document.getElementById('productos');
+        if(s)s.scrollIntoView({behavior:'instant',block:'start'});
+    },300);
+}
 function openProductDetailModal(id){
     const p=productos.find(x=>x.id===id);if(!p)return;
+    /* Actualizar la URL del navegador a /producto/{slug} (sin recargar) */
+    if(p.slug){
+        const nuevaUrl='/producto/'+p.slug;
+        if(window.location.pathname!==nuevaUrl){
+            history.pushState({productId:id},'',nuevaUrl);
+        }
+    }
     /* Construir lista de imagenes: imagen principal + imagenesExtra (del admin) */
     const imgsArr=[];
     if(p.imagen)imgsArr.push(p.imagen);
@@ -556,6 +600,10 @@ function closeProductDetailModal(){
     document.getElementById('productDetailModal')?.classList.remove('show');
     document.getElementById('productDetailOverlay')?.classList.remove('show');
     document.body.style.overflow='';
+    /* Volver la URL a la raíz si estábamos en una URL de producto */
+    if(window.location.pathname.startsWith('/producto/')){
+        history.pushState({},'','/');
+    }
 }
 function pdmCarouselNav(delta){
     if(!_pdmImages.length)return;
