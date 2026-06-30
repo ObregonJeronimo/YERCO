@@ -241,7 +241,7 @@ function renderProducts(list) {
         if(p.grupoId){
             const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
             if(miembros.length>1){
-                grupoHTML='<div class="presentacion-wrap"><button class="pres-arrow pres-arrow-left" onclick="event.stopPropagation();presScroll(this,-1)" aria-label="Anterior" tabindex="-1"><i class="bi bi-chevron-left"></i></button><div class="presentacion-selector" data-grupo="'+p.grupoId+'" onscroll="presUpdateArrows(this)">'+
+                grupoHTML='<div class="presentacion-wrap pres-pushdown"><button class="pres-arrow pres-arrow-left" onclick="event.stopPropagation();presScroll(this,-1)" aria-label="Anterior" tabindex="-1"><i class="bi bi-chevron-left"></i></button><div class="presentacion-selector" data-grupo="'+p.grupoId+'" onscroll="presUpdateArrows(this)">'+
                     miembros.map(m=>{
                         const lbl=m.grupoMascara||m.gramaje||m.nombre;
                         const act=m.id===p.id?' active':'';

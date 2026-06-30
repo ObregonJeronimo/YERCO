@@ -145,7 +145,8 @@ img { max-width: 100%; height: auto; }
 .gramaje-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; box-shadow: 0 2px 6px rgba(45,74,34,0.25); }
 .gramaje-btn.active:hover { transform: none; color: #fff; }
 /* Selector segmentado tipo iOS para presentaciones */
-.presentacion-wrap { position: relative; display: flex; align-items: center; margin: 12px 0 2px 0; }
+.presentacion-wrap { position: relative; display: flex; align-items: center; margin: 12px 0 8px 0; }
+.presentacion-wrap.pres-pushdown { margin-top: auto; }
 .presentacion-selector { display: flex; flex-wrap: wrap; background: var(--color-beige); border-radius: 11px; padding: 4px; gap: 4px; width: 100%; box-sizing: border-box; }
 .presentacion-seg { flex: 1 1 auto; min-width: 56px; background: transparent; border: none; color: var(--color-brown); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.2px; cursor: pointer; transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; white-space: nowrap; text-align: center; }
 .presentacion-seg:hover:not(.active) { color: var(--color-primary); background: rgba(255,255,255,0.45); }
