@@ -1259,41 +1259,42 @@ function authLogin() {
         provider.addScope('email');
         provider.addScope('profile');
         provider.setCustomParameters({ prompt: 'select_account' });
-        /* En móvil: redirect (ahora funciona porque authDomain=yerco.ar via proxy, sin bug de cookies de terceros).
-           En desktop: popup (mejor UX, no recarga la página). */
-        if (_isMobileAuth) {
-            firebase.auth().signInWithRedirect(provider).catch(e => {
-                console.error('redirect error:', e.code, e.message);
-                showToast('No se pudo iniciar sesión. Probá de nuevo.', 'error');
-                _loginActivo = false;
-                sessionStorage.removeItem('_authLoginActivo');
-            });
-            return;
-        }
+        /* POPUP-FIRST en TODOS los dispositivos (desktop y móvil).
+           Es lo recomendado por Firebase desde 2024: no depende de cookies de terceros
+           (que Safari/Firefox/Chrome bloquean) y es más confiable que redirect en móvil/iOS.
+           El redirect queda solo como fallback automático cuando el popup falla. */
         firebase.auth().signInWithPopup(provider)
             .then(result => {
-                if (result.user) {
+                if (result && result.user) {
                     _loginActivo = true;
                     _onUserLogin(result.user, true);
                 }
+                sessionStorage.removeItem('_authLoginActivo');
             })
             .catch(e => {
                 console.error('popup error:', e.code, e.message);
+                /* Errores donde el popup no es viable → caer a redirect */
                 const necesitaRedirect = [
                     'auth/popup-blocked',
                     'auth/cancelled-popup-request',
+                    'auth/popup-closed-by-user',
                     'auth/operation-not-supported-in-this-environment',
-                    'auth/web-storage-unsupported'
+                    'auth/web-storage-unsupported',
+                    'auth/network-request-failed'
                 ].includes(e.code);
-                if (necesitaRedirect) {
+                /* popup-closed-by-user en móvil suele ser el navegador bloqueando el popup,
+                   no el usuario cerrándolo: en móvil siempre intentamos redirect como fallback. */
+                const esCierreEnMovil = e.code === 'auth/popup-closed-by-user' && _isMobileAuth;
+                if (necesitaRedirect || esCierreEnMovil) {
                     firebase.auth().signInWithRedirect(provider).catch(er => {
-                        console.error('redirect error:', er);
-                        showToast('No se pudo iniciar sesión. Probá con otro navegador.', 'error');
+                        console.error('redirect fallback error:', er.code, er.message);
+                        showToast('No se pudo iniciar sesión. Probá de nuevo o usá otro navegador.', 'error');
                         _loginActivo = false;
                         sessionStorage.removeItem('_authLoginActivo');
                     });
                     return;
                 }
+                /* En desktop, si el usuario cerró el popup a propósito, no mostramos error */
                 if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/user-cancelled') {
                     showToast('Error al iniciar sesión: ' + (e.message || e.code), 'error');
                 }

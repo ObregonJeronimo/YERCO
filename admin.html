@@ -375,7 +375,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-        async function loginWithGoogle(){const btn=document.getElementById('googleLoginBtn');const err=document.getElementById('loginError');if(btn)btn.disabled=true;if(err)err.style.display='none';try{const p=new firebase.auth.GoogleAuthProvider();await firebase.auth().signInWithPopup(p);}catch(er){if(er.code!=='auth/popup-closed-by-user'){if(err){err.textContent='Error al iniciar sesión.';err.style.display='block';}}if(btn)btn.disabled=false;}}
+        async function loginWithGoogle(){
+            const btn=document.getElementById('googleLoginBtn');
+            const err=document.getElementById('loginError');
+            if(btn)btn.disabled=true;
+            if(err)err.style.display='none';
+            const p=new firebase.auth.GoogleAuthProvider();
+            p.setCustomParameters({prompt:'select_account'});
+            try{
+                /* POPUP-FIRST (recomendado por Firebase, más confiable que redirect en móvil/iOS) */
+                await firebase.auth().signInWithPopup(p);
+            }catch(er){
+                console.error('popup error:',er.code,er.message);
+                const _isMob=/iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const necesitaRedirect=['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment','auth/web-storage-unsupported','auth/network-request-failed'].includes(er.code)||(er.code==='auth/popup-closed-by-user'&&_isMob);
+                if(necesitaRedirect){
+                    try{await firebase.auth().signInWithRedirect(p);return;}
+                    catch(er2){console.error('redirect fallback error:',er2.code,er2.message);if(err){err.textContent='No se pudo iniciar sesión. Probá de nuevo.';err.style.display='block';}}
+                }else if(er.code!=='auth/popup-closed-by-user'){
+                    if(err){err.textContent='Error al iniciar sesión.';err.style.display='block';}
+                }
+                if(btn)btn.disabled=false;
+            }
+        }
         let auth,storage;try{auth=firebase.auth();storage=firebase.storage();}catch(_e){console.warn('Firebase init parcial:',_e);}let allProducts=[],editingId=null,selectedImageFile=null,existingImageUrl=null,listasData=[],editingListaId=null;
         const _AH=['709d846e9eaf6521','688a669cc7cc6b3f','930b13191a8630b8','7a7f8cbeb22e2015','499c08fa78dcee0e'];async function _ch(e){const d=new TextEncoder().encode(e);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,16);}async function isAllowedEmail(email){const h=await _ch(email);return _AH.includes(h);}
         function _initAuth(){
