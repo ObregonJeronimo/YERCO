@@ -6,6 +6,7 @@ const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
 function optImg(url,w){return url||'';}
 let productos = [];
+let _gruposMeta = {}; // estructura de grupos incluyendo ocultos: { grupoId: { principalOrden, miembros:[{id,orden,oculto,principal}] } }
 let carrito = [];
 let categoriaActual = 'Todos';
 let subcategoriaActual = null;
@@ -64,7 +65,18 @@ async function loadProductsFromFirebase(retries) {
     const loading = document.getElementById('productsLoading'); if (loading) loading.classList.add('show');
     try {
         const snap = await db.collection('productos').get();
-        productos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), slug:r.slug||null, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; }).filter(p => !p.oculto);
+        const _todos = snap.docs.map(d => { const r=d.data(); return { id:d.id, nombre:r.nombre||'', nombreMostrado:r.nombreMostrado||null, gramaje:r.gramaje||null, gramajePadreId:r.gramajePadreId||null, grupoId:r.grupoId||null, grupoPrincipal:r.grupoPrincipal===true, grupoMascara:r.grupoMascara||null, grupoOrden:(typeof r.grupoOrden==='number'?r.grupoOrden:999), slug:r.slug||null, precio:r.precio||0, descuento:Math.min(100,Math.max(0,r.descuento||0)), stock:r.stock||0, categoria:r.categoria||'', subcategoria:r.subcategoria||null, imagen:r.imagen||null, descripcion:r.descripcion||r.nombre||'', popular:r.popular||false, oculto:r.oculto===true, valoresNutricionales:r.valoresNutricionales||'', imagenesExtra:r.imagenesExtra||[] }; });
+        /* Capturar la estructura de los grupos ANTES de filtrar ocultos, para saber el orden
+           del principal aunque esté oculto (necesario para elegir la cara del grupo). */
+        _gruposMeta = {};
+        _todos.forEach(p => {
+            if (!p.grupoId || p.gramajePadreId) return;
+            if (!_gruposMeta[p.grupoId]) _gruposMeta[p.grupoId] = { principalOrden: null, miembros: [] };
+            const ord = (typeof p.grupoOrden === 'number' ? p.grupoOrden : 999);
+            _gruposMeta[p.grupoId].miembros.push({ id: p.id, orden: ord, oculto: p.oculto, principal: p.grupoPrincipal === true });
+            if (p.grupoPrincipal === true) _gruposMeta[p.grupoId].principalOrden = ord;
+        });
+        productos = _todos.filter(p => !p.oculto);
         renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
         _searchCache.clear();
         /* Sincronizar carrito guardado con productos actuales (precio, stock, disponibilidad) */
@@ -103,38 +115,41 @@ function _searchScore(q,p){const texto=_getTexto(p);const palabras=_norm(q).spli
 /* Debounce: espera 200ms desde el último keystroke antes de filtrar */
 let _searchTimer=null;
 function onSearchInput(v){busquedaTexto=v;clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{paginaActual=1;aplicarFiltros();},200);}
+function _ordenGrupo(p){ return (typeof p.grupoOrden === 'number' ? p.grupoOrden : 999); }
+/* Determina qué presentación (visible) es la "cara" de un grupo en el grid:
+   - Si el principal está visible → es la cara.
+   - Si el principal está oculto → la siguiente cantidad más grande en el orden (entre las visibles).
+   - Si el principal era el más grande y se ocultó → la más grande disponible (la más cercana hacia abajo).
+   Cuando el principal vuelve a estar visible, automáticamente vuelve a ser la cara (no tocamos Firestore). */
+function _caraDelGrupo(gid){
+    const visibles = productos.filter(p => p.grupoId === gid && !p.gramajePadreId);
+    if (!visibles.length) return null;
+    /* Principal visible → es la cara */
+    const principalVisible = visibles.find(p => p.grupoPrincipal === true);
+    if (principalVisible) return principalVisible.id;
+    /* Principal oculto o inexistente: usar el orden del principal (guardado en la metadata) */
+    const meta = _gruposMeta[gid];
+    const principalOrden = (meta && meta.principalOrden != null) ? meta.principalOrden : -Infinity;
+    /* La siguiente cantidad más grande: menor orden que sea mayor al del principal */
+    const masGrandes = visibles.filter(p => _ordenGrupo(p) > principalOrden).sort((a,b) => _ordenGrupo(a)-_ordenGrupo(b));
+    if (masGrandes.length) return masGrandes[0].id;
+    /* No hay ninguna más grande (el principal era el más grande): tomar la más grande disponible */
+    const porOrdenDesc = [...visibles].sort((a,b) => _ordenGrupo(b)-_ordenGrupo(a) || String(a.id).localeCompare(String(b.id)));
+    return porOrdenDesc[0].id;
+}
 function aplicarFiltros() {
     let r = [...productos];
     /* Excluir productos hijos de gramaje: solo se muestran como botones dentro del padre de gramaje */
     r = r.filter(p => !p.gramajePadreId);
-    /* Grupos de presentación: en el grid solo se muestra el producto principal de cada grupo.
-       SALVAGUARDA: si un grupo quedó sin ningún principal (dato inconsistente), igual mostramos
-       un miembro (el de menor grupoOrden) para que los productos NUNCA desaparezcan del catálogo. */
-    const _gruposConPrincipal = new Set();
+    /* Grupos de presentación: en el grid se muestra UNA cara por grupo (ver _caraDelGrupo).
+       Esto maneja: principal visible, principal oculto (siguiente más grande), y grupos sin principal. */
+    const _caraPorGrupo = {};
     const _gruposVistos = new Set();
-    productos.forEach(p => {
-        if (p.gramajePadreId) return;
-        if (p.grupoId) {
-            _gruposVistos.add(p.grupoId);
-            if (p.grupoPrincipal === true) _gruposConPrincipal.add(p.grupoId);
-        }
-    });
-    /* Para grupos sin principal, elegir un miembro fallback (menor grupoOrden, luego por id) */
-    const _fallbackPorGrupo = {};
-    const _ordenDe = p => (typeof p.grupoOrden === 'number' ? p.grupoOrden : 999);
-    _gruposVistos.forEach(gid => {
-        if (_gruposConPrincipal.has(gid)) return;
-        const miembros = productos.filter(p => p.grupoId === gid && !p.gramajePadreId);
-        if (miembros.length) {
-            miembros.sort((a,b) => _ordenDe(a)-_ordenDe(b) || String(a.id).localeCompare(String(b.id)));
-            _fallbackPorGrupo[gid] = miembros[0].id;
-        }
-    });
+    productos.forEach(p => { if (p.grupoId && !p.gramajePadreId) _gruposVistos.add(p.grupoId); });
+    _gruposVistos.forEach(gid => { _caraPorGrupo[gid] = _caraDelGrupo(gid); });
     r = r.filter(p => {
         if (!p.grupoId) return true;
-        if (p.grupoPrincipal === true) return true;
-        /* sin principal en el grupo: mostrar solo el fallback elegido */
-        return _fallbackPorGrupo[p.grupoId] === p.id;
+        return _caraPorGrupo[p.grupoId] === p.id;
     });
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual === 'Ofertas') r = r.filter(p => (p.descuento||0) > 0);
