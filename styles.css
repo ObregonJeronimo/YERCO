@@ -145,12 +145,31 @@ img { max-width: 100%; height: auto; }
 .gramaje-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; box-shadow: 0 2px 6px rgba(45,74,34,0.25); }
 .gramaje-btn.active:hover { transform: none; color: #fff; }
 /* Selector segmentado tipo iOS para presentaciones */
-.presentacion-selector { display: flex; flex-wrap: wrap; background: var(--color-beige); border-radius: 11px; padding: 4px; margin: 12px 0 2px 0; gap: 4px; width: 100%; box-sizing: border-box; }
+.presentacion-wrap { position: relative; display: flex; align-items: center; margin: 12px 0 2px 0; }
+.presentacion-selector { display: flex; flex-wrap: wrap; background: var(--color-beige); border-radius: 11px; padding: 4px; gap: 4px; width: 100%; box-sizing: border-box; }
 .presentacion-seg { flex: 1 1 auto; min-width: 56px; background: transparent; border: none; color: var(--color-brown); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.2px; cursor: pointer; transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; white-space: nowrap; text-align: center; }
 .presentacion-seg:hover:not(.active) { color: var(--color-primary); background: rgba(255,255,255,0.45); }
 .presentacion-seg.active { background: #fff; color: var(--color-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.14); }
 .presentacion-seg:active { transform: scale(0.96); }
-@media (max-width: 640px) { .presentacion-seg { padding: 9px 12px; font-size: 0.8rem; min-width: 60px; } }
+/* Flechas de scroll: ocultas por defecto (desktop usa wrap, no las necesita) */
+.pres-arrow { display: none; }
+@media (max-width: 640px) {
+  /* En móvil: una sola línea con scroll horizontal */
+  .presentacion-selector { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+  .presentacion-selector::-webkit-scrollbar { display: none; }
+  .presentacion-seg { flex: 0 0 auto; min-width: 0; padding: 9px 16px; font-size: 0.8rem; }
+  /* Flechas visibles solo cuando hay overflow */
+  .pres-arrow { display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; border: none; background: var(--color-primary); color: #fff; font-size: 0.7rem; cursor: pointer; z-index: 3; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.25); padding: 0; }
+  .pres-arrow.visible { opacity: 0.92; pointer-events: auto; }
+  .pres-arrow.visible:active { transform: translateY(-50%) scale(0.9); }
+  .pres-arrow-left { left: -2px; }
+  .pres-arrow-right { right: -2px; }
+  /* Degradé sutil en los bordes para reforzar que hay más contenido */
+  .presentacion-wrap.has-overflow::before,
+  .presentacion-wrap.has-overflow::after { content: ''; position: absolute; top: 0; bottom: 0; width: 24px; z-index: 2; pointer-events: none; border-radius: 11px; }
+  .presentacion-wrap.has-overflow::before { left: 0; background: linear-gradient(to right, var(--color-beige), transparent); }
+  .presentacion-wrap.has-overflow::after { right: 0; background: linear-gradient(to left, var(--color-beige), transparent); }
+}
 .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow), opacity 0.25s ease; pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .product-image::after { content: ''; position: absolute; inset: 0; z-index: 1; }
 .img-skeleton { position: absolute; inset: 0; background: linear-gradient(90deg, #e8e0d5 25%, #f0ebe4 50%, #e8e0d5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }

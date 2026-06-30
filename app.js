@@ -241,13 +241,13 @@ function renderProducts(list) {
         if(p.grupoId){
             const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
             if(miembros.length>1){
-                grupoHTML='<div class="presentacion-selector" data-grupo="'+p.grupoId+'">'+
+                grupoHTML='<div class="presentacion-wrap"><button class="pres-arrow pres-arrow-left" onclick="event.stopPropagation();presScroll(this,-1)" aria-label="Anterior" tabindex="-1"><i class="bi bi-chevron-left"></i></button><div class="presentacion-selector" data-grupo="'+p.grupoId+'" onscroll="presUpdateArrows(this)">'+
                     miembros.map(m=>{
                         const lbl=m.grupoMascara||m.gramaje||m.nombre;
                         const act=m.id===p.id?' active':'';
                         return '<button class="presentacion-seg'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
                     }).join('')+
-                    '</div>';
+                    '</div><button class="pres-arrow pres-arrow-right" onclick="event.stopPropagation();presScroll(this,1)" aria-label="Siguiente" tabindex="-1"><i class="bi bi-chevron-right"></i></button></div>';
                 /* Precargar imágenes de las otras presentaciones (diferido) para que el cambio sea instantáneo */
                 if('requestIdleCallback' in window){
                     requestIdleCallback(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});});
@@ -282,6 +282,8 @@ function renderProducts(list) {
             gramajeHTML+
             '</div></article>';
     }).join('');
+    /* Inicializar las flechas de scroll de los selectores de presentación */
+    requestAnimationFrame(presInitArrows);
 }
 
 // === CARRITO ===
@@ -314,6 +316,37 @@ function requireLoginToBuy(){
     if(typeof authLogin==='function')authLogin();
 }
 /* Cambia la card del grupo para mostrar el producto (presentación) seleccionado: título, imagen, precio y botón Agregar */
+/* Desplaza el selector de presentaciones al tocar una flecha */
+function presScroll(btn, dir){
+    const wrap=btn.closest('.presentacion-wrap');
+    if(!wrap)return;
+    const sel=wrap.querySelector('.presentacion-selector');
+    if(!sel)return;
+    sel.scrollBy({left:dir*Math.max(120,sel.clientWidth*0.6),behavior:'smooth'});
+}
+/* Muestra/oculta las flechas según haya contenido para scrollear a cada lado */
+function presUpdateArrows(sel){
+    const wrap=sel.closest('.presentacion-wrap');
+    if(!wrap)return;
+    const izq=wrap.querySelector('.pres-arrow-left');
+    const der=wrap.querySelector('.pres-arrow-right');
+    const hayOverflow=sel.scrollWidth>sel.clientWidth+2;
+    if(!hayOverflow){
+        if(izq)izq.classList.remove('visible');
+        if(der)der.classList.remove('visible');
+        wrap.classList.remove('has-overflow');
+        return;
+    }
+    wrap.classList.add('has-overflow');
+    const atStart=sel.scrollLeft<=2;
+    const atEnd=sel.scrollLeft>=sel.scrollWidth-sel.clientWidth-2;
+    if(izq)izq.classList.toggle('visible',!atStart);
+    if(der)der.classList.toggle('visible',!atEnd);
+}
+/* Inicializa las flechas de todos los selectores visibles (tras render) */
+function presInitArrows(){
+    document.querySelectorAll('.presentacion-selector').forEach(sel=>presUpdateArrows(sel));
+}
 function selectGrupoMiembro(cardId, miembroId){
     const card=document.querySelector('.product-card[data-id="'+cardId+'"]');
     if(!card)return;
@@ -378,6 +411,13 @@ function selectGrupoMiembro(cardId, miembroId){
     if(h3)h3.onclick=()=>openProductDetailModal(miembroId);
     /* Guardar el miembro seleccionado en la card para referencia */
     card.setAttribute('data-selected', miembroId);
+    /* Asegurar que el botón seleccionado quede visible en el scroll y actualizar flechas */
+    const segActivo=card.querySelector('.presentacion-seg.active');
+    if(segActivo&&segActivo.scrollIntoView){
+        try{segActivo.scrollIntoView({inline:'nearest',block:'nearest',behavior:'smooth'});}catch(e){}
+    }
+    const selEl=card.querySelector('.presentacion-selector');
+    if(selEl)setTimeout(()=>presUpdateArrows(selEl),350);
 }
 function addToCart(id) {
     if(!clienteAuth){requireLoginToBuy();return;}
