@@ -1081,16 +1081,8 @@ loadReviews();
 /* ===== AUTH CLIENTES ===== */
 const authClient = firebase.auth();
 
-/* Refresh del estado de auth cuando el DOM esté listo */
-document.addEventListener('DOMContentLoaded', function() {
-    const user = authClient.currentUser;
-    if (user && clienteAuth) {
-        _updateNavAuth(user);
-    } else if (user && !clienteAuth) {
-        /* Sesión existe pero clienteAuth no cargó aún - recargar */
-        _onUserLogin(user, false);
-    }
-});
+/* La fuente de verdad del estado de login es onAuthStateChanged (más abajo).
+   No llamamos _onUserLogin desde acá para evitar ejecuciones duplicadas. */
 let clienteAuth = null; // datos del cliente en Firestore
 let _pedidosListener = null;
 
@@ -1100,34 +1092,53 @@ const _isMobileAuth = _isIOS || /Android|webOS|BlackBerry|IEMobile|Opera Mini/i.
 
 /* Inicializar auth */
 let _loginActivo = sessionStorage.getItem('_authLoginActivo') === '1';
+let _authProcesando = false; /* evita ejecuciones concurrentes de _onUserLogin */
+let _ultimoUidProcesado = null; /* evita reprocesar el mismo usuario */
 
-/* getRedirectResult ANTES de setPersistence para no perderse el resultado en iOS */
-authClient.getRedirectResult().then(result => {
-    if (result && result.user) {
-        sessionStorage.setItem('_authLoginActivo', '1');
-        _loginActivo = true;
-        _onUserLogin(result.user, true);
-        sessionStorage.removeItem('_authLoginActivo');
-        /* Si el usuario venía intentando comprar, abrir el carrito al volver del login */
-        if(sessionStorage.getItem('_intentoCompra')==='1'){
-            sessionStorage.removeItem('_intentoCompra');
-            setTimeout(()=>{if(carrito.length>0&&typeof openCart==='function')openCart();},800);
-        }
-    }
-}).catch(e => { console.error('getRedirectResult error:', e); });
+/* 1) Persistencia LOCAL primero: la sesión sobrevive a recargas y cierres del navegador */
+authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .catch(e => console.error('setPersistence error:', e));
 
-authClient.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => console.error('setPersistence error:', e));
-
+/* 2) onAuthStateChanged es la ÚNICA fuente de verdad del login.
+   Se dispara al cargar (si hay sesión), tras popup, y tras volver de un redirect. */
 authClient.onAuthStateChanged(async user => {
     if (user) {
+        /* Evitar reprocesar el mismo usuario o ejecuciones concurrentes */
+        if (_authProcesando) return;
+        if (_ultimoUidProcesado === user.uid && clienteAuth) {
+            _updateNavAuth(user);
+            return;
+        }
+        _authProcesando = true;
         const wasActive = _loginActivo;
         _loginActivo = false;
         sessionStorage.removeItem('_authLoginActivo');
-        await _onUserLogin(user, wasActive);
+        try {
+            await _onUserLogin(user, wasActive);
+            _ultimoUidProcesado = user.uid;
+        } catch (e) {
+            console.error('_onUserLogin error:', e);
+        } finally {
+            _authProcesando = false;
+        }
     } else {
+        _ultimoUidProcesado = null;
         _onUserLogout();
     }
 });
+
+/* 3) getRedirectResult: solo para detectar el retorno de un login por redirect (fallback)
+   y manejar acciones post-login (ej. abrir el carrito). El login en sí lo hace onAuthStateChanged. */
+authClient.getRedirectResult().then(result => {
+    if (result && result.user) {
+        /* El usuario volvió de un redirect exitoso. onAuthStateChanged ya lo procesa.
+           Acá solo manejamos la intención de compra previa. */
+        if (sessionStorage.getItem('_intentoCompra') === '1') {
+            sessionStorage.removeItem('_intentoCompra');
+            setTimeout(() => { if (carrito.length > 0 && typeof openCart === 'function') openCart(); }, 1000);
+        }
+    }
+}).catch(e => { console.error('getRedirectResult error:', e); });
 
 async function _onUserLogin(user, showModal=false) {
     /* Mostrar avatar inmediatamente mientras carga Firestore */
@@ -1218,6 +1229,8 @@ function _refreshCheckoutAuth() {
 
 function _onUserLogout() {
     clienteAuth = null;
+    _ultimoUidProcesado = null;
+    _authProcesando = false;
     _updateNavAuth(null);
     if (_pedidosListener) { _pedidosListener(); _pedidosListener = null; }
 }
@@ -1265,9 +1278,11 @@ function authLogin() {
            El redirect queda solo como fallback automático cuando el popup falla. */
         firebase.auth().signInWithPopup(provider)
             .then(result => {
+                /* No llamamos _onUserLogin acá: onAuthStateChanged ya lo procesa
+                   automáticamente cuando el popup tiene éxito. Solo marcamos el flag
+                   para que onAuthStateChanged sepa que fue un login activo (mostrar modal). */
                 if (result && result.user) {
                     _loginActivo = true;
-                    _onUserLogin(result.user, true);
                 }
                 sessionStorage.removeItem('_authLoginActivo');
             })
