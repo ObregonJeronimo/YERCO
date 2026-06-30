@@ -263,7 +263,7 @@ function renderProducts(list) {
         const precioHtml=dscPct>0
             ?'<span class="product-price product-price-off" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer"><span class="price-original">$'+formatPrice(p.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
             :'<span class="product-price" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">$'+formatPrice(p.precio)+'</span>';
-        return '<article class="product-card" data-id="'+p.id+'"'+(p.grupoId?' data-grupo="'+p.grupoId+'"':'')+'>' +
+        return '<article class="product-card" data-id="'+p.id+'"'+(p.grupoId?' data-grupo="'+p.grupoId+'" data-selected="'+p.id+'"':'')+'>' +
             '<div class="product-image" onclick="openProductDetailModal(\''+p.id+'\')" style="cursor:pointer">' +
             badgeDesc +
             '<div class="img-skeleton"></div>' +
@@ -349,6 +349,33 @@ function presUpdateArrows(sel){
 function presInitArrows(){
     document.querySelectorAll('.presentacion-selector').forEach(sel=>presUpdateArrows(sel));
 }
+/* Construye el HTML interno del botón Agregar / stepper de cantidad para un producto.
+   Unifica la lógica usada en el render inicial y en las actualizaciones. */
+function _buildAtcInner(prodId, qty, noStock, maxOut){
+    if(noStock){
+        return '<span class="atc-text"><i class="bi bi-x-circle"></i> Sin stock</span>';
+    }
+    if(qty===0){
+        return '<span class="atc-text"><i class="bi bi-cart-plus"></i> Agregar</span>';
+    }
+    return '<span class="atc-qty-wrap"><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+prodId+'\',-1)"><i class="bi bi-dash"></i></button><span class="atc-qty-num">'+qty+'</span><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+prodId+'\',1)"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
+}
+/* Reemplaza el botón Agregar de una card por el estado correcto (Agregar o stepper)
+   para el producto/presentación indicado. Devuelve el nuevo elemento. */
+function _setAtcButton(card, prodId, qty, noStock, maxOut){
+    const oldEl=card.querySelector('.add-to-cart-btn');
+    if(!oldEl)return null;
+    const newTag=qty>0?'div':'button';
+    const newEl=document.createElement(newTag);
+    newEl.className='add-to-cart-btn'+(qty>0?' added':'');
+    if(newTag==='button'){
+        newEl.disabled=noStock;
+        newEl.setAttribute('onclick', noStock?'event.stopPropagation()':(qty===0?'addToCart(\''+prodId+'\')':'event.stopPropagation()'));
+    }
+    newEl.innerHTML=_buildAtcInner(prodId, qty, noStock, maxOut);
+    oldEl.parentNode.replaceChild(newEl, oldEl);
+    return newEl;
+}
 function selectGrupoMiembro(cardId, miembroId){
     const card=document.querySelector('.product-card[data-id="'+cardId+'"]');
     if(!card)return;
@@ -398,16 +425,12 @@ function selectGrupoMiembro(cardId, miembroId){
             ?'<span class="product-price product-price-off" style="cursor:pointer"><span class="price-original">$'+formatPrice(m.precio)+'</span> $'+formatPrice(precioConDesc)+'</span>'
             :'<span class="product-price" style="cursor:pointer">$'+formatPrice(m.precio)+'</span>';
     }
-    /* Stock: deshabilitar agregar si sin stock */
-    const atcBtn=card.querySelector('.add-to-cart-btn');
-    if(atcBtn){
-        const enCarrito=carrito.find(i=>i.id===miembroId);
-        if(m.stock===0){atcBtn.classList.add('disabled');atcBtn.setAttribute('disabled','');atcBtn.onclick=null;}
-        else{atcBtn.classList.remove('disabled');atcBtn.removeAttribute('disabled');
-            if(enCarrito){atcBtn.classList.add('added');atcBtn.onclick=(e)=>e.stopPropagation();}
-            else{atcBtn.classList.remove('added');atcBtn.onclick=()=>addToCart(miembroId);}
-        }
-    }
+    /* Botón Agregar / stepper: reflejar el estado del MIEMBRO seleccionado en el carrito */
+    const ciMiembro=carrito.find(i=>i.id===miembroId);
+    const qtyMiembro=ciMiembro?ciMiembro.cantidad:0;
+    const noStockM=m.stock===0;
+    const maxOutM=qtyMiembro>=m.stock;
+    _setAtcButton(card, miembroId, qtyMiembro, noStockM, maxOutM);
     /* Que el click en imagen/título/precio abra el detalle del miembro seleccionado */
     if(imgWrap)imgWrap.onclick=()=>openProductDetailModal(miembroId);
     if(h3)h3.onclick=()=>openProductDetailModal(miembroId);
@@ -435,27 +458,23 @@ function addToCart(id) {
 }
 function updateProductCard(id) {
     const p=productos.find(x=>x.id===id);if(!p)return;
-    const card=document.querySelector('.product-card[data-id="'+id+'"]');
+    /* Buscar la card directamente por su id (caso producto suelto o principal de grupo) */
+    let card=document.querySelector('.product-card[data-id="'+id+'"]');
+    /* Si no se encontró, el producto puede ser un MIEMBRO de un grupo: la card tiene
+       el data-id del principal. Buscar la card cuyo principal comparta el grupoId. */
+    if(!card && p.grupoId){
+        const cards=document.querySelectorAll('.product-card[data-grupo="'+p.grupoId+'"]');
+        if(cards.length)card=cards[0];
+    }
     if(!card)return;
+    /* Solo actualizar el botón si la presentación actualmente mostrada en la card es este id.
+       Si la card muestra otra presentación del grupo, no tocamos su botón. */
+    const mostrado=card.getAttribute('data-selected')||card.getAttribute('data-id');
+    if(mostrado!==id)return;
     const ci=carrito.find(i=>i.id===id),qty=ci?ci.cantidad:0;
     const noStock=p.stock===0;
     const maxOut=qty>=p.stock;
-    const oldEl=card.querySelector('.add-to-cart-btn');
-    if(!oldEl)return;
-    let btnContent;
-    if(noStock){
-        btnContent='<span class="atc-text"><i class="bi bi-x-circle"></i> Sin stock</span>';
-    }else if(qty===0){
-        btnContent='<span class="atc-text"><i class="bi bi-cart-plus"></i> Agregar</span>';
-    }else{
-        btnContent='<span class="atc-qty-wrap"><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',-1)"><i class="bi bi-dash"></i></button><span class="atc-qty-num">'+qty+'</span><button class="atc-qty-btn" onclick="event.stopPropagation();updateProductQuantity(\''+id+'\',1)"'+(maxOut?' disabled':'')+'><i class="bi bi-plus"></i></button></span>';
-    }
-    const newTag=qty>0?'div':'button';
-    const newEl=document.createElement(newTag);
-    newEl.className='add-to-cart-btn'+(qty>0?' added':'');
-    if(newTag==='button'){newEl.disabled=noStock;newEl.setAttribute('onclick',qty===0?'addToCart(\''+id+'\')':'event.stopPropagation()');}
-    newEl.innerHTML=btnContent;
-    oldEl.parentNode.replaceChild(newEl,oldEl);
+    _setAtcButton(card, id, qty, noStock, maxOut);
 }
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const stock=p?p.stock:carrito[idx].cantidad;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+stock,'error');}
 function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
