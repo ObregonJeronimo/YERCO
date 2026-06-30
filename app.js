@@ -330,11 +330,13 @@ function presUpdateArrows(sel){
     if(!wrap)return;
     const izq=wrap.querySelector('.pres-arrow-left');
     const der=wrap.querySelector('.pres-arrow-right');
-    const hayOverflow=sel.scrollWidth>sel.clientWidth+2;
+    /* Medir overflow de forma robusta: primero quitar has-overflow para medir en modo "reparto",
+       luego decidir. Umbral de 8px para evitar falsos positivos por redondeo. */
+    wrap.classList.remove('has-overflow');
+    const hayOverflow=sel.scrollWidth>sel.clientWidth+8;
     if(!hayOverflow){
         if(izq)izq.classList.remove('visible');
         if(der)der.classList.remove('visible');
-        wrap.classList.remove('has-overflow');
         return;
     }
     wrap.classList.add('has-overflow');
