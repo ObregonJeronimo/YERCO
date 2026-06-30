@@ -107,8 +107,35 @@ function aplicarFiltros() {
     let r = [...productos];
     /* Excluir productos hijos de gramaje: solo se muestran como botones dentro del padre de gramaje */
     r = r.filter(p => !p.gramajePadreId);
-    /* Grupos de presentación: en el grid solo se muestra el producto principal de cada grupo */
-    r = r.filter(p => !p.grupoId || p.grupoPrincipal === true);
+    /* Grupos de presentación: en el grid solo se muestra el producto principal de cada grupo.
+       SALVAGUARDA: si un grupo quedó sin ningún principal (dato inconsistente), igual mostramos
+       un miembro (el de menor grupoOrden) para que los productos NUNCA desaparezcan del catálogo. */
+    const _gruposConPrincipal = new Set();
+    const _gruposVistos = new Set();
+    productos.forEach(p => {
+        if (p.gramajePadreId) return;
+        if (p.grupoId) {
+            _gruposVistos.add(p.grupoId);
+            if (p.grupoPrincipal === true) _gruposConPrincipal.add(p.grupoId);
+        }
+    });
+    /* Para grupos sin principal, elegir un miembro fallback (menor grupoOrden, luego por id) */
+    const _fallbackPorGrupo = {};
+    const _ordenDe = p => (typeof p.grupoOrden === 'number' ? p.grupoOrden : 999);
+    _gruposVistos.forEach(gid => {
+        if (_gruposConPrincipal.has(gid)) return;
+        const miembros = productos.filter(p => p.grupoId === gid && !p.gramajePadreId);
+        if (miembros.length) {
+            miembros.sort((a,b) => _ordenDe(a)-_ordenDe(b) || String(a.id).localeCompare(String(b.id)));
+            _fallbackPorGrupo[gid] = miembros[0].id;
+        }
+    });
+    r = r.filter(p => {
+        if (!p.grupoId) return true;
+        if (p.grupoPrincipal === true) return true;
+        /* sin principal en el grupo: mostrar solo el fallback elegido */
+        return _fallbackPorGrupo[p.grupoId] === p.id;
+    });
     if (categoriaActual === 'Populares') r = r.filter(p => p.popular === true);
     else if (categoriaActual === 'Ofertas') r = r.filter(p => (p.descuento||0) > 0);
     else if (categoriaActual !== 'Todos') r = r.filter(p => p.categoria === categoriaActual);
