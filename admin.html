@@ -2301,12 +2301,13 @@
                 const data=await file.arrayBuffer();
                 const pdf=await pdfjsLib.getDocument({data}).promise;
                 const OPS=pdfjsLib.OPS;const opNames={};for(const[n,c]of Object.entries(OPS))opNames[c]=n;
-                const PAGE_H=1023;const COL_SPLIT=280;
+                const PAGE_H=1023;/* COL_SPLIT se calcula por pagina, NO es una constante fija: en 07/2026 el proveedor paso el PDF de A4 (595pt de ancho) a A5 (420pt). Con el valor fijo de 280 el nombre de la columna derecha (x=212 en A5) caia del lado izquierdo y se rompia el apareo nombre/precio: solo se leian 10 productos de 661. Se escala proporcional al ancho real de la pagina. TODO: esto asume que el proveedor mantiene la proporcion de columnas. Si cambian los anchos de columna (no solo el tamano de papel), reemplazar por autodeteccion del corte: buscar el mayor hueco vertical sin texto en la banda central de x (aprox 35%-60% del ancho). */
                 pb.style.width='10%';pt.textContent='Leyendo '+pdf.numPages+' paginas...';
                 const pdfProds=[];const yellowProds=new Set();const greenProds=new Set();
                 for(let p=1;p<=pdf.numPages;p++){
                     pb.style.width=(10+Math.round(p/pdf.numPages*60))+'%';pt.textContent='Pagina '+p+'/'+pdf.numPages+'...';
                     const page=await pdf.getPage(p);const ops=await page.getOperatorList();const tc=await page.getTextContent();
+                    const COL_SPLIT=page.getViewport({scale:1}).width*(280/595);
                     const yOffset=(p-1)*PAGE_H;
                     /* Collect yellow/green rects */
                     let fc=null;const highlights=[];
