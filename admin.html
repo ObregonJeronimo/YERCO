@@ -246,7 +246,7 @@
     </div>
     <div class="section-content" id="sec-insumos"><div style="max-width:900px"><div class="toolbar"><h3 style="font-size:1rem;color:var(--text-main);margin:0 1rem 0 0;display:flex;align-items:center;gap:0.5rem"><i class="bi bi-tools"></i> Insumos</h3><button class="btn btn-primary" style="width:auto" onclick="openInsumoModal()"><i class="bi bi-plus-lg"></i> Nuevo</button><div class="search-box" style="flex:1;min-width:180px;max-width:280px"><i class="bi bi-search"></i><input type="text" placeholder="Buscar..." id="insumoSearch" oninput="renderInsumos()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadInsumos()"><i class="bi bi-arrow-clockwise"></i></button></div><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nombre</th><th style="text-align:right">Stock</th><th style="text-align:right">Mínimo</th><th style="text-align:center">Acciones</th></tr></thead><tbody id="insumosTableBody"><tr><td colspan="4"><div class="empty-state"><i class="bi bi-tools"></i><p>Cargando insumos...</p></div></td></tr></tbody></table></div></div></div></div>
     <div class="section-content" id="sec-ventas"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Ventas</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Facturado Total</div><strong style="font-size:1.2rem;color:#67c23a" id="vtStatTotal$">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Este Mes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="vtStatMes">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Ticket Promedio</div><strong style="font-size:1.2rem;color:#e6a817" id="vtStatProm">$0</strong></div></div><div class="toolbar" style="flex-wrap:wrap"><button class="btn btn-primary" style="width:auto" onclick="openVentaModal()"><i class="bi bi-plus-lg"></i> Nueva Venta</button><select class="form-input" id="ventaMesFiltro" style="width:auto;min-width:170px;font-weight:600;background:#1e3a5f;color:#fff;border-color:#1e3a5f" onchange="filterVentas()"><option value="">Todos los meses</option></select><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar venta..." id="ventaSearch" oninput="filterVentas()"></div><button class="btn btn-secondary" style="width:auto" onclick="loadVentas()"><i class="bi bi-arrow-clockwise"></i></button></div><div id="ventasList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando ventas...</p></div></div><div class="price-pager" id="ventasPager"></div></div>
-    <div class="section-content" id="sec-clientes"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Clientes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Con Ventas</div><strong style="font-size:1.2rem;color:#67c23a" id="clStatConVentas">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Facturado</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatFacturado">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Promedio x Cliente</div><strong style="font-size:1.2rem;color:#e6a817" id="clStatPromedio">$0</strong></div></div><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openClienteModal()"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar cliente..." id="clienteSearch" oninput="filterClientes()"></div><button class="btn btn-secondary" style="width:auto" id="clSortBtn" onclick="toggleClienteSort()"><i class="bi bi-sort-numeric-down"></i> Ventas</button></div><div id="clientesList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando clientes...</p></div></div></div>
+    <div class="section-content" id="sec-clientes"><div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap"><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Clientes</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatTotal">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Con Ventas</div><strong style="font-size:1.2rem;color:#67c23a" id="clStatConVentas">0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Facturado</div><strong style="font-size:1.2rem;color:var(--accent-light)" id="clStatFacturado">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Promedio x Cliente</div><strong style="font-size:1.2rem;color:#e6a817" id="clStatPromedio">$0</strong></div><div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Ganancia</div><strong style="font-size:1.2rem;color:#67c23a" id="clStatGanado">$0</strong></div></div><div class="toolbar"><button class="btn btn-primary" style="width:auto" onclick="openClienteModal()"><i class="bi bi-plus-lg"></i> Nuevo Cliente</button><div class="search-box"><i class="bi bi-search"></i><input type="text" placeholder="Buscar cliente..." id="clienteSearch" oninput="filterClientes()"></div><button class="btn btn-secondary" style="width:auto" id="clSortBtn" onclick="toggleClienteSort()"><i class="bi bi-sort-numeric-down"></i> Ventas</button></div><div id="clientesList" class="hist-list"><div class="empty-state" style="padding:2rem"><p>Cargando clientes...</p></div></div></div>
     <div class="section-content" id="sec-ventasMay">
       <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
         <div style="flex:1;min-width:120px;background:var(--bg-card);padding:0.75rem;border-radius:var(--radius)"><div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Total Ventas May.</div><strong style="font-size:1.2rem;color:#a78bfa" id="vtMayStatTotal">0</strong></div>
@@ -1743,10 +1743,17 @@
         function showPedClienteSelect(){
             const list=document.getElementById('pedClienteSelectList');
             const q=(document.getElementById('pedCliente').value||'').toLowerCase();
-            let items=[...allClientes];
-            if(q)items=items.filter(cl=>(cl.nombre||'').toLowerCase().includes(q));
+            /* Mismo criterio que la venta: Auth (Google) + manuales */
+            const items=_clientesUnificados(q);
             if(!items.length){list.classList.remove('open');return;}
-            list.innerHTML=items.map(cl=>'<div class="cliente-select-item" onmousedown="pickPedCliente(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\\'")+'\')"><span>'+cl.nombre+'</span>'+(cl.telefono?'<small>'+cl.telefono+'</small>':'')+'</div>').join('');
+            list.innerHTML='';
+            items.forEach(function(cl){
+                var d=document.createElement('div');
+                d.className='cliente-select-item';
+                d.innerHTML=_clienteItemHTML(cl);
+                d.addEventListener('mousedown',function(){pickPedCliente(cl.id,cl.nombre);});
+                list.appendChild(d);
+            });
             list.classList.add('open');
         }
         function pickPedCliente(id,nombre){document.getElementById('pedCliente').value=nombre;document.getElementById('pedClienteId').value=id;pedClienteSelected=true;document.getElementById('pedClienteSelectList').classList.remove('open');if(!pedidoDirty){const cvb=document.getElementById('convertirVentaBtn');if(cvb&&cvb.style.display!=='none'){cvb.disabled=false;cvb.title='';}}}
@@ -1757,11 +1764,29 @@
         let _clienteDesde=null;
         function openNuevoClienteDesde(desde){_clienteDesde=desde;openClienteModal();}
 
-        async function loadClientes(){try{const snap=await db.collection('clientes').orderBy('nombre').get();allClientes=snap.docs.map(d=>({id:d.id,...d.data(),ventasCount:0,ventasTotal:0}));const vSnap=await db.collection('ventas').get();vSnap.docs.forEach(d=>{const v=d.data();if(v.clienteId){const cl=allClientes.find(c=>c.id===v.clienteId);if(cl){cl.ventasCount++;cl.ventasTotal+=(v.total||0);}}});updateClienteStats();filterClientes();}catch(e){document.getElementById('clientesList').innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
+        async function loadClientes(){try{const snap=await db.collection('clientes').orderBy('nombre').get();allClientes=snap.docs.map(d=>({id:d.id,...d.data(),ventasCount:0,ventasTotal:0,_totalGanado:0,_ventasPorMes:{},_ultimaCompra:null}));const vSnap=await db.collection('ventas').get();vSnap.docs.forEach(d=>{const v=d.data();if(v.clienteId){const cl=allClientes.find(c=>c.id===v.clienteId);if(cl){cl.ventasCount++;cl.ventasTotal+=(v.total||0);
+            /* Ganancia y desglose por mes: mismo criterio que clientesAuth, para que las dos secciones sean comparables */
+            const ganancia=(v.items||[]).reduce(function(s,i){return s+(((i.precio||0)-(i.costo||0))*(i.cantidad||1));},0);
+            cl._totalGanado=(cl._totalGanado||0)+Math.round(ganancia);
+            try{
+                const fd=v.fecha instanceof Date?v.fecha:(v.fecha&&v.fecha.toDate?v.fecha.toDate():new Date(v.fecha));
+                if(fd&&!isNaN(fd)){
+                    const mes=fd.getFullYear()+'-'+String(fd.getMonth()+1).padStart(2,'0');
+                    if(!cl._ventasPorMes[mes])cl._ventasPorMes[mes]={ventas:0,ganado:0,count:0};
+                    cl._ventasPorMes[mes].ventas+=(v.total||0);
+                    cl._ventasPorMes[mes].ganado+=Math.round(ganancia);
+                    cl._ventasPorMes[mes].count++;
+                    if(!cl._ultimaCompra||fd>cl._ultimaCompra)cl._ultimaCompra=fd;
+                }
+            }catch(eF){}
+        }}});updateClienteStats();filterClientes();}catch(e){document.getElementById('clientesList').innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
         let clSortDir=null;
         function toggleClienteSort(){if(!clSortDir)clSortDir='desc';else if(clSortDir==='desc')clSortDir='asc';else clSortDir=null;const btn=document.getElementById('clSortBtn');if(clSortDir==='desc')btn.innerHTML='<i class="bi bi-sort-numeric-down"></i> Mayor ventas';else if(clSortDir==='asc')btn.innerHTML='<i class="bi bi-sort-numeric-up"></i> Menor ventas';else btn.innerHTML='<i class="bi bi-sort-numeric-down"></i> Ventas';filterClientes();}
-        function updateClienteStats(){document.getElementById('clStatTotal').textContent=allClientes.length;const conVentas=allClientes.filter(c=>c.ventasCount>0);document.getElementById('clStatConVentas').textContent=conVentas.length;const totalFact=allClientes.reduce((s,c)=>s+c.ventasTotal,0);document.getElementById('clStatFacturado').textContent='$'+totalFact.toLocaleString('es-AR');const prom=conVentas.length?Math.round(totalFact/conVentas.length):0;document.getElementById('clStatPromedio').textContent='$'+prom.toLocaleString('es-AR');}
-        function filterClientes(){const c=document.getElementById('clientesList');const q=(document.getElementById('clienteSearch')?.value||'').toLowerCase();let f=[...allClientes];if(q)f=f.filter(cl=>(cl.nombre||'').toLowerCase().includes(q)||(cl.identificacion||'').toLowerCase().includes(q)||(cl.telefono||'').toLowerCase().includes(q)||(cl.email||'').toLowerCase().includes(q));if(clSortDir==='desc')f.sort((a,b)=>b.ventasCount-a.ventasCount);else if(clSortDir==='asc')f.sort((a,b)=>a.ventasCount-b.ventasCount);if(!f.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin clientes</p></div>';return;}c.innerHTML=f.map(cl=>{const det=[(cl.identificacion?'DNI: '+cl.identificacion:''),(cl.telefono?'Tel: '+cl.telefono:''),(cl.email||'')].filter(Boolean).join(' | ');const ventasInfo=cl.ventasCount>0?'<span style="font-size:0.72rem;color:var(--accent-light);margin-left:8px">'+cl.ventasCount+' venta'+(cl.ventasCount!==1?'s':'')+' | $'+cl.ventasTotal.toLocaleString('es-AR')+'</span>':'';return'<div class="cliente-card"><div class="cliente-info"><div class="cliente-name">'+cl.nombre+ventasInfo+'</div><div class="cliente-detail">'+det+'</div></div><div class="cliente-actions"><button class="btn btn-sm btn-secondary" onclick="showClienteHist(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Historial"><i class="bi bi-clock-history"></i></button><button class="btn btn-sm btn-secondary" onclick="openClienteModal(\''+cl.id+'\')" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-secondary" onclick="deleteCliente(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Eliminar" style="color:var(--danger)"><i class="bi bi-trash"></i></button></div></div>';}).join('');}
+        function updateClienteStats(){document.getElementById('clStatTotal').textContent=allClientes.length;const conVentas=allClientes.filter(c=>c.ventasCount>0);document.getElementById('clStatConVentas').textContent=conVentas.length;const totalFact=allClientes.reduce((s,c)=>s+c.ventasTotal,0);document.getElementById('clStatFacturado').textContent='$'+totalFact.toLocaleString('es-AR');const prom=conVentas.length?Math.round(totalFact/conVentas.length):0;document.getElementById('clStatPromedio').textContent='$'+prom.toLocaleString('es-AR');
+            /* Ganancia total, si existe el contador en el DOM */
+            const gEl=document.getElementById('clStatGanado');
+            if(gEl){const totalG=allClientes.reduce((s,c)=>s+(c._totalGanado||0),0);gEl.textContent='$'+totalG.toLocaleString('es-AR');}}
+        function filterClientes(){const c=document.getElementById('clientesList');const q=(document.getElementById('clienteSearch')?.value||'').toLowerCase();let f=[...allClientes];if(q)f=f.filter(cl=>(cl.nombre||'').toLowerCase().includes(q)||(cl.identificacion||'').toLowerCase().includes(q)||(cl.telefono||'').toLowerCase().includes(q)||(cl.email||'').toLowerCase().includes(q));if(clSortDir==='desc')f.sort((a,b)=>b.ventasCount-a.ventasCount);else if(clSortDir==='asc')f.sort((a,b)=>a.ventasCount-b.ventasCount);if(!f.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin clientes</p></div>';return;}c.innerHTML=f.map(cl=>{const det=[(cl.identificacion?'DNI: '+cl.identificacion:''),(cl.telefono?'Tel: '+cl.telefono:''),(cl.email||'')].filter(Boolean).join(' | ');const _ult=cl._ultimaCompra?(' | ult. '+cl._ultimaCompra.toLocaleDateString('es-AR')):'';const _gan=cl._totalGanado?(' | gan. $'+cl._totalGanado.toLocaleString('es-AR')):'';const ventasInfo=cl.ventasCount>0?'<span style="font-size:0.72rem;color:var(--accent-light);margin-left:8px">'+cl.ventasCount+' venta'+(cl.ventasCount!==1?'s':'')+' | $'+cl.ventasTotal.toLocaleString('es-AR')+_gan+_ult+'</span>':'';return'<div class="cliente-card"><div class="cliente-info"><div class="cliente-name">'+cl.nombre+ventasInfo+'</div><div class="cliente-detail">'+det+'</div></div><div class="cliente-actions"><button class="btn btn-sm btn-secondary" onclick="showClienteHist(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Historial"><i class="bi bi-clock-history"></i></button><button class="btn btn-sm btn-secondary" onclick="openClienteModal(\''+cl.id+'\')" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-secondary" onclick="deleteCliente(\''+cl.id+'\',\''+cl.nombre.replace(/'/g,"\'")+'\')" title="Eliminar" style="color:var(--danger)"><i class="bi bi-trash"></i></button></div></div>';}).join('');}
         function openClienteModal(id){
             editingClienteId=id||null;
             document.getElementById('clienteForm').reset();
@@ -1834,30 +1859,58 @@
         async function showClienteHist(id,nombre){document.getElementById('clienteHistTitle').textContent='Ventas de '+nombre;const c=document.getElementById('clienteHistList');c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Cargando...</p></div>';document.getElementById('clienteHistModal').classList.add('show');try{const snap=await db.collection('ventas').where('clienteId','==',id).get();const ventas=snap.docs.map(d=>{const r=d.data();return{...r,fecha:r.fecha?r.fecha.toDate?r.fecha.toDate():new Date(r.fecha):new Date()};}).sort((a,b)=>b.fecha-a.fecha);if(!ventas.length){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Sin ventas registradas para este cliente</p></div>';return;}c.innerHTML=ventas.map((v,idx)=>{const fecha=v.fecha.toLocaleDateString('es-AR');const nro=String(v.numero||0).padStart(6,'0');const items=(v.items||[]).map(i=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:0.78rem;color:var(--text-dim)"><span>'+esc(i.nombre)+'</span><span style="font-family:var(--mono);white-space:nowrap">'+i.cantidad+' x $'+i.precio.toLocaleString('es-AR')+' = $'+i.subtotal.toLocaleString('es-AR')+'</span></div>').join('');return'<div class="venta-card" style="cursor:pointer" onclick="this.querySelector(\'.ch-items\').classList.toggle(\'show\')"><div class="venta-card-top"><span class="venta-card-num">#'+nro+'</span><span class="venta-card-total">$'+(v.total||0).toLocaleString('es-AR')+'</span></div><div class="venta-card-bot"><span>'+fecha+'</span><span>'+v.medioPago+'</span><span title="'+(v.tipoEntrega==='retiro'?'Retiro en local':'Envio a domicilio')+'" style="background:'+(v.tipoEntrega==='retiro'?'#3a2818':'#1a3a2a')+';color:'+(v.tipoEntrega==='retiro'?'#e6a817':'#67c23a')+';padding:2px 8px;border-radius:10px;font-size:0.72rem"><i class="bi bi-'+(v.tipoEntrega==='retiro'?'shop':'truck')+'"></i> '+(v.tipoEntrega==='retiro'?'Retiro':'Envío')+'</span><span>'+(v.items||[]).length+' items <i class="bi bi-chevron-down" style="font-size:0.65rem"></i></span></div><div class="ch-items" style="display:none;padding-top:8px;border-top:1px solid var(--border);margin-top:8px">'+items+'</div></div>';}).join('');}catch(e){c.innerHTML='<div class="empty-state" style="padding:2rem"><p>Error: '+e.message+'</p></div>';}}
 
         /* Selector de cliente en modal venta */
+        function _clientesUnificados(q){
+            /* Devuelve clientes de AMBAS colecciones para cualquier selector.
+               id lleva prefijo 'auth:' para los de Google (asi lo espera el guardado de la venta,
+               que separa clienteAuthUid de clienteId). Los manuales van con el id crudo. */
+            var out=[];
+            (clientesAuthData||[]).forEach(function(cl){
+                var nombre=((cl.nombre||'')+' '+(cl.apellido||'')).trim();
+                if(nombre)out.push({id:'auth:'+cl.uid,nombre:nombre,telefono:cl.telefono||'',email:cl.email||'',clienteId:cl.clienteId||null,tipo:'auth'});
+            });
+            (allClientes||[]).forEach(function(cl){
+                /* Si esta ficha manual ya fue vinculada a una cuenta Google, no duplicarla */
+                var yaVinculado=(clientesAuthData||[]).some(function(a){return a.clienteId&&a.clienteId===cl.id;});
+                if(yaVinculado)return;
+                if(cl.nombre)out.push({id:cl.id,nombre:cl.nombre,telefono:cl.telefono||'',email:cl.email||'',clienteId:cl.id,tipo:'manual'});
+            });
+            var s=(q||'').toLowerCase();
+            if(s&&s!=='consumidor final')out=out.filter(function(cl){
+                return (cl.nombre||'').toLowerCase().includes(s)||(cl.telefono||'').includes(s)||(cl.email||'').toLowerCase().includes(s);
+            });
+            out.sort(function(a,b){return (a.nombre||'').localeCompare(b.nombre||'');});
+            return out;
+        }
+        function _clienteItemHTML(cl){
+            var idStr=(cl.tipo==='auth'&&cl.clienteId)?'<span style="font-family:var(--mono);color:var(--accent-light);font-size:0.72rem">#'+cl.clienteId+'</span> ':'';
+            var sub=cl.tipo==='auth'
+                ?'<i class="bi bi-person-check" style="color:#a78bfa"></i> '+esc(cl.email||cl.telefono||'')
+                :'<i class="bi bi-person" style="color:#8d8b85"></i> '+esc(cl.email||cl.telefono||'sin datos');
+            return '<span>'+idStr+esc(cl.nombre)+'</span><small>'+sub+'</small>';
+        }
         function showClienteSelect(){
             const list=document.getElementById('clienteSelectList');
             const q=(document.getElementById('ventaCliente').value||'').toLowerCase();
-            /* Solo Clientes Auth */
+            /* Clientes Auth (Google) + Clientes cargados a mano */
             if(!clientesAuthData.length){
                 db.collection('clientesAuth').get().then(snap=>{
                     clientesAuthData=snap.docs.map(d=>({uid:d.id,...d.data()}));
                     showClienteSelect();
                 }).catch(()=>{});
             }
-            let items=[];
-            (clientesAuthData||[]).forEach(cl=>{
-                const nombre=((cl.nombre||'')+' '+(cl.apellido||'')).trim();
-                if(nombre)items.push({id:'auth:'+cl.uid,nombre:nombre,telefono:cl.telefono||'',email:cl.email||'',clienteId:cl.clienteId||null,tipo:'auth'});
-            });
-            if(q&&q!=='consumidor final')items=items.filter(cl=>(cl.nombre||'').toLowerCase().includes(q)||(cl.telefono||'').includes(q)||(cl.email||'').toLowerCase().includes(q));
+            if(!allClientes.length){
+                db.collection('clientes').get().then(snap=>{
+                    allClientes=snap.docs.map(d=>({id:d.id,...d.data()}));
+                    showClienteSelect();
+                }).catch(()=>{});
+            }
+            const items=_clientesUnificados(q);
             if(!items.length){list.classList.remove('open');return;}
             list.innerHTML='';
             items.forEach(function(cl){
                 var d=document.createElement('div');
                 d.className='cliente-select-item';
-                var idStr=cl.clienteId?'<span style="font-family:var(--mono);color:var(--accent-light);font-size:0.72rem">#'+cl.clienteId+'</span> ':'';
-                var sub=cl.tipo==='auth'?'<i class="bi bi-person-check" style="color:#a78bfa"></i> '+esc(cl.email||cl.telefono||''):'';
-                d.innerHTML='<span>'+idStr+esc(cl.nombre)+'</span>'+(sub?'<small>'+sub+'</small>':'');
+                d.innerHTML=_clienteItemHTML(cl);
                 d.addEventListener('mousedown',function(){pickCliente(cl.id,cl.nombre);});
                 list.appendChild(d);
             });
@@ -3408,14 +3461,32 @@
             const btn=document.getElementById('syncConfirmBtn');
             btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Sincronizando...';
             try{
-                /* 1. Actualizar todos los pedidos del cliente viejo con el nuevo UID */
-                const pedSnap=await db.collection('pedidos').where('clienteId','==',clienteId).get();
+                /* Migracion completa de la ficha manual a la cuenta de Google.
+                   IMPORTANTE: hay que LIMPIAR clienteId ademas de escribir clienteAuthUid. Antes solo
+                   se escribia el uid y el clienteId quedaba apuntando a la ficha que este mismo batch
+                   borra dos lineas mas abajo: el registro quedaba huerfano y, segun que pantalla lo
+                   leyera, no aparecia en el historial ni sumaba a las estadisticas de la cuenta nueva.
+                   Se migran ventas, pedidos y resenas (opcion A: historial completo). */
                 const batch=db.batch();
-                pedSnap.docs.forEach(d=>batch.update(d.ref,{clienteAuthUid:_syncAuthUid}));
-                /* 2. Actualizar todas las ventas del cliente viejo */
+                let nPed=0,nVent=0,nRes=0;
+                /* 1. Pedidos */
+                const pedSnap=await db.collection('pedidos').where('clienteId','==',clienteId).get();
+                pedSnap.docs.forEach(d=>{batch.update(d.ref,{clienteAuthUid:_syncAuthUid,clienteId:null});nPed++;});
+                /* 2. Ventas */
                 const ventSnap=await db.collection('ventas').where('clienteId','==',clienteId).get();
-                ventSnap.docs.forEach(d=>batch.update(d.ref,{clienteAuthUid:_syncAuthUid}));
-                /* 3. Eliminar el cliente de la colección clientes */
+                ventSnap.docs.forEach(d=>{batch.update(d.ref,{clienteAuthUid:_syncAuthUid,clienteId:null});nVent++;});
+                /* 3. Resenas */
+                try{
+                    const resSnap=await db.collection('resenas').where('clienteId','==',clienteId).get();
+                    resSnap.docs.forEach(d=>{batch.update(d.ref,{clienteAuthUid:_syncAuthUid,clienteId:null});nRes++;});
+                }catch(eRes){console.warn('resenas sin clienteId:',eRes.message);}
+                /* 4. Confirmacion explicita antes de borrar la ficha manual */
+                if(!confirm('Se van a pasar a la cuenta de Google:\n\n'
+                    +'\u2022 '+nVent+' venta(s)\n\u2022 '+nPed+' pedido(s)\n\u2022 '+nRes+' resena(s)\n\n'
+                    +'La ficha manual se elimina y su historial queda en la cuenta de Google. Continuar?')){
+                    btn.disabled=false;btn.innerHTML='<i class="bi bi-link-45deg"></i> Sincronizar';return;
+                }
+                /* 5. Eliminar la ficha manual ya migrada */
                 batch.delete(db.collection('clientes').doc(clienteId));
                 await batch.commit();
                 /* 4. Actualizar datos del clienteAuth si le faltan */
@@ -3428,8 +3499,8 @@
                     if(!clAuth.telefono&&clViejo.telefono)update.telefono=clViejo.telefono;
                     if(Object.keys(update).length)await db.collection('clientesAuth').doc(_syncAuthUid).update(update);
                 }
-                logAction('editar','Sincronizado cliente Auth: '+_syncAuthUid,'Con cliente: '+clienteId);
-                showAdminToast('Cliente sincronizado correctamente','success');
+                logAction('editar','Sincronizado cliente Auth: '+_syncAuthUid,'Ficha manual '+clienteId+' migrada: '+nVent+' ventas, '+nPed+' pedidos, '+nRes+' resenas');
+                showAdminToast('Cliente sincronizado: '+nVent+' ventas, '+nPed+' pedidos migrados','success');
                 closeSincronizarModal();
                 loadClientesAuth();
                 loadClientes();
