@@ -1,0 +1,96 @@
+rules_version = '2';
+
+/*
+ * YERCO — REGLAS DE FIREBASE STORAGE
+ * =============================================================================
+ * IMPORTANTE: el proyecto YERCO NO tenía este archivo. Sin reglas propias,
+ * Storage arranca con las reglas por defecto (solo usuarios autenticados, o
+ * directamente todo denegado según la versión), y la subida de imágenes de
+ * productos desde /admin falla con "storage/unauthorized".
+ *
+ * Modelo:
+ *   - LECTURA pública: las fotos de productos y del sitio se muestran en la
+ *     tienda, que es pública.
+ *   - ESCRITURA solo admins, con límite de tamaño y validación de tipo, para
+ *     que nadie use el bucket como hosting gratis.
+ *
+ * Desplegar con:  firebase deploy --only storage
+ *
+ * SOBRE QUIEN ES ADMIN ACA:
+ * Storage no puede leer Firestore, asi que no puede consultar la coleccion
+ * /admins como hacen las reglas de Firestore. Se resuelve con un custom claim:
+ * la Cloud Function sincronizarClaimAdmin marca `admin:true` en el token de la
+ * persona cuando se la agrega desde el panel, y se lo saca cuando se la quita.
+ *
+ * Consecuencia practica: un admin nuevo que YA estaba logueado necesita cerrar
+ * sesion y volver a entrar para poder subir imagenes, porque el claim viaja en
+ * el token y el token se emite al iniciar sesion. El resto del panel le funciona
+ * al instante, porque eso lo resuelve Firestore leyendo /admins.
+ *
+ * El dueño queda fijo abajo como salida de emergencia, igual que en
+ * firestore.rules: si el claim no se llego a aplicar, alguien tiene que poder
+ * subir una imagen.
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    /* Los admins de YERCO van enumerados aca y no en una coleccion: las reglas de
+       Storage no comparten estado con las de Firestore, asi que /admins no se ve
+       desde este archivo. Si se da de alta a alguien nuevo desde el panel, va a
+       poder entrar y editar, pero NO subir imagenes hasta que se lo agregue aca
+       y se redespliegue este archivo. Es la contra de tener dos motores de reglas.
+       Mantener en sincronia con esAdminHeredado() de firestore.rules. */
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.email.lower() == 'jeroobregon03@gmail.com' ||
+        request.auth.token.email.lower() == 'obregonjeronimo@icloud.com' ||
+        request.auth.token.email.lower() == 'genaro077caromaggi@gmail.com' ||
+        request.auth.token.email.lower() == 'agustinmarqez2@gmail.com' ||
+        request.auth.token.email.lower() == 'joacobrarda06@gmail.com'
+      );
+    }
+
+    function esImagenValida() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 6 * 1024 * 1024;
+    }
+
+    /* Fotos de productos (las sube el admin desde el panel) */
+    match /productos/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && esImagenValida();
+      allow delete: if isAdmin();
+    }
+
+    /* Imágenes del sitio: hero, CTA y los 3 logos (Editor Web) */
+    match /site/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && esImagenValida();
+      allow delete: if isAdmin();
+    }
+
+    /* Comprobantes / logo y QR de la factura */
+    match /factura/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && esImagenValida();
+      allow delete: if isAdmin();
+    }
+
+    /* El logo de la factura se sube a config/logo-factura.jpg (ver admin.html,
+       saveFacturaFromEditor). No estaba contemplado en ninguna regla, asi que caia
+       en el cierre de abajo y la subida fallaba con "storage/unauthorized". */
+    match /config/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && esImagenValida();
+      allow delete: if isAdmin();
+    }
+
+    /* Todo lo demás: cerrado. Sin esta regla, cualquier ruta nueva que agregue
+       el panel en el futuro quedaría sin cubrir y Storage la denegaría igual,
+       pero dejarlo explícito evita sorpresas. */
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
