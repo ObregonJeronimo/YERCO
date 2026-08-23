@@ -99,9 +99,11 @@
             <p>Este link de reseña no es válido o ya expiró.</p>
             <a href="https://yerco.ar" class="btn-back">Ir a Yerco</a>
         </div>
-    </div>
 
-    <div class="state-view" id="needsLoginArea">
+        <!-- Estos dos bloques tienen que quedar DENTRO de .card: #needsLoginArea
+             es la primera pantalla que ve cualquier visitante (pide login con
+             Google), y fuera de la tarjeta se renderiza sin estilos. -->
+        <div class="state-view" id="needsLoginArea">
             <div class="icon">&#128274;</div>
             <h2 style="color:#333">Inicia sesión para continuar</h2>
             <p>Necesitás iniciar sesión con tu cuenta de Google para dejar una reseña.</p>
@@ -114,6 +116,8 @@
             <p>Solo se permite una reseña por cuenta. ¡Gracias por tu opinión!</p>
             <a href="https://yerco.ar" class="btn-back">Volver a Yerco</a>
         </div>
+    </div>
+
 <div class="toast" id="toast"></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>

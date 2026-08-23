@@ -88,9 +88,13 @@ async function loadProductsFromFirebase(retries) {
         /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
         if(!window._autoScrollDone){
             window._autoScrollDone=true;
-            const hash=window.location.hash;
-            const target=hash==='#productos'?'productos':'productos';
-            setTimeout(()=>{const s=document.getElementById(target);if(s)s.scrollIntoView({behavior:'smooth',block:'start'});},600);
+            /* Las dos ramas del ternario eran iguales ('productos'), asi que la pagina
+               SIEMPRE se bajaba sola al cargar y nadie llegaba a ver el hero. Ahora
+               solo baja si la URL lo pide. */
+            const target=window.location.hash==='#productos'?'productos':null;
+            if(target){
+                setTimeout(()=>{const s=document.getElementById(target);if(s)s.scrollIntoView({behavior:'smooth',block:'start'});},600);
+            }
         }
     } catch(e) { console.error(e); if(retries>0){setTimeout(()=>loadProductsFromFirebase(retries-1),1500);return;} showToast('Error al cargar productos.','error'); }
     finally { if (loading) loading.classList.remove('show'); }
@@ -910,7 +914,7 @@ function sanitizeText(val, maxLen) {
     /* Eliminar caracteres de control y HTML */
     return String(val)
         .replace(/[<>"'`]/g, '')
-        .replace(/[ -]/g, '')
+        .replace(/[\x00-\x1F\x7F]/g, '')
         .trim()
         .slice(0, maxLen || 500);
 }
@@ -1505,7 +1509,7 @@ function renderDirecciones() {
     if (!dirs.length) { c.innerHTML = '<p style="color:#999;font-size:0.88rem">No tenés direcciones guardadas.</p>'; return; }
     c.innerHTML = dirs.map((d, i) => `
         <div class="dir-card">
-            <div><div class="dir-card-name">${d.nombre}</div><div class="dir-card-text">${d.texto}</div></div>
+            <div><div class="dir-card-name">${esc(d.nombre)}</div><div class="dir-card-text">${esc(d.texto)}</div></div>
             <button class="dir-card-del" onclick="eliminarDireccion(${i})"><i class="bi bi-trash"></i></button>
         </div>`).join('');
     const addBtn = document.getElementById('btnAgregarDir');
@@ -1523,8 +1527,10 @@ function cancelarFormDir() {
 }
 
 async function guardarDireccion() {
-    const nombre = document.getElementById('dirNombre').value.trim();
-    const texto = document.getElementById('dirTexto').value.trim();
+    /* sanitizeText ademas de escapar al mostrar: estos valores los lee tambien
+       el panel /admin, asi que no queremos guardar HTML en la base. */
+    const nombre = sanitizeText(document.getElementById('dirNombre').value, 60);
+    const texto = sanitizeText(document.getElementById('dirTexto').value, 200);
     if (!nombre || !texto) { showToast('Completá los campos de la dirección', 'error'); return; }
     const dirs = clienteAuth.direcciones || [];
     if (dirs.length >= 5) { showToast('Máximo 5 direcciones', 'error'); return; }

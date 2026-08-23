@@ -154,7 +154,13 @@ exports.procesarUsoCupon = onDocumentCreated(
  */
 const {onDocumentCreated: onPedidoCreated} = require('firebase-functions/v2/firestore');
 
-exports.rateLimitPedidos = onDocumentCreated('pedidos/{pedidoId}', async (event) => {
+exports.rateLimitPedidos = onDocumentCreated(
+  /* Sin region declarada, esta funcion se desplegaba en us-central1 mientras
+     notifyTelegramOnNewOrder y procesarUsoCupon iban a southamerica-east1:
+     mismo trigger, dos regiones, y latencia extra contra una base que esta
+     en Sudamerica. */
+  { document: 'pedidos/{pedidoId}', region: 'southamerica-east1' },
+  async (event) => {
   const data = event.data?.data();
   if (!data) return;
 
@@ -184,7 +190,13 @@ exports.rateLimitPedidos = onDocumentCreated('pedidos/{pedidoId}', async (event)
 /**
  * SANITIZACIÓN SERVER-SIDE: limpia y valida pedidos al crearse
  */
-exports.sanitizarPedido = onDocumentCreated('pedidos/{pedidoId}', async (event) => {
+exports.sanitizarPedido = onDocumentCreated(
+  /* Sin region declarada, esta funcion se desplegaba en us-central1 mientras
+     notifyTelegramOnNewOrder y procesarUsoCupon iban a southamerica-east1:
+     mismo trigger, dos regiones, y latencia extra contra una base que esta
+     en Sudamerica. */
+  { document: 'pedidos/{pedidoId}', region: 'southamerica-east1' },
+  async (event) => {
   const data = event.data?.data();
   if (!data) return;
 
