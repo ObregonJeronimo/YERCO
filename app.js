@@ -1227,11 +1227,27 @@ async function _onUserLogin(user, showModal=false) {
             telefono: '',
             direcciones: [],
             clienteId: clienteId,
-            creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+            creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+            ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
+            visitas: 1
         });
         clienteAuth = { uid: user.uid, email: user.email, nombre: '', apellido: '', telefono: '', direcciones: [], clienteId };
     } else {
         clienteAuth = { uid: user.uid, ...snap.data(), clienteId: snap.data().clienteId || null };
+        /* Registrar ultimo acceso para las metricas del admin.
+           Throttle diario: si ya se registro una visita hoy, no se vuelve a escribir. Sin esto
+           cada recarga de la pagina seria una escritura a Firestore. */
+        try {
+            const prev = snap.data().ultimoAcceso;
+            const prevDate = prev && prev.toDate ? prev.toDate() : (prev ? new Date(prev) : null);
+            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+            if (!prevDate || prevDate < hoy) {
+                ref.update({
+                    ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
+                    visitas: firebase.firestore.FieldValue.increment(1)
+                }).catch(e => console.warn('ultimoAcceso:', e.message));
+            }
+        } catch (e) { console.warn('ultimoAcceso error:', e.message); }
     }
     _updateNavAuth(user);
     /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */
