@@ -1,44 +1,29 @@
 /* =============================================================================
    ESTADÍSTICAS  —  YERCO
    =============================================================================
-   Un mes por vez, con calendario, y separando siempre LOCAL de ONLINE: son dos
-   negocios distintos y promediarlos no dice nada útil.
+   Un mes por vez, con calendario, y separando siempre las ventas cargadas a mano
+   de las que entran por la web: son dos canales distintos y promediarlos no dice
+   nada útil.
 
-   TRES REGLAS QUE VALE LA PENA TENER PRESENTES:
+   DOS REGLAS QUE VALE LA PENA TENER PRESENTES:
 
    1) La facturación se mide en NETO (sin el envío). El flete no es mercadería
       vendida: si entra al total, los meses con muchos envíos parecen mejores de
-      lo que fueron. El arqueo de caja hace lo contrario a propósito — ahí el
-      flete SÍ cuenta, porque esa plata entró al cajón.
+      lo que fueron.
 
    2) Qué es "online" no se deduce del campo `origen`: las ventas anteriores a
       que ese campo existiera no lo tienen. Se cruza con los pedidos del mes por
       su `ventaId`, así las viejas también quedan bien clasificadas.
-
-   3) El color de cada día del calendario dice CÓMO CERRÓ LA CAJA, no cuánto se
-      vendió. El monto va en la barrita de abajo. Mezclar las dos cosas en el
-      mismo color hacía que un día flojo y uno con faltante se vieran igual.
    ============================================================================= */
 
 const STATS_ESTADOS = {
-  sin_actividad: { color:'#2d333b', etq:'Sin actividad',        desc:'No hubo ventas ni se abrió la caja.' },
-  sin_caja:      { color:'#6e7681', etq:'Ventas sin caja',      desc:'Se vendió, pero ese día no se abrió la caja: si la que quedó abierta es la del día anterior, estas ventas entraron a SU arqueo.' },
-  /* La leyenda afirmaba que estas ventas "quedaron fuera del arqueo" y muchas veces es
-     MENTIRA: cuando se olvidan de cerrar la caja, getCajaAbiertaIdLive le pone a las ventas
-     de hoy el cajaId de la caja de ayer y entran al arqueo de ayer. El calendario igual las
-     pinta como "sin caja" porque la caja se agrupa por c.fecha (dia de apertura) y las
-     ventas por su propia fecha. Arreglar la agrupacion es un cambio grande; mientras tanto
-     que el texto no afirme algo falso, que es lo que hace dudar del arqueo del dia anterior. */
-  abierta:       { color:'#3b82f6', etq:'Caja abierta',         desc:'La caja se abrió y todavía no se cerró.' },
-  exacta:        { color:'#5FA87A', etq:'Cerró exacta',         desc:'Lo contado coincidió con lo esperado.' },
-  diferencia_ok: { color:'#EDB833', etq:'Diferencia chica',     desc:'Cerró con una diferencia dentro de la tolerancia configurada.' },
-  diferencia:    { color:'#e54545', etq:'Diferencia importante',desc:'Cerró con una diferencia mayor a la tolerancia. Debería tener un motivo cargado.' }
+  sin_actividad: { color:'#2d333b', etq:'Sin ventas', desc:'Ese día no se registró ninguna venta.' },
+  con_ventas:    { color:'#5FA87A', etq:'Con ventas', desc:'Hubo ventas. La barrita de abajo dice cuánto, comparado con el mejor día del mes.' }
 };
 
 let _statsMes = null;          /* 'AAAA-MM' */
-let _statsDatos = null;        /* { cajas, ventas, pedidos, porDia } */
+let _statsDatos = null;        /* { ventas, pedidos, porDia } */
 let _statsDiaAbierto = null;
-let _statsTolerancia = 500;
 
 const _sp = n => '$' + Math.round(Number(n || 0)).toLocaleString('es-AR');
 
@@ -84,10 +69,6 @@ async function loadStats() {
   if (!_statsMes) _statsMes = _mesActual();
   const cont = document.getElementById('statsBody');
   if (cont) cont.innerHTML = '<p style="color:var(--text-dim);font-size:0.88rem;padding:1rem 0">Cargando...</p>';
-  try {
-    const s = await db.collection('config').doc('cajaConfig').get();
-    if (s.exists && s.data().toleranciaDiferencia != null) _statsTolerancia = Number(s.data().toleranciaDiferencia);
-  } catch (e) { /* queda el valor por defecto */ }
   /* Token de peticion. statsMesNav escribe _statsMes y dispara loadStats() sin
      esperar, asi que dos clicks rapidos en la flecha de mes dejaban dos cargas en
      vuelo y pintaba la que terminaba ultima, que no es necesariamente la ultima
@@ -104,7 +85,7 @@ async function loadStats() {
 
 async function cargarDatosMes(mes) {
   const b = _mesBounds(mes);
-  const vac = { cajas: [], ventas: [], pedidos: [] };
+  const vac = { ventas: [], pedidos: [] };
   const pedir = async (col, campo, desde, hasta, tipo) => {
     try {
       const q = await db.collection(col).where(campo, '>=', desde).where(campo, '<=', hasta).get();
@@ -113,14 +94,12 @@ async function cargarDatosMes(mes) {
       return out;
     } catch (e) { console.warn('stats ' + col + ':', e); return []; }
   };
-  const [cajas, vMin, vMay, pedidos] = await Promise.all([
-    /* cajas.fecha es el string 'AAAA-MM-DD': el rango se compara alfabéticamente */
-    pedir('cajas', 'fecha', mes + '-01', mes + '-31', 'caja'),
+  const [vMin, vMay, pedidos] = await Promise.all([
     pedir('ventas', 'fecha', b.desde, b.hasta, 'minorista'),
     pedir('ventasMayoristas', 'fecha', b.desde, b.hasta, 'mayorista'),
     pedir('pedidos', 'creadoEn', b.desde, b.hasta, 'pedido')
   ]);
-  const d = Object.assign({}, vac, { cajas: cajas, ventas: vMin.concat(vMay), pedidos: pedidos });
+  const d = Object.assign({}, vac, { ventas: vMin.concat(vMay), pedidos: pedidos });
 
   /* Qué venta nació de un pedido web. No alcanza con mirar `origen`: las ventas
      anteriores a ese campo no lo tienen, y quedarían contadas como mostrador. */
@@ -137,46 +116,21 @@ async function cargarDatosMes(mes) {
 
 function agruparPorDia(d) {
   const dias = {};
-  const tocar = f => (dias[f] = dias[f] || { fecha:f, ventas:0, count:0, local:0, online:0, caja:null, cajas:[], movs:0 });
+  const tocar = f => (dias[f] = dias[f] || { fecha:f, ventas:0, count:0, local:0, online:0 });
   d.ventas.forEach(v => {
     if (!v._dia) return;
     const x = tocar(v._dia);
     x.ventas += v._neto; x.count++;
     if (v._online) x.online += v._neto; else x.local += v._neto;
   });
-  /* Un mismo dia puede tener DOS cajas: corte de turno, o una que se cerro por error y se
-     abrio otra a la tarde. Esto asignaba de a una, asi que la ultima que salia de la
-     consulta tapaba a la anterior, y entre dos documentos con la misma fecha el orden lo
-     decide el id: al azar. El dia podia quedar pintado de verde "cerro exacta" mientras el
-     faltante de $3.000 de la otra caja no aparecia en ninguna parte. Ahora se guardan todas
-     y en x.caja queda la PEOR, para que el color del dia y el detalle nunca escondan el
-     problema: una caja abierta gana (es lo que hay que ir a resolver) y, si las dos
-     cerraron, la de mayor diferencia. */
-  d.cajas.forEach(c => {
-    if (!c.fecha) return;
-    const x = tocar(c.fecha);
-    x.cajas.push(c);
-    const cAbierta = c.estado === 'abierta', yaAbierta = !!x.caja && x.caja.estado === 'abierta';
-    const peor = !x.caja
-      || (cAbierta && !yaAbierta)
-      || (cAbierta === yaAbierta
-          && Math.abs(Number(c.diferencia || 0)) > Math.abs(Number(x.caja.diferencia || 0)));
-    if (peor) x.caja = c;
-  });
   Object.values(dias).forEach(x => { x.estado = estadoDelDia(x); });
   return dias;
 }
 
-/* El color del día. Se separa "cerró exacta" de "cerró con diferencia chica"
-   porque son dos mensajes distintos: uno es que está todo bien y el otro que hay
-   algo suelto, aunque sea poco. */
+/* El color del día: si hubo ventas o no. La intensidad real la da la barrita
+   de abajo, que compara contra el mejor día del mes. */
 function estadoDelDia(x) {
-  const c = x.caja;
-  if (!c) return x.count ? 'sin_caja' : 'sin_actividad';
-  if (c.estado === 'abierta') return 'abierta';
-  const dif = Math.abs(Number(c.diferencia || 0));
-  if (dif === 0) return 'exacta';
-  return dif <= _statsTolerancia ? 'diferencia_ok' : 'diferencia';
+  return x.count ? 'con_ventas' : 'sin_actividad';
 }
 
 /* ============================ TOTALES ============================ */
@@ -186,7 +140,7 @@ function totalesMes(d) {
     facturado:0, count:0, local:0, localCount:0, online:0, onlineCount:0,
     envios:0, descuentos:0, porMedio:{}, productos:{},
     pedidosRecibidos:d.pedidos.length, pedidosConfirmados:0, pedidosCancelados:0,
-    diasConVenta:0, diasCajaCerrada:0, diferenciaAcumulada:0, diasConDiferencia:0
+    diasConVenta:0
   };
   d.ventas.forEach(v => {
     t.facturado += v._neto; t.count++;
@@ -206,15 +160,7 @@ function totalesMes(d) {
     if (p.estado === 'confirmado') t.pedidosConfirmados++;
     else if (p.estado === 'cancelado') t.pedidosCancelados++;
   });
-  Object.values(d.porDia).forEach(x => {
-    if (x.count) t.diasConVenta++;
-    if (x.caja && x.caja.estado === 'cerrada') {
-      t.diasCajaCerrada++;
-      const dif = Number(x.caja.diferencia || 0);
-      t.diferenciaAcumulada += dif;
-      if (dif !== 0) t.diasConDiferencia++;
-    }
-  });
+  Object.values(d.porDia).forEach(x => { if (x.count) t.diasConVenta++; });
   t.ticket = t.count ? t.facturado / t.count : 0;
   t.ticketLocal = t.localCount ? t.local / t.localCount : 0;
   t.ticketOnline = t.onlineCount ? t.online / t.onlineCount : 0;
@@ -313,7 +259,7 @@ function renderCalendario(t) {
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">' + celdas + '</div>' +
     '<p style="font-size:0.74rem;color:var(--text-dim);margin:0.9rem 0 0.6rem;line-height:1.5">' +
-      'El <b>color</b> dice cómo cerró la caja ese día. La <b>barrita de abajo</b> es cuánto se vendió, ' +
+      'El <b>color</b> dice si ese día hubo ventas. La <b>barrita de abajo</b> es cuánto se vendió, ' +
       'comparado con el mejor día del mes. Haga clic en un día para ver el detalle.</p>' +
     '<div style="display:grid;gap:0.4rem;border-top:1px solid var(--border);padding-top:0.75rem">' + leyenda + '</div>');
 }
@@ -322,7 +268,7 @@ function renderDetalleDia() {
   if (!_statsDiaAbierto) {
     return _card('Detalle del día',
       '<p style="font-size:0.85rem;color:var(--text-dim);line-height:1.55">Tocá un día del calendario para ver ' +
-      'qué se vendió, cómo se cobró y cómo cerró la caja.</p>');
+      'qué se vendió y cómo se cobró.</p>');
   }
   const f = _statsDiaAbierto;
   const x = _statsDatos.porDia[f];
@@ -330,11 +276,10 @@ function renderDetalleDia() {
   const dd = new Date(f + 'T12:00:00');
   const titulo = dd.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
 
-  if (!x || (!x.count && !x.caja)) {
+  if (!x || !x.count) {
     return _card(titulo.charAt(0).toUpperCase() + titulo.slice(1),
-      '<p style="font-size:0.85rem;color:var(--text-dim)">Sin ventas ni caja ese día.</p>');
+      '<p style="font-size:0.85rem;color:var(--text-dim)">Sin ventas ese día.</p>');
   }
-  const c = x.caja;
   let cuerpo =
     '<div style="display:inline-flex;align-items:center;gap:0.45rem;background:rgba(255,255,255,0.05);border-radius:20px;padding:0.25rem 0.7rem;margin-bottom:0.85rem;font-size:0.78rem;font-weight:600">' +
       '<span style="width:9px;height:9px;border-radius:50%;background:' + est.color + '"></span>' + est.etq + '</div>' +
@@ -342,28 +287,7 @@ function renderDetalleDia() {
     _fila('Ventas', String(x.count)) +
     _fila('Mostrador', _sp(x.local)) +
     _fila('Web', _sp(x.online));
-  if (c) {
-    cuerpo += '<div style="margin-top:0.9rem;padding-top:0.7rem;border-top:1px solid var(--border)">' +
-      '<div style="font-size:0.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:0.4rem">Caja #' + String(c.numero || 0).padStart(4, '0') + '</div>' +
-      _fila('Fondo inicial', _sp(c.montoInicial));
-    if (c.estado === 'cerrada') {
-      const dif = Number(c.diferencia || 0);
-      cuerpo +=
-        _fila('Esperado en efectivo', _sp(c.esperadoEfectivo)) +
-        _fila('Contado', _sp(c.contadoEfectivo)) +
-        _fila('Diferencia', (dif > 0 ? '+' : '') + _sp(dif), dif === 0 ? '#5FA87A' : (Math.abs(dif) <= _statsTolerancia ? '#EDB833' : '#e54545')) +
-        (c.totalIngresos ? _fila('Ingresos', '+ ' + _sp(c.totalIngresos)) : '') +
-        (c.totalEgresos ? _fila('Egresos', '− ' + _sp(c.totalEgresos)) : '') +
-        (c.motivoDiferencia ? '<p style="font-size:0.8rem;color:var(--text-dim);margin-top:0.6rem;line-height:1.5"><b>Motivo:</b> ' + esc(c.motivoDiferencia) + '</p>' : '') +
-        (c.observaciones ? '<p style="font-size:0.8rem;color:var(--text-dim);margin-top:0.3rem;line-height:1.5"><b>Obs:</b> ' + esc(c.observaciones) + '</p>' : '');
-    } else {
-      cuerpo += '<p style="font-size:0.82rem;color:var(--text-dim);margin-top:0.5rem">Todavía sin cerrar.</p>';
-    }
-    cuerpo += '</div>';
-  } else if (x.count) {
-    cuerpo += '<p style="font-size:0.82rem;color:#EDB833;margin-top:0.85rem;line-height:1.5">' +
-      'Hubo ventas pero no se abrió la caja, así que ese día no tiene arqueo.</p>';
-  }
+
   return _card(titulo.charAt(0).toUpperCase() + titulo.slice(1), cuerpo);
 }
 
@@ -396,7 +320,7 @@ function renderOnline(t) {
   return _card('Tienda online',
     _fila('Pedidos recibidos', String(t.pedidosRecibidos)) +
     _fila('Confirmados', String(t.pedidosConfirmados), '#5FA87A') +
-    _fila('Sin resolver', String(pendientes > 0 ? pendientes : 0), pendientes > 0 ? '#EDB833' : null) +
+    _fila('Sin resolver', String(pendientes > 0 ? pendientes : 0), pendientes > 0 ? '#e6a817' : null) +
     _fila('Cancelados', String(t.pedidosCancelados), t.pedidosCancelados ? '#e54545' : null) +
     _fila('Se convirtieron en venta', t.conversion.toFixed(0) + '%') +
     _fila('Cobrado por envíos', _sp(t.envios)) +

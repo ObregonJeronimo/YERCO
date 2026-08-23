@@ -3,11 +3,9 @@
    =============================================================================
    Fuente unica de los datos del negocio para el PANEL DE ADMIN.
 
-   Portado desde brotesdietetica, pero recortado a proposito. Alla este archivo
-   tambien hidrataba la tienda (hidratarDOM / aplicarContenidoDelPanel); aca no,
-   porque YERCO ya resuelve eso con loadSiteContent() en app.js, que lee
-   config/siteContent de Firestore. Meter las dos cosas seria pisar el contenido
-   que el Editor Web guarda desde el panel.
+   Deliberadamente NO hidrata la tienda: de eso ya se encarga loadSiteContent()
+   en app.js, que lee config/siteContent de Firestore. Tener las dos cosas
+   pisaria el contenido que el Editor Web guarda desde el panel.
 
    Entonces: lo de abajo son los valores que consume el ADMIN. Lo que se ve en la
    tienda se sigue editando desde /admin -> Editor Web, sin tocar codigo.
@@ -40,12 +38,11 @@ const NEGOCIO = {
      vacio o alguien se saca a si mismo, este mail sigue entrando. */
   mailDuenio: 'jeroobregon03@gmail.com',
 
-  /* ---- Quien desarrolla el sitio ----
+  /* ---- Contacto del desarrollador ----
      El link del footer lleva class="wa-dev" A PROPOSITO: app.js reescribe todos
      los links de wa.me con el numero del negocio EXCEPTO los .wa-dev. Si le
      sacas esa clase, el contacto del desarrollador pasa a apuntar al local. */
   dev: {
-    nombre: 'Deft Software Solutions',
     whatsapp: '5493512067970',
     telefonoDisplay: '+54 9 351 206-7970'
   }

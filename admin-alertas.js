@@ -50,21 +50,6 @@ async function _insumosParaAlertas(forzar) {
 async function calcularAlertas(forzar) {
   const out = [];
 
-  /* --- La caja quedó abierta de un día anterior -------------------------
-     Va primero y como crítica porque es la que se agrava sola: mientras siga
-     así, todo lo que se venda hoy entra al arqueo de ayer. */
-  try {
-    if (typeof cajaActual !== 'undefined' && cajaActual && cajaActual.estado === 'abierta' &&
-        typeof hoyAR === 'function' && cajaActual.fecha && cajaActual.fecha !== hoyAR()) {
-      out.push({
-        id: 'caja-vieja', nivel: 'critico', icono: 'bi-cash-stack',
-        titulo: 'La caja quedó abierta del ' + cajaActual.fecha,
-        detalle: 'Todo lo que se venda hoy entra al arqueo de ese día. Conviene cerrarla.',
-        items: [], seccion: 'caja'
-      });
-    }
-  } catch (e) { console.warn('alertas/caja:', e); }
-
   /* --- Productos ---------------------------------------------------------
      Los ocultos no entran: no están a la venta, así que su stock no es un
      problema que haya que resolver hoy. */
@@ -139,7 +124,7 @@ function _pintarBadge() {
   btn.setAttribute('aria-label', 'Alertas: ' + total + ' pendiente' + (total !== 1 ? 's' : ''));
 }
 
-/* La llaman loadProducts() y loadCaja() al terminar, y con forzar=true todo lo
+/* La llama loadProducts() al terminar, y con forzar=true todo lo
    que crea, edita o borra un producto o un insumo. Sin ese forzar, una alerta
    sigue mostrando lo que ya se resolvió hasta que se recargue la página. */
 async function actualizarBadgeAlertas(forzar) {
@@ -199,7 +184,7 @@ async function toggleAlertas(ev) {
   _pintarPanel();
 }
 
-/* Igual que el menú del historial de cajas: position:fixed y montado en <body>.
+/* Menú flotante: position:fixed y montado en <body>.
    La barra superior es sticky y tiene su propio contexto de apilado, así que un
    panel absolute adentro queda por debajo del contenido al hacer scroll. */
 function _ubicarPanelAlertas() {

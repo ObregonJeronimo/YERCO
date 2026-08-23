@@ -28,20 +28,12 @@ const ATAJOS_ACCIONES = {
                   desc:'Abre el formulario para cargar un producto al catálogo.' },
   buscar:       { def:'/', grupo:'Acciones', etq:'Buscar',
                   desc:'Coloca el cursor en el buscador de la pantalla actual.' },
-  /* --- caja --- */
-  cajaIngreso:  { def:'i', grupo:'Caja', etq:'Registrar ingreso',
-                  desc:'Plata que entra al cajón y no es una venta. Necesita la caja abierta.' },
-  cajaEgreso:   { def:'e', grupo:'Caja', etq:'Registrar egreso',
-                  desc:'Plata que sale del cajón: un pago, un gasto, un retiro. Necesita la caja abierta.' },
-  cajaCerrar:   { def:'x', grupo:'Caja', etq:'Cerrar caja y arquear',
-                  desc:'Abre el conteo de cierre del día.' },
   /* --- navegación --- */
-  irCaja:       { def:'1', grupo:'Ir a', etq:'Caja',          desc:'', sec:'caja' },
-  irVentas:     { def:'2', grupo:'Ir a', etq:'Ventas',        desc:'', sec:'ventas' },
-  irPedidos:    { def:'3', grupo:'Ir a', etq:'Pedidos',       desc:'', sec:'pedidos' },
-  irProductos:  { def:'4', grupo:'Ir a', etq:'Productos',     desc:'', sec:'products' },
-  irStats:      { def:'5', grupo:'Ir a', etq:'Estadísticas',  desc:'', sec:'stats' },
-  irConfig:     { def:'6', grupo:'Ir a', etq:'Configuración', desc:'', sec:'config' }
+  irVentas:     { def:'1', grupo:'Ir a', etq:'Ventas',        desc:'', sec:'ventas' },
+  irPedidos:    { def:'2', grupo:'Ir a', etq:'Pedidos',       desc:'', sec:'pedidos' },
+  irProductos:  { def:'3', grupo:'Ir a', etq:'Productos',     desc:'', sec:'products' },
+  irStats:      { def:'4', grupo:'Ir a', etq:'Estadísticas',  desc:'', sec:'stats' },
+  irConfig:     { def:'5', grupo:'Ir a', etq:'Configuración', desc:'', sec:'config' }
 };
 
 /* '?' y Escape no se pueden reasignar: son la salida de emergencia. Si alguien
@@ -175,22 +167,7 @@ function ejecutarAtajo(accion) {
       else _aviso('Esta pantalla no tiene buscador');
       break;
     }
-    case 'cajaIngreso':
-    case 'cajaEgreso':
-      if (!_cajaAbiertaEnPantalla()) { _aviso('Primero abra la caja'); if (_existe('switchSection')) switchSection('caja'); break; }
-      if (_existe('openMovModal')) openMovModal(accion === 'cajaIngreso' ? 'ingreso' : 'egreso');
-      break;
-    case 'cajaCerrar':
-      if (!_cajaAbiertaEnPantalla()) { _aviso('No hay caja abierta'); if (_existe('switchSection')) switchSection('caja'); break; }
-      if (_existe('openCierreModal')) openCierreModal();
-      break;
   }
-}
-
-/* Los modales de caja leen la caja que ya cargó la pantalla. Si nunca se entró a
-   la sección, no hay nada cargado y abrirlos daría un formulario que no guarda. */
-function _cajaAbiertaEnPantalla() {
-  return _existe('getCajaAbiertaId') && !!getCajaAbiertaId();
 }
 
 function _buscadorActivo() {

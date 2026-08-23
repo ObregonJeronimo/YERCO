@@ -172,7 +172,7 @@ function renderAsignarCodigoLista() {
       'border-bottom:1px solid rgba(255,255,255,0.05);padding:0.55rem 0.3rem;cursor:pointer;color:var(--text-main)">' +
       '<span style="flex:1;font-size:0.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
         esc(p.nombreMostrado || p.nombre) + '</span>' +
-      (p.codigoBarras ? '<span style="font-size:0.7rem;color:#EDB833;white-space:nowrap">ya tiene código</span>' : '') +
+      (p.codigoBarras ? '<span style="font-size:0.7rem;color:#e6a817;white-space:nowrap">ya tiene código</span>' : '') +
       '<span style="font-size:0.8rem;color:var(--text-dim);white-space:nowrap">$' + Number(p.precio || 0).toLocaleString('es-AR') + '</span>' +
     '</button>').join('');
 }

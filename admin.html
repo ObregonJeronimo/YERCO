@@ -28,19 +28,19 @@
         .product-img-cell{width:50px;height:50px;border-radius:8px;object-fit:cover}.cat-badge{background:var(--accent-bg);color:var(--accent-light);padding:0.25rem 0.6rem;border-radius:50px;font-size:0.75rem;font-weight:600;white-space:nowrap}.stock-badge{padding:0.25rem 0.6rem;border-radius:50px;font-size:0.75rem;font-weight:600}.stock-ok{background:rgba(90,154,90,0.12);color:var(--success)}.stock-low{background:var(--warning-bg);color:var(--warning)}.stock-out{background:var(--danger-bg);color:var(--danger)}.price-cell{font-family:var(--mono);font-weight:600;color:var(--accent-light)}.actions-cell{display:flex;gap:0.4rem}
         .btn-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all 0.2s;font-size:0.9rem}.btn-icon:hover{border-color:var(--accent);color:var(--accent-light)}.btn-icon.delete:hover{border-color:var(--danger);color:var(--danger)}
         .empty-state{text-align:center;padding:3rem;color:var(--text-dim)}.empty-state i{font-size:3rem;margin-bottom:1rem;display:block}
-        /* .card se usaba en 13 lugares (7 en este archivo y 6 en admin-caja.js) y no
-           estaba definida en ninguna parte: admin.html no carga ningun CSS externo.
-           El resultado era que toda la seccion Caja y los bloques de Configuracion se
-           veian planos, sin fondo ni borde, con solo el padding que traian inline. */
+        /* .card se usaba en varios lugares y no estaba definida en ninguna parte:
+           admin.html no carga ningun CSS externo. El resultado era que los bloques
+           de Configuracion se veian planos, sin fondo ni borde, con solo el padding
+           que traian inline. */
         .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
-        /* Menu "Acciones" del historial de cajas. Va con position:fixed y montado en
-           <body> a proposito: la tabla del historial vive dentro de un overflow-x:auto,
+        /* Menu "Acciones" de las tablas del historial. Va con position:fixed y
+           montado en <body> a proposito: la tabla vive dentro de un overflow-x:auto,
            y un menu absolute adentro queda recortado por ese scroll. */
         .menu-acciones{position:fixed;z-index:300;min-width:210px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:0.3rem;box-shadow:0 10px 30px rgba(0,0,0,0.45)}
         .menu-acciones button{display:flex;align-items:center;gap:0.6rem;width:100%;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:0.85rem;text-align:left;padding:0.55rem 0.7rem;border-radius:7px;cursor:pointer}
         .menu-acciones button:hover{background:var(--bg-input)}
         .menu-acciones button i{color:var(--text-dim);font-size:0.95rem}
-        .badge-editado{background:rgba(237,184,51,0.18);color:#EDB833;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:700;cursor:help}
+        .badge-editado{background:rgba(237,184,51,0.18);color:#e6a817;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:700;cursor:help}
         /* Campana de alertas. El panel va con position:fixed y montado en <body>:
            la barra superior es sticky y crea su propio contexto de apilado, asi
            que un panel absolute adentro se mete debajo del contenido al scrollear. */
@@ -62,7 +62,7 @@
         .alertas-item:focus-visible{outline:2px solid var(--accent-light);outline-offset:-2px}
         .alertas-ico{font-size:1rem;margin-top:1px;flex:0 0 auto}
         .alertas-item.critico .alertas-ico{color:var(--danger)}
-        .alertas-item.aviso .alertas-ico{color:#EDB833}
+        .alertas-item.aviso .alertas-ico{color:#e6a817}
         .alertas-txt{flex:1;min-width:0}
         .alertas-titulo{font-size:0.85rem;font-weight:600;line-height:1.3}
         .alertas-detalle{font-size:0.76rem;color:var(--text-dim);line-height:1.45;margin-top:2px}
@@ -108,7 +108,7 @@
         .sidebar{width:220px;background:var(--bg-card);border-right:1px solid var(--border);padding:1rem 0;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
         .sidebar-section{padding:0.5rem 0}.sidebar-divider{height:1px;background:var(--border);margin:0.5rem 1rem}
         /* Rotulo del grupo: separa lo del local fisico de lo de la tienda online.
-           Sin esto "Ventas" y "Caja" parecen lo mismo y no lo son. */
+           Sin esto las secciones parecen todas lo mismo y no lo son. */
         /* ===== Menus de la barra de Productos =====
            Eran once botones en fila con el mismo peso visual, y no todos se usan con
            la misma frecuencia: "Nuevo" es de todos los dias y "Exportar PDF M" es de
@@ -122,7 +122,7 @@
         .visor{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
             background:rgba(6,10,7,0.82);padding:1.5rem}
         .visor.show{display:flex}
-        .visor-caja{position:relative;background:var(--bg-card);border:1px solid var(--border);
+        .visor-marco{position:relative;background:var(--bg-card);border:1px solid var(--border);
             border-radius:12px;padding:0.75rem;max-width:min(440px,92vw);
             box-shadow:0 24px 60px rgba(0,0,0,0.5)}
         .visor-img{display:block;max-width:100%;max-height:62vh;width:auto;height:auto;
@@ -185,11 +185,11 @@
         .dlg-peligro{background:var(--danger);color:#fff;border:none}
         .dlg-peligro:hover{filter:brightness(1.08)}
         .dlg-pie .btn:focus-visible{outline:2px solid var(--accent-light);outline-offset:2px}
-        .stock-sin-guardar{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;background:rgba(237,184,51,0.12);border:1px solid rgba(237,184,51,0.35);color:#EDB833;border-radius:var(--radius);padding:0.7rem 0.9rem;margin-bottom:0.75rem;font-size:0.85rem}
+        .stock-sin-guardar{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;background:rgba(237,184,51,0.12);border:1px solid rgba(237,184,51,0.35);color:#e6a817;border-radius:var(--radius);padding:0.7rem 0.9rem;margin-bottom:0.75rem;font-size:0.85rem}
         .stock-sin-guardar[hidden]{display:none}
         .stock-row.sin-guardar{outline:1px solid rgba(237,184,51,0.55)}
-        .stock-row.sin-guardar .stock-input{border-color:#EDB833;color:#EDB833}
-        .stock-chip-sg{font-size:0.62rem;font-weight:700;color:#EDB833;background:rgba(237,184,51,0.18);padding:1px 6px;border-radius:8px;white-space:nowrap;margin-left:6px}
+        .stock-row.sin-guardar .stock-input{border-color:#e6a817;color:#e6a817}
+        .stock-chip-sg{font-size:0.62rem;font-weight:700;color:#e6a817;background:rgba(237,184,51,0.18);padding:1px 6px;border-radius:8px;white-space:nowrap;margin-left:6px}
         .stock-input{width:70px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.5rem;color:var(--text);font-family:var(--mono);font-size:0.9rem;text-align:center;outline:none}.stock-input:focus{border-color:var(--accent)}.stock-save{background:var(--accent);color:white;border:none;border-radius:6px;padding:0.4rem 0.75rem;font-size:0.8rem;cursor:pointer;font-weight:600;transition:all 0.2s}.stock-save:hover{background:var(--accent-light)}
         .admin-topbar-logo{height:36px;width:auto;}
         @media(max-width:768px){.topbar{padding:0.75rem 1rem}.admin-topbar-logo{height:28px}.user-badge{display:none}.topbar-right .btn{font-size:0.75rem;padding:0.3rem 0.6rem}}
@@ -207,9 +207,9 @@
         .price-page-info{font-size:0.75rem;color:var(--text-dim)}
         .sel-list{max-height:400px;overflow-y:auto}.sel-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.82rem;cursor:pointer;transition:background 0.15s}.sel-item:hover{background:var(--bg-input)}.sel-item.checked{background:var(--accent-bg)}.sel-item input{accent-color:var(--accent)}.sel-price{color:var(--text-dim);margin-left:auto;font-family:var(--mono)}
         .hist-list{max-height:calc(100vh - 350px);overflow-y:auto}.hist-item{padding:12px;border-bottom:1px solid var(--border);font-size:0.82rem}.hist-item:hover{background:var(--bg-input)}.hist-meta{display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap}.hist-date{color:var(--accent-light);font-family:var(--mono);font-size:0.75rem}.hist-user{color:var(--text-dim);font-size:0.75rem}.hist-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;text-transform:uppercase}.hist-badge.crear{background:#2d5a2720;color:#5a9a5a}.hist-badge.editar{background:var(--accent-bg);color:var(--accent-light)}.hist-badge.eliminar{background:var(--danger-bg);color:var(--danger)}.hist-badge.stock{background:var(--warning-bg);color:var(--warning)}.hist-badge.precios{background:#7c3aed20;color:#a78bfa}.hist-badge.importar{background:#0ea5e920;color:#67e8f9}
-        /* La caja registra abrir/cerrar/ingreso/egreso y la ficha de cliente registra
-           cobro, pero ninguno tenia color: en el historial salian como etiquetas
-           transparentes, ilegibles al lado de las que si lo tenian. */
+        /* La ficha de cliente registra el cobro de fiado y no tenia color: en el
+           historial salia como una etiqueta transparente, ilegible al lado de las
+           que si lo tenian. */
         .hist-badge.abrir{background:rgba(95,168,122,0.18);color:#5FA87A}
         .hist-badge.cerrar{background:rgba(229,69,69,0.18);color:#e54545}
         .hist-badge.ingreso{background:rgba(95,168,122,0.18);color:#5FA87A}
@@ -244,7 +244,7 @@
         .vprod-precio-alt{font-size:0.7rem;color:var(--text-dim);font-family:var(--mono);margin-top:1px}
         .vprod-chip{font-size:0.64rem;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap;letter-spacing:0.3px}
         .vprod-chip.ok{background:rgba(95,168,122,0.16);color:#5FA87A}
-        .vprod-chip.bajo{background:rgba(237,184,51,0.18);color:#EDB833}
+        .vprod-chip.bajo{background:rgba(237,184,51,0.18);color:#e6a817}
         .vprod-chip.cero{background:rgba(229,69,69,0.18);color:#e54545}
         .vprod-chip.neutro{background:var(--bg-input);color:var(--text-dim)}.venta-prod-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--border);font-size:0.82rem;cursor:pointer;transition:background 0.15s}.venta-prod-item:hover{background:var(--accent-bg)}
         .venta-items{max-height:200px;overflow-y:auto}.venta-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);font-size:0.82rem}.vi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vi-price{color:var(--text-dim);font-family:var(--mono);min-width:65px;text-align:right}.vi-sub{color:var(--accent-light);font-family:var(--mono);min-width:75px;text-align:right;font-weight:600}.vi-qty{width:50px;padding:3px;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);text-align:center;font-size:0.82rem}.vi-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.9rem}
@@ -392,7 +392,7 @@
     <nav class="sidebar" id="adminSidebar">
         <div class="sidebar-section">
             <div class="sidebar-rotulo">Local</div>
-            <a class="sidebar-item" onclick="switchSection('caja')"><i class="bi bi-cash-stack"></i><span>Caja</span></a>
+            
             <div class="sidebar-group" id="sidebarVentasGroup">
                 <a class="sidebar-item sidebar-group-toggle" onclick="toggleSidebarVentas()"><i class="bi bi-cart-check"></i><span>Ventas</span><i class="bi bi-chevron-right sidebar-chevron" id="ventasChevron"></i></a>
                 <div class="sidebar-subitems" id="sidebarVentasSub">
@@ -531,11 +531,11 @@
     <div class="section-content" id="sec-factura"><div class="toolbar" style="margin-bottom:1rem"><h3 style="font-size:1rem;font-weight:700;flex:1"><i class="bi bi-receipt"></i> Editor de Factura / Etiqueta</h3><button class="btn btn-primary" style="width:auto" onclick="saveFacturaFromEditor()" id="saveFcEditorBtn"><i class="bi bi-check-lg"></i> Guardar</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
 <div><div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-image"></i> 1. Logo</h4><div class="form-group"><div style="display:flex;align-items:center;gap:10px"><img id="fce_logoPreview" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-vacio="1" style="width:50px;height:50px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:var(--bg-input)"><button type="button" class="btn btn-secondary btn-sm" style="width:auto" onclick="document.getElementById('fce_logoFile').click()"><i class="bi bi-upload"></i> Cambiar logo</button><input type="file" class="file-input-hidden" id="fce_logoFile" accept="image/*" onchange="fceLogoFile=this.files[0];if(this.files[0]){document.getElementById('fce_logoPreview').src=URL.createObjectURL(this.files[0]);renderFcePreview();}"></div></div></div>
 <div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-chat-heart"></i> 2. Mensaje</h4><div class="form-group"><label>Agradecimiento</label><input type="text" class="form-input" id="fce_agradecimiento" oninput="renderFcePreview()"></div><div class="form-group"><label>Subtitulo</label><input type="text" class="form-input" id="fce_subtitulo" oninput="renderFcePreview()"></div></div>
-<div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-building"></i> 3. Datos empresa</h4><div class="form-group"><label>Nombre</label><input type="text" class="form-input" id="fce_nombre" oninput="renderFcePreview()"></div><div class="form-group"><label>Direccion</label><input type="text" class="form-input" id="fce_direccion" oninput="renderFcePreview()"></div><div class="form-group"><label>Email</label><input type="text" class="form-input" id="fce_email" oninput="renderFcePreview()"></div><div class="form-group"><label>Tel&eacute;fono <span style="font-size:0.72rem;color:var(--text-dim);font-weight:normal">(sale impreso en el ticket)</span></label><input type="text" class="form-input" id="fce_telefono" placeholder="351 687 2770" oninput="renderFcePreview()"></div><div class="form-group"><label>CUIT</label><input type="text" class="form-input" id="fce_cuit" oninput="renderFcePreview()" placeholder="XX-XXXXXXXX-X"></div></div>
+<div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-building"></i> 3. Datos empresa</h4><div class="form-group"><label>Nombre</label><input type="text" class="form-input" id="fce_nombre" oninput="renderFcePreview()"></div><div class="form-group"><label>Direccion</label><input type="text" class="form-input" id="fce_direccion" oninput="renderFcePreview()"></div><div class="form-group"><label>Email</label><input type="text" class="form-input" id="fce_email" oninput="renderFcePreview()"></div><div class="form-group"><label>Tel&eacute;fono <span style="font-size:0.72rem;color:var(--text-dim);font-weight:normal">(sale impreso en el ticket)</span></label><input type="text" class="form-input" id="fce_telefono" placeholder="351 531 4675" oninput="renderFcePreview()"></div><div class="form-group"><label>CUIT</label><input type="text" class="form-input" id="fce_cuit" oninput="renderFcePreview()" placeholder="XX-XXXXXXXX-X"></div></div>
 <div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.5rem"><i class="bi bi-list-check"></i> 4. Productos + Total</h4><p style="font-size:0.78rem;color:var(--text-dim)">Se generan automaticamente de la venta con precios, subtotal, envio y total.</p></div>
 <div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-share"></i> 5. Contacto + QR</h4><div class="form-group"><label>Instagram</label><input type="text" class="form-input" id="fce_instagram" oninput="renderFcePreview()"></div><div class="form-group"><label>WhatsApp</label><input type="text" class="form-input" id="fce_whatsapp" oninput="renderFcePreview()"></div><p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px">El QR se genera automatico por venta para reseñas.</p></div>
 <div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;margin-bottom:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem"><i class="bi bi-quote"></i> 6. Slogan + Pie</h4><div class="form-group"><label>Slogan final</label><input type="text" class="form-input" id="fce_slogan" oninput="renderFcePreview()"></div></div>
-<div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.5rem"><i class="bi bi-printer"></i> Formatos de papel</h4><p style="font-size:0.75rem;color:var(--text-dim);line-height:1.5;margin-bottom:0.9rem">El navegador no puede elegir la impresora: eso se elige en la ventana de impresion de Windows, y conviene dejarla marcada como predeterminada para cada tipo de ticket. Lo que se configura aca es el <b>tamano del papel</b>, para que el ticket salga bien cortado en cada una.</p><div style="border-left:3px solid var(--accent);padding-left:0.8rem;margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;margin-bottom:0.15rem">Ticket del mostrador</div><div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem">La etiqueta adhesiva grande del local.</div><div class="form-row"><div class="form-group"><label>Ancho (mm)</label><input type="number" class="form-input" id="fce_etiquetaAncho" value="100" min="40" max="210"></div><div class="form-group"><label>Alto (mm) 0=auto</label><input type="number" class="form-input" id="fce_etiquetaAlto" value="150" min="0" max="500"></div></div></div><div style="border-left:3px solid #EDB833;padding-left:0.8rem"><div style="font-size:0.82rem;font-weight:700;margin-bottom:0.15rem">Ticket de pedido web</div><div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem">La termica de rollo continuo.</div><div class="form-row"><div class="form-group"><label>Ancho (mm)</label><input type="number" class="form-input" id="fce_termicaAncho" value="80" min="40" max="210"></div><div class="form-group"><label>Alto (mm) 0=auto</label><input type="number" class="form-input" id="fce_termicaAlto" value="0" min="0" max="500"></div></div></div><p style="font-size:0.72rem;color:var(--text-dim);margin-top:0.7rem">Rollos comunes: 58, 72, 80 y 100 mm. Alto 0 = el papel se corta donde termina el ticket.</p></div></div>
+<div class="editor-section" style="background:var(--bg-card);border-radius:var(--radius);padding:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.5rem"><i class="bi bi-printer"></i> Formatos de papel</h4><p style="font-size:0.75rem;color:var(--text-dim);line-height:1.5;margin-bottom:0.9rem">El navegador no puede elegir la impresora: eso se elige en la ventana de impresion de Windows, y conviene dejarla marcada como predeterminada para cada tipo de ticket. Lo que se configura aca es el <b>tamano del papel</b>, para que el ticket salga bien cortado en cada una.</p><div style="border-left:3px solid var(--accent);padding-left:0.8rem;margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;margin-bottom:0.15rem">Ticket del mostrador</div><div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem">La etiqueta adhesiva grande del local.</div><div class="form-row"><div class="form-group"><label>Ancho (mm)</label><input type="number" class="form-input" id="fce_etiquetaAncho" value="100" min="40" max="210"></div><div class="form-group"><label>Alto (mm) 0=auto</label><input type="number" class="form-input" id="fce_etiquetaAlto" value="150" min="0" max="500"></div></div></div><div style="border-left:3px solid #e6a817;padding-left:0.8rem"><div style="font-size:0.82rem;font-weight:700;margin-bottom:0.15rem">Ticket de pedido web</div><div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem">La termica de rollo continuo.</div><div class="form-row"><div class="form-group"><label>Ancho (mm)</label><input type="number" class="form-input" id="fce_termicaAncho" value="80" min="40" max="210"></div><div class="form-group"><label>Alto (mm) 0=auto</label><input type="number" class="form-input" id="fce_termicaAlto" value="0" min="0" max="500"></div></div></div><p style="font-size:0.72rem;color:var(--text-dim);margin-top:0.7rem">Rollos comunes: 58, 72, 80 y 100 mm. Alto 0 = el papel se corta donde termina el ticket.</p></div></div>
 
 <div><div style="background:var(--bg-card);border-radius:var(--radius);padding:1rem;position:sticky;top:1rem"><h4 style="font-size:0.9rem;color:var(--accent-light);margin-bottom:0.75rem;text-align:center"><i class="bi bi-eye"></i> Preview etiqueta</h4><div id="fcePreview" style="background:#fff;color:#000;padding:15px;border-radius:8px;font-family:Arial,sans-serif;font-size:11px;max-width:340px;margin:0 auto;transform:scale(1.25);transform-origin:top center;margin-bottom:4rem"></div><button class="btn btn-secondary btn-sm" style="width:auto;margin-top:0.75rem;display:block;margin-left:auto;margin-right:auto" onclick="renderFcePreview()"><i class="bi bi-arrow-clockwise"></i> Actualizar preview</button></div></div>
 </div></div>
@@ -551,31 +551,6 @@
       </div>
       <div id="statsBody"></div>
       <div id="statsComparativa" style="margin-top:1rem"></div>
-    </div>
-
-    <div class="section-content" id="sec-caja">
-      <div class="toolbar" style="margin-bottom:1.25rem">
-        <h3 style="font-size:1.05rem;font-weight:700;flex:1">Caja del local</h3>
-        <button class="btn btn-secondary" style="width:auto" onclick="loadCaja()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
-      </div>
-      <div id="cajaTop"><p style="color:var(--text-dim);font-size:0.88rem">Cargando...</p></div>
-      <div class="card" style="padding:1.25rem;margin-top:1.5rem">
-        <div class="toolbar" style="margin-bottom:0.85rem">
-          <h3 style="font-size:0.95rem;font-weight:700;flex:1;margin:0">Cajas anteriores</h3>
-          <select class="form-input" id="cajaHistMes" style="width:auto;min-width:165px" onchange="loadHistorialCajas()"></select>
-          <select class="form-input" id="cajaHistDif" style="width:auto;min-width:150px" onchange="cajaHistFiltrar()">
-            <option value="">Todas</option>
-            <option value="con">Con diferencia</option>
-            <option value="exactas">Exactas</option>
-            <option value="faltante">Con faltante</option>
-            <option value="sobrante">Con sobrante</option>
-          </select>
-          <button class="btn btn-secondary" style="width:auto" onclick="loadHistorialCajas()" title="Recargar"><i class="bi bi-arrow-clockwise"></i></button>
-        </div>
-        <div id="cajaHistResumen" style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.7rem"></div>
-        <div id="cajaHistorial"><p style="color:var(--text-dim);font-size:0.85rem">Cargando...</p></div>
-        <div id="cajaHistPager"></div>
-      </div>
     </div>
 
     <div class="section-content" id="sec-config">
@@ -653,7 +628,7 @@
     <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.55;margin-bottom:1.1rem">
       Solo estas cuentas de Google pueden abrir <b>/admin</b>. Al agregar un correo,
       el acceso queda habilitado de inmediato.<br>
-      <span style="color:#EDB833">Para subir im&aacute;genes</span> es necesario cerrar sesi&oacute;n e ingresar
+      <span style="color:#e6a817">Para subir im&aacute;genes</span> es necesario cerrar sesi&oacute;n e ingresar
       nuevamente una vez: ese permiso viaja en la sesi&oacute;n de Google, no en el panel.
     </p>
     <div class="form-row" style="grid-template-columns:1fr auto;align-items:end;margin-bottom:1.25rem">
@@ -775,7 +750,6 @@
         <p style="font-size:0.83rem;color:var(--text-dim);margin-bottom:0.7rem;line-height:1.5">Seleccione las ventas que el cliente est&aacute; pagando.</p>
         <div id="cobroCCLista" style="max-height:38vh;overflow-y:auto"></div>
         <div id="cobroCCTotal" style="border-top:1px solid var(--border);margin-top:0.8rem;padding-top:0.8rem"></div>
-        <div id="cobroCCCaja" style="font-size:0.78rem;color:var(--text-dim);margin-top:0.6rem;line-height:1.5"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeCobroCC()">Cancelar</button>
@@ -807,9 +781,9 @@
    21:15 quedaba fechada al dia siguiente.
    keyDeMedio: normaliza el medio de pago escrito a mano a un valor fijo, para
    poder sumar por medio sin depender de como lo tipearon.
-   neto: el envio que cobra el negocio ENTRA a la caja, pero NO es venta de
-   mercaderia. Para el arqueo se usa el bruto; para estadisticas, el neto.
-   Confundirlos hace que el arqueo de faltante por el monto exacto del flete. */
+   neto: el envio que cobra el negocio NO es venta de mercaderia. Las estadisticas
+   usan el neto, asi que los meses con muchos envios no parecen mejores de lo que
+   fueron. */
 function hoyAR(d){const x=d||new Date();return new Date(x.getTime()-x.getTimezoneOffset()*60000).toISOString().slice(0,10);}
 function keyDeMedio(m){const t=(m||'').toLowerCase();
   if(t.startsWith('efec'))return'efectivo';
@@ -1026,7 +1000,7 @@ function deltasDeItems(items,signo){
         _initAuth();
         function logout(){auth.signOut();}
         function toggleSidebarVentas(){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(!sub)return;const open=sub.classList.toggle('open');if(chev)chev.style.transform=open?'rotate(90deg)':'rotate(0deg)';}
-        function switchSection(sec){document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));const el=document.getElementById('sec-'+sec);if(el)el.classList.add('active');document.querySelectorAll('.sidebar-item').forEach(i=>{const oc=i.getAttribute('onclick')||'';if(oc.includes("'"+sec+"'"))i.classList.add('active');});if(sec==='ventas'||sec==='ventasMay'){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(sub&&!sub.classList.contains('open')){sub.classList.add('open');if(chev)chev.style.transform='rotate(90deg)';}}if(sec==='stock')renderStockList();if(sec==='historial')loadHistorial();if(sec==='ventas'){_buildMesOptions('ventaMesFiltro');loadVentas();}if(sec==='ventasMay'){_buildMesOptions('ventaMayMesFiltro');loadVentasMay();}if(sec==='pedidos'){loadPedidos();}else if(_pedidosUnsubscribe){_pedidosUnsubscribe();_pedidosUnsubscribe=null;}if(sec==='clientes')loadClientes();if(sec==='clientesAuth')loadClientesAuth();if(sec==='editor')loadSiteContent();if(sec==='resenas')loadAdminReviews();if(sec==='cupones')loadCupones();if(sec==='factura')loadFceEditor();if(sec==='insumos')loadInsumos();if(sec==='caja')loadCaja();if(sec==='config'){loadAdmins();/* Los dos admins trabajan a la vez y este formulario se llenaba UNA sola vez, al iniciar sesion. El que dejaba la pestana abierta desde la manana entraba a Configuracion, tocaba una sola casilla y al Guardar escribia TODOS los campos con los valores viejos que tenia en pantalla: le revertia al otro el precio de envio recien cambiado (y el atajo, que se guarda con .set del mapa cargado al login). Ahora el formulario se relee de la base cada vez que se entra a la seccion. */loadPedidosCfgEditor();loadAtajos();}if(sec==='stats')loadStats();document.getElementById('adminSidebar').classList.remove('open');}
+        function switchSection(sec){document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));const el=document.getElementById('sec-'+sec);if(el)el.classList.add('active');document.querySelectorAll('.sidebar-item').forEach(i=>{const oc=i.getAttribute('onclick')||'';if(oc.includes("'"+sec+"'"))i.classList.add('active');});if(sec==='ventas'||sec==='ventasMay'){const sub=document.getElementById('sidebarVentasSub');const chev=document.getElementById('ventasChevron');if(sub&&!sub.classList.contains('open')){sub.classList.add('open');if(chev)chev.style.transform='rotate(90deg)';}}if(sec==='stock')renderStockList();if(sec==='historial')loadHistorial();if(sec==='ventas'){_buildMesOptions('ventaMesFiltro');loadVentas();}if(sec==='ventasMay'){_buildMesOptions('ventaMayMesFiltro');loadVentasMay();}if(sec==='pedidos'){loadPedidos();}else if(_pedidosUnsubscribe){_pedidosUnsubscribe();_pedidosUnsubscribe=null;}if(sec==='clientes')loadClientes();if(sec==='clientesAuth')loadClientesAuth();if(sec==='editor')loadSiteContent();if(sec==='resenas')loadAdminReviews();if(sec==='cupones')loadCupones();if(sec==='factura')loadFceEditor();if(sec==='insumos')loadInsumos();if(sec==='config'){loadAdmins();/* Los dos admins trabajan a la vez y este formulario se llenaba UNA sola vez, al iniciar sesion. El que dejaba la pestana abierta desde la manana entraba a Configuracion, tocaba una sola casilla y al Guardar escribia TODOS los campos con los valores viejos que tenia en pantalla: le revertia al otro el precio de envio recien cambiado (y el atajo, que se guarda con .set del mapa cargado al login). Ahora el formulario se relee de la base cada vez que se entra a la seccion. */loadPedidosCfgEditor();loadAtajos();}if(sec==='stats')loadStats();document.getElementById('adminSidebar').classList.remove('open');}
         /* Visor de imagen. Se abre desde la miniatura de la tabla y no deja tocar nada
            de atras hasta cerrarlo: el fondo tapa la pantalla completa, asi que un click
            afuera cae en el propio fondo y cierra, en vez de apretar el boton que estaba
@@ -2216,7 +2190,7 @@ function deltasDeItems(items,signo){
                subtotal. Antes se topeaba contra el subtotal y los dos se restaban por separado:
                un pedido de $2.200 con un cupon de $2.000 mas un 20% de descuento daba
                2200 - 440 - 2000 = -240, o sea una venta con total negativo, que despues se
-               guardaba asi y ensuciaba el arqueo y las estadisticas. */
+               guardaba asi y ensuciaba las estadisticas. */
             const cuponMonto=window._pedidoCuponVenta
                 ? Math.min(Math.max(0,Number(window._pedidoCuponVenta.monto||0)),Math.max(0,subtotal-descuentoMonto))
                 : 0;
@@ -2226,7 +2200,7 @@ function deltasDeItems(items,signo){
                ENVIO_PRECIO y ENVIO_GRATIS_DESDE son los de HOY: entrar a una venta de marzo
                solo para corregir el nombre mal escrito del cliente y guardar le subia el envio
                a la tarifa nueva, y el total dejaba de coincidir con el ticket que el cliente
-               tiene en la mano (y con la plata que entro a la caja). Con el umbral de envio
+               tiene en la mano. Con el umbral de envio
                gratis pasaba al reves: una venta que pago flete quedaba en cero.
                Si se cambia el tipo de entrega se recotiza, porque ahi el envio cambio de verdad. */
             if(editingVentaId){
@@ -2451,12 +2425,7 @@ const dProd=(editingVentaOriginal.stockDescontado?deltasDeItems(editingVentaOrig
 const dNuevo=deltasDeItems(ventaItems,-1);
 Object.keys(dNuevo).forEach(k=>{dProd[k]=(dProd[k]||0)+dNuevo[k];});
 await aplicarStockProductos(dProd);
-/* 4. Actualizar la venta */const ventaUpdate={fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,medioPagoKey:keyDeMedio(document.getElementById('ventaMedio').value),stockDescontado:!!DESCONTAR_STOCK,editadoEn:new Date(),editadoPor:auth.currentUser?auth.currentUser.email:''};await db.collection('ventas').doc(editingVentaId).update(ventaUpdate);/* Si la venta era de una caja YA CERRADA, hay que marcar la caja. El arqueo queda
-   congelado a proposito, asi que a partir de esta edicion el listado de ventas de ese dia
-   no cuadra mas con el cierre de ese dia, y no habia forma de darse cuenta: el cartel
-   EDITADA del historial de cajas existe desde el principio (admin-caja.js:285) pero nadie
-   escribia el campo, solo se escribia en false al abrir la caja. Se guarda tambien el delta
-   acumulado para poder explicar cuanto se movio despues del cierre. */const _cajaIdVenta=(editingVentaOriginal&&editingVentaOriginal.cajaId)||(ventaPrevia&&ventaPrevia.cajaId)||null;if(_cajaIdVenta){try{const _cjRef=db.collection('cajas').doc(_cajaIdVenta);const _cjSnap=await _cjRef.get();if(_cjSnap.exists&&_cjSnap.data().estado==='cerrada'){await _cjRef.update({editadaPostCierre:true,ventasEditadasDelta:firebase.firestore.FieldValue.increment(Number(total||0)-(ventaPrevia?Number(ventaPrevia.total||0):0))});}}catch(e){console.warn('No se pudo marcar la caja como editada:',e);}}/* Log con detalles */const origTotal=ventaPrevia?(ventaPrevia.total||0):0;const origItems=editingVentaOriginal.items.length;const newItems=ventaItems.length;let detalle='Total: $'+origTotal.toLocaleString('es-AR')+' -> $'+total.toLocaleString('es-AR');if(origItems!==newItems)detalle+=' | items: '+origItems+' -> '+newItems;if((editingVentaOriginal.tipoEntrega||'envio')!==ventaTipoEntrega)detalle+=' | entrega: '+(editingVentaOriginal.tipoEntrega||'envio')+' -> '+ventaTipoEntrega;logAction('editar','Venta #'+numActual+' editada',detalle);showAdminToast('Venta #'+numActual+' actualizada','success');}else{/* === MODO CREAR === *//* En transaccion, como ya lo hacia saveVentaMay. Con get()+set() sueltos, los dos
+/* 4. Actualizar la venta */const ventaUpdate={fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,medioPagoKey:keyDeMedio(document.getElementById('ventaMedio').value),stockDescontado:!!DESCONTAR_STOCK,editadoEn:new Date(),editadoPor:auth.currentUser?auth.currentUser.email:''};await db.collection('ventas').doc(editingVentaId).update(ventaUpdate);/* Log con detalles */const origTotal=ventaPrevia?(ventaPrevia.total||0):0;const origItems=editingVentaOriginal.items.length;const newItems=ventaItems.length;let detalle='Total: $'+origTotal.toLocaleString('es-AR')+' -> $'+total.toLocaleString('es-AR');if(origItems!==newItems)detalle+=' | items: '+origItems+' -> '+newItems;if((editingVentaOriginal.tipoEntrega||'envio')!==ventaTipoEntrega)detalle+=' | entrega: '+(editingVentaOriginal.tipoEntrega||'envio')+' -> '+ventaTipoEntrega;logAction('editar','Venta #'+numActual+' editada',detalle);showAdminToast('Venta #'+numActual+' actualizada','success');}else{/* === MODO CREAR === *//* En transaccion, como ya lo hacia saveVentaMay. Con get()+set() sueltos, los dos
    admins registrando a la vez leian el mismo contador y las dos ventas salian con
    el mismo numero: dos tickets distintos con el mismo #, y una pisando a la otra
    en cualquier listado que busque por numero. */
@@ -2472,7 +2441,7 @@ const _pedOrigen=window._pedidoOrigenVentaId?pedidosData.find(x=>x.docId===windo
    Confundirlas hacia que una venta de mostrador comun dejara de descontar. */
 const _yaDescontado=!!(_pedOrigen&&_pedOrigen.stockDescontado);
 const _ventaPoseeStock=_yaDescontado||!!DESCONTAR_STOCK;
-const venta={numero:num,resenaId:resenaOk?resenaId:null,fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,cupon:window._pedidoCuponVenta||null,usuario:auth.currentUser?auth.currentUser.email:'',cajaId:(typeof getCajaAbiertaIdLive==='function'?await getCajaAbiertaIdLive():null),medioPagoKey:(typeof keyDeMedio==='function'?keyDeMedio(document.getElementById('ventaMedio').value):null),origen:window._pedidoOrigenVentaId?'web':'mostrador',pedidoId:window._pedidoOrigenVentaId||null,stockDescontado:_ventaPoseeStock,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};const ventaRefNueva=await db.collection('ventas').add(venta);/* el contador ya quedo escrito dentro de la transaccion de arriba *//* Descontar stock de productos (gondola). Si la venta viene de un pedido web el
+const venta={numero:num,resenaId:resenaOk?resenaId:null,fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,cupon:window._pedidoCuponVenta||null,usuario:auth.currentUser?auth.currentUser.email:'',medioPagoKey:(typeof keyDeMedio==='function'?keyDeMedio(document.getElementById('ventaMedio').value):null),origen:window._pedidoOrigenVentaId?'web':'mostrador',pedidoId:window._pedidoOrigenVentaId||null,stockDescontado:_ventaPoseeStock,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};const ventaRefNueva=await db.collection('ventas').add(venta);/* el contador ya quedo escrito dentro de la transaccion de arriba *//* Descontar stock de productos (gondola). Si la venta viene de un pedido web el
    stock YA lo descontó la tienda al confirmar, asi que no se resta dos veces. */
 /* Se mira la bandera del pedido, no de donde viene la venta. Antes alcanzaba con
    que la venta naciera de un pedido web para NO descontar, dando por hecho que la
@@ -2735,8 +2704,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
            que filtrando marzo seguia mostrando el mes corriente.
 
            Se cuenta el NETO, sin el envio: el flete no es mercaderia vendida. Es el
-           mismo criterio que la seccion Estadisticas, y el opuesto al del arqueo de
-           caja, donde el flete SI cuenta porque esa plata entro al cajon.
+           mismo criterio que la seccion Estadisticas.
 
            El fiado reemplaza a "Este Mes" porque es lo unico de los cuatro sobre lo
            que se puede hacer algo: es plata facturada que todavia no se cobro. */
@@ -3606,8 +3574,8 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
            Antes esto era solo el historial de ventas. Lo que faltaba era la cuenta
            corriente: el panel mostraba un total "Fiado sin cobrar" que solo crecia,
            porque no habia ninguna forma de decir "esto ya me lo pagaron". El concepto
-           "Cobro de fiado" de la caja existia, pero era un monto suelto que no bajaba
-           la deuda de nadie.
+           El "Cobro de fiado" existia como monto suelto, pero no bajaba la deuda
+           de nadie.
 
            Una venta fiada esta impaga mientras no tenga ccPagado. Se saldan ventas
            ENTERAS, no montos sueltos: un cobro que no se imputa a una venta concreta
@@ -3717,12 +3685,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                     '<span style="font-weight:700;white-space:nowrap">$'+Number(v.total||0).toLocaleString('es-AR')+'</span>'+
                 '</label>';
             }).join('');
-            /* Si no hay caja abierta el cobro se registra igual, pero no entra a
-               ningun arqueo. Se avisa ANTES, no despues. */
-            const hayCaja=typeof getCajaAbiertaId==='function' && !!getCajaAbiertaId();
-            document.getElementById('cobroCCCaja').innerHTML=hayCaja
-                ? '<i class="bi bi-check-circle" style="color:#5FA87A"></i> Se va a registrar como ingreso en la caja abierta.'
-                : '<i class="bi bi-exclamation-triangle" style="color:#EDB833"></i> No hay ninguna caja abierta: la deuda se salda igual, pero esta plata no va a figurar en ningun arqueo.';
+            
             _pintarTotalCobroCC();
             document.getElementById('cobroCCModal').classList.add('show');
         }
@@ -3754,44 +3717,19 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
             try{
                 const quien=(auth.currentUser&&auth.currentUser.email)||'-';
                 const nros=sel.map(v=>'#'+nroVta(v.numero||0)).join(', ');
-                /* La caja se consulta EN VIVO, igual que al guardar una venta: si el
-                   cajero nunca entro a la seccion Caja, la variable local esta vacia
-                   y el ingreso se perderia. */
-                let cajaId=null;
-                if(typeof getCajaAbiertaIdLive==='function'){ try{ cajaId=await getCajaAbiertaIdLive(); }catch(_e){} }
 
                 const batch=db.batch();
                 sel.forEach(v=>batch.update(db.collection('ventas').doc(v.docId),{
                     ccPagado:true,
                     ccPagadoEn:firebase.firestore.FieldValue.serverTimestamp(),
-                    ccPagadoPor:quien,
-                    ccPagadoEnCaja:cajaId||null
+                    ccPagadoPor:quien
                 }));
                 await batch.commit();
 
-                /* El ingreso a la caja va DESPUES de saldar y en su propio try: si
-                   fallara, la deuda ya quedo saldada (que es lo que el cliente pago) y
-                   lo unico que falta es una linea del arqueo, que se puede cargar a
-                   mano. Al reves seria peor: plata contada en la caja y el cliente
-                   figurando como que sigue debiendo. */
-                if(cajaId){
-                    try{
-                        await db.collection('cajas').doc(cajaId).collection('movimientos').add({
-                            tipo:'ingreso', concepto:'cobro_cuenta_corriente', monto:total,
-                            detalle:'Cobro de '+_fichaCliente.nombre+' - '+nros,
-                            usuario:quien, fecha:firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }catch(err){
-                        showAdminToast('La deuda se saldo, pero no se pudo cargar el ingreso en la caja: '+err.message,'error');
-                    }
-                }
-
-                logAction('cobro','Cobro de fiado: '+_fichaCliente.nombre+' $'+total.toLocaleString('es-AR'),
-                    nros+(cajaId?'':' | Sin caja abierta: no entro a ningun arqueo'));
+                logAction('cobro','Cobro de fiado: '+_fichaCliente.nombre+' $'+total.toLocaleString('es-AR'), nros);
                 showAdminToast('Cobro registrado por $'+total.toLocaleString('es-AR'),'success');
                 closeCobroCC();
                 await showClienteHist(_fichaCliente.id,_fichaCliente.nombre);
-                if(typeof loadCaja==='function' && cajaId) loadCaja();
             }catch(e){
                 showAdminToast('No se pudo registrar el cobro: '+e.message,'error');
             }finally{
@@ -5092,7 +5030,7 @@ async function previewEditorImg(input,field){
             /* Fecha con el helper hoyAR(), el mismo que usa el modal minorista. Con toISOString()
                pelado el campo mostraba la fecha UTC: despues de las 21:00 de Cordoba (UTC-3) una
                venta mayorista se guardaba con la fecha del dia siguiente, se listaba, se filtraba
-               por mes y se contaba en el arqueo como de otro dia; y cada vez que se volvia a
+               por mes como de otro dia; y cada vez que se volvia a
                guardar de noche se corria un dia mas. */
             const today=hoyAR();
             document.getElementById('ventaMayFecha').value=today;
@@ -5282,8 +5220,6 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
                 const clienteId=document.getElementById('ventaMayClienteId').value||null;
                 const fecha=new Date(document.getElementById('ventaMayFecha').value+'T12:00:00');
                 const medioPago=document.getElementById('ventaMayMedioPago').value;
-                /* cajaId NO va en ventaData: como la rama de edicion hace update({...ventaData}), pondria
-                   la venta en la caja de HOY al editar una de la semana pasada. Solo se estampa al crear. */
                 /* El desplegable de clientes mayoristas devuelve 'auth:<uid>' y eso se guardaba crudo en
                    clienteId: la ficha del cliente mostraba "#auth:kJ2h..." como si fuera el numero de
                    cliente, y ninguna consulta encontraba la venta (ni el where('clienteAuthUid') ni el
@@ -5315,7 +5251,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
                     const cntRef=db.collection('config').doc('ventasMayCount');
                     let num=1;
                     await db.runTransaction(async tx=>{const s=await tx.get(cntRef);num=(s.exists?parseInt(s.data().count)||0:0)+1;tx.set(cntRef,{count:num});});
-                    await db.collection('ventasMayoristas').add({...ventaData,numero:num,cajaId:(typeof getCajaAbiertaIdLive==='function'?await getCajaAbiertaIdLive():null),origen:'mostrador',stockDescontado:!!DESCONTAR_STOCK,usuario:auth.currentUser?auth.currentUser.email:'',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
+                    await db.collection('ventasMayoristas').add({...ventaData,numero:num,origen:'mostrador',stockDescontado:!!DESCONTAR_STOCK,usuario:auth.currentUser?auth.currentUser.email:'',creadoEn:firebase.firestore.FieldValue.serverTimestamp()});
                     await aplicarStockProductos(deltasDeItems(ventaMayItems,-1));
                     /* Descontar stock insumos */
                     await aplicarStockInsumos(deltasDeInsumos(ventaMayInsumosUsados,-1));
@@ -5986,7 +5922,6 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
         </script>
     <script src="admin-dialogo.js"></script>
     <script src="admin-pagination.js"></script>
-    <script src="admin-caja.js"></script>
     <script src="admin-alertas.js"></script>
     <script src="admin-stats.js"></script>
     <script src="admin-atajos.js"></script>
@@ -5994,7 +5929,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
     <script src="admin-admins.js"></script>
 
     <div class="visor" id="visorImagen" onclick="if(event.target===this)cerrarImagen()">
-      <div class="visor-caja" role="dialog" aria-modal="true" aria-label="Imagen del producto">
+      <div class="visor-marco" role="dialog" aria-modal="true" aria-label="Imagen del producto">
         <button type="button" class="visor-x" onclick="cerrarImagen()" title="Cerrar" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
         <img class="visor-img" id="visorImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-vacio="1" alt="">
         <p class="visor-pie" id="visorPie"></p>
@@ -6022,130 +5957,11 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
     </div></div>
 
 
-    <div class="modal-overlay" id="abrirCajaModal"><div class="modal-box" style="max-width:460px;width:96vw">
-      <div class="modal-header"><h3><i class="bi bi-unlock"></i> Abrir caja</h3><button class="modal-close" onclick="closeAbrirCajaModal()">&times;</button></div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Fondo inicial (efectivo con el que arranca)</label>
-          <input type="text" inputmode="numeric" class="form-input" id="cajaMontoInicial" placeholder="20000" oninput="limpiarMonto(this)">
-          <small style="color:var(--text-dim);font-size:0.78rem">Sugerido: lo que qued&oacute; en el caj&oacute;n al cerrar la caja anterior.</small>
-        </div>
-        <div class="form-group">
-          <label>Nota (opcional)</label>
-          <input type="text" class="form-input" id="cajaNotaApertura" maxlength="120" placeholder="Ej: falta cambio chico">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeAbrirCajaModal()">Cancelar</button>
-        <button class="btn btn-primary" id="cajaAbrirBtn" onclick="abrirCaja()"><i class="bi bi-unlock"></i> Abrir caja</button>
-      </div>
-    </div></div>
+    
 
-    <div class="modal-overlay" id="movModal"><div class="modal-box" style="max-width:460px;width:96vw">
-      <div class="modal-header"><h3 id="movTitulo"><i class="bi bi-arrow-down-circle"></i> Registrar movimiento</h3><button class="modal-close" onclick="closeMovModal()">&times;</button></div>
-      <div class="modal-body">
-        <div class="form-group"><label>Concepto</label><select class="form-input" id="movConcepto"></select></div>
-        <div class="form-group"><label>Monto</label><input type="text" inputmode="numeric" class="form-input" id="movMonto" placeholder="0" oninput="limpiarMonto(this)"></div>
-        <div class="form-group">
-          <label>Detalle <span style="color:var(--danger)">*</span></label>
-          <input type="text" class="form-input" id="movDetalle" maxlength="160" placeholder="Ej: pago flete Fruticor, remito 4412">
-          <small style="color:var(--text-dim);font-size:0.78rem">Obligatorio: es lo que despu&eacute;s explica la diferencia en el arqueo.</small>
-        </div>
-        <div class="form-group" id="movMotivoWrap" style="display:none">
-          <label>Motivo del cambio <span style="color:var(--text-dim);font-weight:400">(opcional)</span></label>
-          <input type="text" class="form-input" id="movMotivo" maxlength="160" placeholder="Ej: hab&iacute;a cargado 5.000 de m&aacute;s">
-          <small style="color:var(--text-dim);font-size:0.78rem">Queda guardado junto con los valores anteriores. El movimiento no se borra nunca: se corrige y se deja el rastro.</small>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeMovModal()">Cancelar</button>
-        <button class="btn btn-primary" id="movGuardarBtn" onclick="guardarMovimiento()"><i class="bi bi-check-lg"></i> Guardar</button>
-      </div>
-    </div></div>
+    
 
-    <!-- Corte parcial: el vistazo a mitad del dia. Muestra lo mismo que el cierre
-         pero no cierra nada. Sin esto, la unica forma de ver cuanto deberia haber
-         era abrir el modal de cierre y cancelar, con el riesgo obvio. -->
-    <div class="modal-overlay" id="corteParcialModal"><div class="modal-box" style="max-width:520px;width:96vw">
-      <div class="modal-header">
-        <h3 id="corteParcialTitulo"><i class="bi bi-eyeglasses"></i> Corte parcial</h3>
-        <button class="modal-close" onclick="closeCorteParcialModal()">&times;</button>
-      </div>
-      <div class="modal-body" id="corteParcialBody"></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeCorteParcialModal()">Cerrar</button>
-        <button class="btn btn-primary" onclick="imprimirCorteParcial()"><i class="bi bi-printer"></i> Imprimir</button>
-      </div>
-    </div></div>
-
-    <!-- Detalle de una caja cerrada. Todo lo que muestra sale de los totales
-         CONGELADOS del documento, no se recalcula: tiene que seguir diciendo lo
-         que se conto aquel dia aunque despues se edite una venta. -->
-    <div class="modal-overlay" id="cajaDetalleModal"><div class="modal-box" style="max-width:760px;width:96vw">
-      <div class="modal-header">
-        <h3 id="cajaDetalleTitulo"><i class="bi bi-receipt-cutoff"></i> Detalle de caja</h3>
-        <button class="modal-close" onclick="closeCajaDetalleModal()">&times;</button>
-      </div>
-      <div class="modal-body" id="cajaDetalleBody"></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeCajaDetalleModal()">Cerrar</button>
-        <button class="btn btn-primary" id="cajaDetalleImprimirBtn" onclick="abrirExportDesdeDetalle()"><i class="bi bi-printer"></i> Imprimir y exportar</button>
-      </div>
-    </div></div>
-
-    <!-- Imprimir y exportar. La vista previa se arma con la MISMA funcion que
-         genera lo que se manda a la impresora (buildArqueoHTML), asi que lo que
-         se ve en pantalla es literalmente lo que sale en papel. -->
-    <div class="modal-overlay" id="cajaExportModal"><div class="modal-box" style="max-width:720px;width:96vw">
-      <div class="modal-header">
-        <h3><i class="bi bi-printer"></i> Imprimir y exportar</h3>
-        <button class="modal-close" onclick="closeCajaExportModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size:0.83rem;color:var(--text-dim);margin-bottom:0.7rem;line-height:1.5">As&iacute; se va a imprimir. El PDF sale igual; el CSV es la misma informaci&oacute;n en columnas, para abrir con Excel.</p>
-        <div id="cajaExportPreview" style="background:#fff;color:#111;border-radius:8px;padding:1rem;max-height:46vh;overflow:auto"></div>
-      </div>
-      <div class="modal-footer pie-export">
-        <div class="pie-export-grupo">
-          <label for="cajaExportFormato" style="font-size:0.83rem;color:var(--text-dim);white-space:nowrap">Exportar como</label>
-          <select class="form-input" id="cajaExportFormato" style="width:auto;min-width:104px">
-            <option value="pdf">PDF</option>
-            <option value="csv">CSV</option>
-          </select>
-          <button class="btn btn-secondary" id="cajaExportBtn" onclick="exportarArqueo()"><i class="bi bi-download"></i> Exportar</button>
-        </div>
-        <button class="btn btn-primary" onclick="imprimirArqueo()"><i class="bi bi-printer"></i> Imprimir</button>
-      </div>
-    </div></div>
-
-    <div class="modal-overlay" id="cierreModal"><div class="modal-box" style="max-width:520px;width:96vw;max-height:92vh;display:flex;flex-direction:column">
-      <div class="modal-header"><h3><i class="bi bi-lock"></i> Cerrar caja y arquear</h3><button class="modal-close" onclick="closeCierreModal()">&times;</button></div>
-      <div class="modal-body" style="overflow-y:auto">
-        <div id="cierreResumen" style="margin-bottom:1.1rem"></div>
-        <div class="form-group">
-          <label>Efectivo contado en el caj&oacute;n</label>
-          <input type="text" inputmode="numeric" class="form-input" id="cajaContado" placeholder="0" oninput="limpiarMonto(this);onContadoInput()">
-        </div>
-        <div id="cierreDiferencia"></div>
-        <div class="form-group" id="cajaMotivoWrap" style="display:none;margin-top:0.75rem">
-          <label>&iquest;Por qu&eacute; no coincide? <span style="color:var(--danger)">*</span></label>
-          <input type="text" class="form-input" id="cajaMotivo" maxlength="200" placeholder="Ej: falt&oacute; cargar un gasto de $500" oninput="validarCierre()">
-        </div>
-        <div class="form-group" style="margin-top:0.75rem">
-          <label>Retiro final (opcional)</label>
-          <input type="text" inputmode="numeric" class="form-input" id="cajaRetiro" placeholder="0" oninput="limpiarMonto(this)">
-          <small style="color:var(--text-dim);font-size:0.78rem">Lo que sac&aacute;s del caj&oacute;n. El resto queda como fondo de ma&ntilde;ana.</small>
-        </div>
-        <div class="form-group">
-          <label>Observaciones (opcional)</label>
-          <input type="text" class="form-input" id="cajaObs" maxlength="200">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeCierreModal()">Cancelar</button>
-        <button class="btn btn-primary" id="cajaCerrarBtn" onclick="confirmarCierre()" disabled><i class="bi bi-lock"></i> Cerrar caja</button>
-      </div>
-    </div></div>
+    
 
     <div class="modal-overlay" id="noCatModal"><div class="modal-box" style="max-width:700px;max-height:92vh"><div class="modal-header"><h3><i class="bi bi-exclamation-triangle" style="color:#9b59b6"></i> Productos sin categoria</h3><button class="modal-close" onclick="document.getElementById('noCatModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1rem;overflow-y:auto;max-height:calc(92vh - 80px)"><div id="noCatList"></div><div class="price-pager" id="noCatPager"></div></div></div></div>
     <div class="modal-overlay" id="catManagerModal"><div class="modal-box" style="max-width:900px;width:96vw;max-height:92vh"><div class="modal-header"><h3><i class="bi bi-gear"></i> Administrar Categorias</h3><button class="modal-close" onclick="document.getElementById('catManagerModal').classList.remove('show')"><i class="bi bi-x-lg"></i></button></div><div style="padding:1.25rem;overflow-y:auto;max-height:calc(92vh - 80px)"><div style="display:flex;gap:0.5rem;margin-bottom:1.25rem"><input type="text" id="newCatInput" placeholder="Nueva categoria..." style="flex:1;min-width:0;font-size:1.1rem;padding:12px 16px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><button class="btn btn-primary" onclick="addNewCategory()" style="white-space:nowrap;width:auto;padding:12px 24px;font-size:1.05rem"><i class="bi bi-plus-lg"></i> Agregar</button></div><div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;align-items:center"><select id="newSubCatParent" style="flex:1;min-width:0;font-size:1rem;padding:10px 14px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><option value="">(seleccionar categoria)</option></select><input type="text" id="newSubCatInput" placeholder="Nueva subcategoria..." style="flex:1;min-width:0;font-size:1rem;padding:10px 14px;color:#fff;background:#2a2d35;border:2px solid #555;border-radius:8px;outline:none"><button class="btn btn-secondary" onclick="addNewSubcategory()" style="white-space:nowrap;width:auto;padding:10px 20px;font-size:1rem"><i class="bi bi-plus-lg"></i> Sub</button></div><div id="catManagerList" style="font-size:1.05rem"></div></div></div></div>
