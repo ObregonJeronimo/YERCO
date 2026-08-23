@@ -1,0 +1,46 @@
+# Lo que NO se sube a Vercel.
+#
+# Vercel publica como estatico TODO lo que hay en el repo, asi que sin este archivo
+# cualquiera podia abrir por URL:
+#   /SETUP.md         -> la guia completa, con los mails de los admins y el project id
+#   /PENDIENTE.md     -> idem, mas el detalle de que quedaba pendiente de seguridad
+#   /firestore.rules  -> el modelo de permisos entero, servido en texto plano
+#   /.firebaserc      -> el id del proyecto
+#
+# Las reglas se hacen cumplir del lado del servidor, asi que publicarlas no abre un
+# agujero por si mismo, pero le regala a cualquiera el mapa de que esta permitido y
+# donde buscar. Y los .md son reconocimiento directo para un ataque dirigido: nombres,
+# mails y como esta armado todo.
+#
+# Nada de esto lo necesita el sitio para funcionar: los deploys de Firebase salen de
+# la maquina del desarrollador con el CLI, no de Vercel.
+
+# Documentacion
+*.md
+
+# Configuracion de Firebase (no la sirve nadie; las reglas se despliegan con el CLI)
+firestore.rules
+storage.rules
+firestore.indexes.json
+firebase.json
+.firebaserc
+.firebase/
+
+# Cloud Functions: se despliegan con el CLI, no por Vercel
+functions/
+
+# Herramientas de desarrollo
+dev-server.js
+.claude/
+
+# Bancos de prueba locales (montan los modulos contra un Firestore falso)
+_test-*.html
+
+# OJO: check-admin.js NO va aca a proposito.
+# Vercel corre `npm run build` al desplegar, y el build arranca con `npm run check`,
+# que es ese archivo. Si se excluye, el deploy se cae con "cannot find module".
+# Y esta bien que corra alla: si alguien commitea un JS que revienta al cargar, el
+# deploy falla y produccion se queda con la version anterior, que funciona. Sin eso,
+# el panel roto sale al aire (ya paso una vez: un `async` colgado que node --check
+# aprobaba y que dejaba todo el bloque de admin.html sin ejecutar).
+# Es una herramienta inerte: no expone nada ni escucha en ningun puerto.

@@ -1,4 +1,7 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
   "functions": {
     "api/producto/[slug].js": {
       "includeFiles": "index.html"
@@ -28,6 +31,10 @@
     {
       "source": "/mayoristas",
       "destination": "/mayoristas.html"
+    },
+    {
+      "source": "/resena",
+      "destination": "/resena.html"
     }
   ],
   "headers": [
@@ -70,6 +77,19 @@
     },
     {
       "source": "/admin(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/seed(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
