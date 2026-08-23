@@ -172,10 +172,12 @@ exports.procesarUsoCupon = onDocumentCreated(
 const {onDocumentCreated: onPedidoCreated} = require('firebase-functions/v2/firestore');
 
 exports.rateLimitPedidos = onDocumentCreated(
-  /* Sin region declarada, esta funcion se desplegaba en us-central1 mientras
-     notifyTelegramOnNewOrder y procesarUsoCupon iban a southamerica-east1:
-     mismo trigger, dos regiones, y latencia extra contra una base que esta
-     en Sudamerica. */
+  /* La region va declarada explicitamente. Verificado con functions:list: las
+     cuatro YA estaban corriendo en southamerica-east1, aunque estas dos no la
+     pedian en el codigo. Dejarlo implicito es fragil: onDocumentCreated de
+     firebase-functions v2 cae en us-central1 por defecto, asi que un redeploy
+     desde otra maquina o con otra config podia moverlas de region sin que nadie
+     lo pidiera, y quedarian lejos de Firestore. */
   { document: 'pedidos/{pedidoId}', region: 'southamerica-east1' },
   async (event) => {
   const data = event.data?.data();
@@ -231,10 +233,12 @@ exports.rateLimitPedidos = onDocumentCreated(
  * SANITIZACIÓN SERVER-SIDE: limpia y valida pedidos al crearse
  */
 exports.sanitizarPedido = onDocumentCreated(
-  /* Sin region declarada, esta funcion se desplegaba en us-central1 mientras
-     notifyTelegramOnNewOrder y procesarUsoCupon iban a southamerica-east1:
-     mismo trigger, dos regiones, y latencia extra contra una base que esta
-     en Sudamerica. */
+  /* La region va declarada explicitamente. Verificado con functions:list: las
+     cuatro YA estaban corriendo en southamerica-east1, aunque estas dos no la
+     pedian en el codigo. Dejarlo implicito es fragil: onDocumentCreated de
+     firebase-functions v2 cae en us-central1 por defecto, asi que un redeploy
+     desde otra maquina o con otra config podia moverlas de region sin que nadie
+     lo pidiera, y quedarian lejos de Firestore. */
   { document: 'pedidos/{pedidoId}', region: 'southamerica-east1' },
   async (event) => {
   const data = event.data?.data();
