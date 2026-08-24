@@ -223,12 +223,19 @@
            Izquierda: los datos de la venta (quien, como paga, cuando, insumos).
            Derecha: elegir productos y ver el total, que es donde esta la accion. */
         .venta-modal-box{max-width:1120px;width:96vw}
-        .venta-modal-body{display:grid;grid-template-columns:minmax(250px,310px) minmax(0,1fr);gap:1.25rem;align-items:start}
+        /* El grid de dos columnas vale SOLO dentro de .venta-modal-box. La clase
+           .venta-modal-body la comparten tres modales y unicamente ventaModal y
+           ventaMayModal tienen el markup para dos columnas (dos .venta-col y un
+           .venta-pie que las cruza). pedidoModal sigue con el markup viejo: siete
+           bloques sueltos, que el grid repartia en zigzag y dejaba "Medio de pago"
+           en 46px y los nombres de producto recortados a "G...". Sin el grid vuelve
+           al flujo normal, apilado y a todo el ancho. */
+        .venta-modal-box .venta-modal-body{display:grid;grid-template-columns:minmax(250px,310px) minmax(0,1fr);gap:1.25rem;align-items:start}
         .venta-col{min-width:0;display:flex;flex-direction:column;gap:0.9rem}
         .venta-pie{grid-column:1/-1;border-top:1px solid var(--border);padding-top:1rem}
         .venta-bloque{background:var(--bg-input);border-radius:var(--radius);padding:0.85rem}
         .venta-sub{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem}
-        @media(max-width:900px){.venta-modal-body{grid-template-columns:1fr}}
+        @media(max-width:900px){.venta-modal-box .venta-modal-body{grid-template-columns:1fr}}
         /* Resultados del buscador: una fila por producto, con la miniatura, los dos
            precios y el stock. Antes solo se veia el nombre y un precio suelto, asi que
            habia que salir del modal para saber si quedaba stock. */
