@@ -2733,9 +2733,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
         }
         /* Copia los productos de una venta, uno por linea, para pegarlos en
            WhatsApp o donde haga falta. Formato:
-               Avena
-               Bondiola x2
-           La cantidad va solo cuando es mas de uno.
+               Avena (1)
+               Bondiola (2)
+           La cantidad va siempre, entre parentesis y al final.
 
            Usa el NOMBRE INTERNO, no el que ve el cliente. El nombre que quedo
            guardado dentro de la venta es el MOSTRADO del momento en que se
@@ -2748,7 +2748,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                 var p=cat.find(function(x){return x.id===i.id;});
                 var nombre=(((p&&p.nombre)||i.nombre)||'').trim();
                 var cant=Number(i.cantidad||1);
-                return nombre?(nombre+(cant>1?(' x'+cant):'')):'';
+                return nombre?(nombre+' ('+cant+')'):'';
             }).filter(function(s){return s;});
         }
         async function copiarProductosVenta(id,tipo){
