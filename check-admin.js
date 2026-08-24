@@ -90,9 +90,23 @@ bloques.forEach((b, i) => {
 /* Una linea que es solo un nombre, con o sin punto y coma. No hace nada y casi
    siempre es lo que quedo de borrar algo a medias. */
 bloques.forEach((b, i) => {
-  b.codigo.split('\n').forEach((linea, k) => {
+  /* Antes esto miraba linea por linea y solo salteaba las que EMPIEZAN con //,
+     * o /*. No llevaba cuenta de estar DENTRO de un comentario de bloque, asi
+     que un comentario con un ejemplo sangrado:
+
+         Avena
+         Bondiola x2
+
+     hacia fallar el build por "identificador suelto". Ahora el contenido de los
+     comentarios se blanquea antes de escanear, conservando los saltos de linea
+     para que los numeros de linea sigan siendo los de verdad. */
+  const limpio = b.codigo
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, ' '));
+
+  limpio.split('\n').forEach((linea, k) => {
     const t = linea.trim();
-    if (!t || t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return;
+    if (!t) return;
     if (/^[A-Za-z_$][\w$]*;?$/.test(t) && !/^(break|continue|debugger|return)/.test(t)) {
       problemas.push('IDENTIFICADOR SUELTO en admin.html:' + (b.lineaBase + k) + '  ->  ' + JSON.stringify(t));
     }
