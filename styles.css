@@ -89,7 +89,11 @@ img { max-width: 100%; height: auto; }
 /* Antes era un velo plano de crema al 40% sobre toda la foto. Ahora es un degradado
    direccional: bien opaco del lado del texto -que es donde hace falta contraste- y
    casi transparente del otro, asi la foto se ve de verdad. */
-.hero-section::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 85% at 50% 0%, rgba(255,255,255,0.16), rgba(255,255,255,0) 62%), linear-gradient(100deg, rgba(248,244,236,0.76) 0%, rgba(248,244,236,0.54) 40%, rgba(248,244,236,0.22) 74%, rgba(248,244,236,0.36) 100%); z-index: 1; pointer-events: none; }
+/* El velo blanco se regula desde el Editor Web con --hero-velo (0 a 1). Las alfas
+   del degradado estan subidas 1,25x respecto de lo que se ve con el valor por
+   defecto (0.8): asi el control puede BAJAR el velo hasta sacarlo del todo y
+   tambien SUBIRLO un poco por encima de lo actual. Con 0.8 queda igual que antes. */
+.hero-section::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 85% at 50% 0%, rgba(255,255,255,0.20), rgba(255,255,255,0) 62%), linear-gradient(100deg, rgba(248,244,236,0.95) 0%, rgba(248,244,236,0.675) 40%, rgba(248,244,236,0.275) 74%, rgba(248,244,236,0.45) 100%); opacity: var(--hero-velo, 0.8); z-index: 1; pointer-events: none; }
 .hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
 .particle { position: absolute; width: 10px; height: 10px; background: var(--color-primary-light); border-radius: 50%; opacity: 0.3; animation: float 15s infinite ease-in-out; will-change: transform; }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-100px) rotate(180deg); } }
@@ -501,7 +505,7 @@ img { max-width: 100%; height: auto; }
     /* Aca el texto va centrado, asi que el degradado direccional del escritorio -que
        carga el velo del lado izquierdo- dejaria la mitad derecha sin contraste. En
        vertical se reparte parejo y se refuerza abajo, que es donde caen los botones. */
-    .hero-section::after { background: linear-gradient(180deg, rgba(248,244,236,0.42) 0%, rgba(248,244,236,0.56) 45%, rgba(248,244,236,0.72) 100%); }
+    .hero-section::after { background: linear-gradient(180deg, rgba(248,244,236,0.525) 0%, rgba(248,244,236,0.70) 45%, rgba(248,244,236,0.90) 100%); }
     .why-us-content { padding-right: 0; text-align: center; margin-bottom: var(--spacing-xl); }
     .trust-badges { align-items: center; }
     .features-grid { grid-template-columns: repeat(2, 1fr); }

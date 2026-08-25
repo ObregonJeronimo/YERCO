@@ -1203,6 +1203,13 @@ function applySiteContent(d){
     if(d.horario){const hor=document.getElementById('footerHorario');if(hor)hor.textContent=d.horario;}
     /* El mail salia en dos lugares y el campo solo actualizaba el icono de arriba. */
     if(d.email){const fe=document.getElementById('footerEmail');if(fe){fe.textContent=d.email;fe.href='mailto:'+d.email;}}
+    /* Velo blanco del hero: 0 = la foto se ve limpia, 100 = velo al maximo.
+       Ojo con el 0, que es un valor legitimo: no sirve `if(d.heroVelo)`. */
+    if(d.heroVelo!==undefined&&d.heroVelo!==null&&d.heroVelo!==''){
+        const velo=Math.min(100,Math.max(0,parseFloat(d.heroVelo)));
+        const hs=document.querySelector('.hero-section');
+        if(hs&&!isNaN(velo))hs.style.setProperty('--hero-velo',(velo/100).toFixed(3));
+    }
     const ho=document.querySelector('.hero-overlay');
     if(ho){
         if(d.heroImg&&d.heroImg.startsWith('http')){
