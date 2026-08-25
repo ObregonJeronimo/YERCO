@@ -4,6 +4,15 @@
  */
 const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
+/* optImg devuelve la URL tal cual, a proposito. Redimensionar del lado del servidor
+   necesitaria la extension Resize Images de Firebase (no hay ninguna instalada en el
+   proyecto) o guardar variantes al subir. Se evaluo y no da: el hero pesa 146 KB y
+   mide 886x665, o sea que ya es MAS CHICO que el ancho que se le pedia (1600) y que
+   la pantalla donde se muestra a pantalla completa; achicarlo empeoraria la calidad
+   sin ahorrar casi nada. Lo que si dolia era otra cosa: Storage lo servia con
+   "private, max-age=0" y el navegador se lo bajaba entero en cada visita. Eso ya
+   esta arreglado (metadata del objeto + cacheControl al subir desde el panel).
+   Si algun dia se suben imagenes grandes de verdad, aca va el resize. */
 function optImg(url,w){return url||'';}
 /* Etiqueta corta para un botón del sistema viejo de gramajes.
    Antes el fallback era `h.nombre`, o sea el nombre interno entero: al lado de una
@@ -352,6 +361,7 @@ function renderProducts(list) {
     }).join('');
     /* Inicializar las flechas de scroll de los selectores de presentación */
     requestAnimationFrame(presInitArrows);
+    scrollAnimProductos();
 }
 
 // === CARRITO ===
@@ -1112,14 +1122,121 @@ async function confirmCheckout(){
 
 function showToast(message,type){type=type||'info';const c=document.getElementById('toastContainer');if(!c)return;const icons={success:'bi-check-circle-fill',error:'bi-exclamation-circle-fill',info:'bi-info-circle-fill'};const t=document.createElement('div');t.className='toast '+type;t.innerHTML='<i class="toast-icon bi '+(icons[type]||icons.info)+'"></i><span class="toast-message">'+message+'</span>';c.appendChild(t);setTimeout(()=>{t.classList.add('removing');setTimeout(()=>t.remove(),300);},3000);}
 
-function initScrollAnimations(){if(window.innerWidth<768||window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;const o=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('animate-in');o.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});document.querySelectorAll('.service-card,.feature-card,.product-card').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='opacity 0.6s ease, transform 0.6s ease';o.observe(el);});const s=document.createElement('style');s.textContent='.animate-in{opacity:1!important;transform:translateY(0)!important;}';document.head.appendChild(s);}
+/* Observador unico y reutilizable, para poder enganchar tambien lo que se dibuja
+   despues (las tarjetas de producto llegan recien cuando responde Firestore). */
+let _scrollAnimObserver=null;
+function scrollAnimObserve(nodos){
+    if(!_scrollAnimObserver||!nodos||!nodos.length)return;
+    nodos.forEach(el=>{
+        if(el.dataset.animObs)return;
+        el.dataset.animObs='1';
+        el.style.opacity='0';el.style.transform='translateY(30px)';
+        el.style.transition='opacity 0.6s ease, transform 0.6s ease';
+        _scrollAnimObserver.observe(el);
+    });
+}
+function initScrollAnimations(){
+    /* Antes esto se apagaba entero debajo de 768px, asi que en el telefono no se
+       animaba nada. Ahora si: las tarjetas de contenido son pocas y solo mueven
+       opacity y transform. Las de producto siguen quedando afuera en pantallas
+       chicas, que ahi pueden ser decenas y styles.css les saca las transiciones
+       a proposito. */
+    if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+    _scrollAnimObserver=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('animate-in');_scrollAnimObserver.unobserve(e.target);}});},{threshold:0.1,rootMargin:'0px 0px -50px 0px'});
+    const s=document.createElement('style');
+    s.textContent='.animate-in{opacity:1!important;transform:translateY(0)!important;}';
+    document.head.appendChild(s);
+    scrollAnimObserve(document.querySelectorAll('.service-card,.feature-card'));
+}
+/* Las .product-card no existian todavia cuando corria initScrollAnimations (se crean
+   al responder Firestore), asi que el selector no enganchaba ninguna y esa parte de
+   la animacion nunca se ejecuto. Ahora se enganchan despues de cada dibujado. */
+function scrollAnimProductos(){
+    if(!_scrollAnimObserver||window.innerWidth<768)return;
+    scrollAnimObserve(document.querySelectorAll('.product-card'));
+}
 
 function toggleCategoryFilters(){const f=document.getElementById('categoryFilters');const btn=document.getElementById('toggleCatsBtn');f.classList.toggle('cat-hidden');if(f.classList.contains('cat-hidden')){btn.innerHTML='<i class="bi bi-funnel"></i> Categorias';}else{btn.innerHTML='<i class="bi bi-funnel-fill"></i> Categorias';}}
 
 window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.aplicarCupon=aplicarCupon;window.quitarCupon=quitarCupon;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
 
 // Cargar contenido editable desde Firestore
-async function loadSiteContent(){try{const snap=await db.collection('config').doc('siteContent').get();if(!snap.exists)return;const d=snap.data();const s=(id,val)=>{const el=document.querySelector(id);if(el&&val)el.textContent=val;};s('.hero-badge span',d.heroBadge);const tl=document.querySelectorAll('.title-line');if(tl[0]&&d.heroTitle1)tl[0].textContent=d.heroTitle1;const th=document.querySelectorAll('.title-highlight');if(th[0]&&d.heroTitle2)th[0].textContent=d.heroTitle2;s('.hero-subtitle',d.heroSubtitle);const stats=document.querySelectorAll('.stat-item');if(stats[0]&&d.stat1Num){stats[0].querySelector('.stat-number').textContent=d.stat1Num;stats[0].querySelector('.stat-label').textContent=d.stat1Label||'';}if(stats[1]&&d.stat2Num){stats[1].querySelector('.stat-number').textContent=d.stat2Num;stats[1].querySelector('.stat-label').textContent=d.stat2Label||'';}s('.why-us-section .section-tag',d.nosotrosTag);s('.why-us-section .section-title',d.nosotrosTitulo);s('.why-us-text',d.nosotrosTexto);const badges=document.querySelectorAll('.trust-badge span');if(badges[0]&&d.badge1)badges[0].textContent=d.badge1;if(badges[1]&&d.badge2)badges[1].textContent=d.badge2;const cards=document.querySelectorAll('.feature-card');if(cards[0]){if(d.card1t)cards[0].querySelector('h4').textContent=d.card1t;if(d.card1p)cards[0].querySelector('p').textContent=d.card1p;}if(cards[1]){if(d.card2t)cards[1].querySelector('h4').textContent=d.card2t;if(d.card2p)cards[1].querySelector('p').textContent=d.card2p;}if(cards[2]){if(d.card3t)cards[2].querySelector('h4').textContent=d.card3t;if(d.card3p)cards[2].querySelector('p').textContent=d.card3p;}if(cards[3]){if(d.card4t)cards[3].querySelector('h4').textContent=d.card4t;if(d.card4p)cards[3].querySelector('p').textContent=d.card4p;}s('.cta-title',d.ctaTitulo);s('.cta-text',d.ctaTexto);s('.footer-description',d.footerDesc);if(d.instagram){const ig=document.querySelector('.social-links a[aria-label="Instagram"]');if(ig)ig.href=d.instagram;}if(d.whatsapp){const wa=document.querySelectorAll('a[href*="wa.me"]:not(.wa-dev)');wa.forEach(a=>{const oldHref=a.href;a.href=a.href.replace(/wa\.me\/[0-9]+/,'wa.me/'+d.whatsapp);});}if(d.email){const em=document.querySelector('.social-links a[aria-label="Email"]');if(em)em.href='mailto:'+d.email;}if(d.heroImg&&d.heroImg.startsWith('http')){const ho=document.querySelector('.hero-overlay');if(ho){const heroOptim=optImg(d.heroImg,1600);const pre=new Image();pre.fetchPriority='high';pre.onload=()=>{ho.style.backgroundImage='url('+heroOptim+')';ho.style.backgroundSize='cover';ho.style.backgroundPosition='center';ho.style.opacity='0.35';};pre.onerror=()=>{ho.style.backgroundImage='url('+d.heroImg+')';ho.style.backgroundSize='cover';ho.style.backgroundPosition='center';ho.style.opacity='0.35';};pre.src=heroOptim;}}else{const ho=document.querySelector('.hero-overlay');if(ho)ho.style.opacity='0.35';}if(d.ctaImg&&d.ctaImg.startsWith('http')){const cta=document.querySelector('.cta-background');if(cta){const st=document.createElement('style');st.textContent='.cta-background::before{background-image:url('+d.ctaImg+')!important}';document.head.appendChild(st);}}if(d.logoIcon&&d.logoIcon.startsWith('http')){const li=document.querySelector('.logo-img');if(li)li.src=d.logoIcon;}if(d.logoText&&d.logoText.startsWith('http')){const lt=document.querySelector('.brand-text-img');if(lt)lt.src=d.logoText;}if(d.logoFooter&&d.logoFooter.startsWith('http')){const lf=document.querySelector('.footer-brand img');if(lf)lf.src=d.logoFooter;}}catch(e){console.log('Site content not loaded:',e);}}
+/* Clave del cache local del contenido del sitio. Si alguna vez cambia la forma del
+   documento, subir el numero y el cache viejo se ignora solo. */
+const SC_CACHE_KEY='yerco_siteContent_v1';
+function scCacheLeer(){try{const raw=localStorage.getItem(SC_CACHE_KEY);return raw?JSON.parse(raw):null;}catch(e){return null;}}
+function scCacheGuardar(d){try{localStorage.setItem(SC_CACHE_KEY,JSON.stringify(d));}catch(e){/* modo privado o cuota llena: el sitio funciona igual, solo pierde el arranque rapido */}}
+/* Reparte el documento config/siteContent sobre el DOM. Estaba adentro de
+   loadSiteContent(); se separo para poder aplicarlo dos veces: primero con lo que
+   quedo cacheado de la visita anterior, y despues con lo que responde Firestore. */
+function applySiteContent(d){
+    if(!d)return;
+    const s=(id,val)=>{const el=document.querySelector(id);if(el&&val)el.textContent=val;};
+    s('.hero-badge span',d.heroBadge);
+    const tl=document.querySelectorAll('.title-line');if(tl[0]&&d.heroTitle1)tl[0].textContent=d.heroTitle1;
+    const th=document.querySelectorAll('.title-highlight');if(th[0]&&d.heroTitle2)th[0].textContent=d.heroTitle2;
+    s('.hero-subtitle',d.heroSubtitle);
+    const stats=document.querySelectorAll('.stat-item');
+    if(stats[0]&&d.stat1Num){stats[0].querySelector('.stat-number').textContent=d.stat1Num;stats[0].querySelector('.stat-label').textContent=d.stat1Label||'';}
+    if(stats[1]&&d.stat2Num){stats[1].querySelector('.stat-number').textContent=d.stat2Num;stats[1].querySelector('.stat-label').textContent=d.stat2Label||'';}
+    s('.why-us-section .section-tag',d.nosotrosTag);s('.why-us-section .section-title',d.nosotrosTitulo);s('.why-us-text',d.nosotrosTexto);
+    const badges=document.querySelectorAll('.trust-badge span');if(badges[0]&&d.badge1)badges[0].textContent=d.badge1;if(badges[1]&&d.badge2)badges[1].textContent=d.badge2;
+    const cards=document.querySelectorAll('.feature-card');
+    if(cards[0]){if(d.card1t)cards[0].querySelector('h4').textContent=d.card1t;if(d.card1p)cards[0].querySelector('p').textContent=d.card1p;}
+    if(cards[1]){if(d.card2t)cards[1].querySelector('h4').textContent=d.card2t;if(d.card2p)cards[1].querySelector('p').textContent=d.card2p;}
+    if(cards[2]){if(d.card3t)cards[2].querySelector('h4').textContent=d.card3t;if(d.card3p)cards[2].querySelector('p').textContent=d.card3p;}
+    if(cards[3]){if(d.card4t)cards[3].querySelector('h4').textContent=d.card4t;if(d.card4p)cards[3].querySelector('p').textContent=d.card4p;}
+    s('.cta-title',d.ctaTitulo);s('.cta-text',d.ctaTexto);s('.footer-description',d.footerDesc);
+    if(d.instagram){const ig=document.querySelector('.social-links a[aria-label="Instagram"]');if(ig)ig.href=d.instagram;}
+    if(d.whatsapp){const wa=document.querySelectorAll('a[href*="wa.me"]:not(.wa-dev)');wa.forEach(a=>{a.href=a.href.replace(/wa\.me\/[0-9]+/,'wa.me/'+d.whatsapp);});}
+    if(d.email){const em=document.querySelector('.social-links a[aria-label="Email"]');if(em)em.href='mailto:'+d.email;}
+    const ho=document.querySelector('.hero-overlay');
+    if(ho){
+        if(d.heroImg&&d.heroImg.startsWith('http')){
+            const heroOptim=optImg(d.heroImg,1600);
+            /* El arranque temprano de index.html ya pudo poner esta misma imagen con
+               la URL cacheada. Volver a asignarla reiniciaria la transicion y haria
+               parpadear el hero, asi que solo se toca si cambio. */
+            if(ho.dataset.heroSrc!==heroOptim&&window.__heroPre!==heroOptim){
+                const poner=(u)=>{ho.style.backgroundImage='url('+u+')';ho.style.backgroundSize='cover';ho.style.backgroundPosition='center';ho.style.opacity='0.35';ho.dataset.heroSrc=heroOptim;};
+                const pre=new Image();pre.fetchPriority='high';
+                pre.onload=()=>poner(heroOptim);
+                pre.onerror=()=>poner(d.heroImg);
+                pre.src=heroOptim;
+            }
+        }else{
+            ho.style.opacity='0.35';
+        }
+    }
+    /* Un solo <style> reutilizado: applySiteContent corre dos veces (cache y red) y
+       antes cada pasada agregaba otra etiqueta al head. */
+    if(d.ctaImg&&d.ctaImg.startsWith('http')&&document.querySelector('.cta-background')){
+        let st=document.getElementById('ctaImgStyle');
+        if(!st){st=document.createElement('style');st.id='ctaImgStyle';document.head.appendChild(st);}
+        st.textContent='.cta-background::before{background-image:url('+d.ctaImg+')!important}';
+    }
+    if(d.logoIcon&&d.logoIcon.startsWith('http')){const li=document.querySelector('.logo-img');if(li)li.src=d.logoIcon;}
+    if(d.logoText&&d.logoText.startsWith('http')){const lt=document.querySelector('.brand-text-img');if(lt)lt.src=d.logoText;}
+    if(d.logoFooter&&d.logoFooter.startsWith('http')){const lf=document.querySelector('.footer-brand img');if(lf)lf.src=d.logoFooter;}
+}
+/* La imagen del hero no aparecia hasta que terminaban TRES esperas encadenadas:
+   cargar el bundle de Firebase, la ida y vuelta a Firestore por config/siteContent,
+   y recien ahi bajar la imagen. Medido en produccion: la peticion de la imagen no
+   arrancaba hasta los 1225 ms y el hero se veia a los ~2070 ms.
+   Ahora el contenido de la visita anterior queda en localStorage y se pinta al
+   instante -index.html ademas precarga la imagen desde el <head> con esa misma URL-,
+   mientras Firestore revalida por atras y corrige si algo cambio. */
+async function loadSiteContent(){
+    const cache=scCacheLeer();
+    if(cache)applySiteContent(cache);
+    try{
+        const snap=await db.collection('config').doc('siteContent').get();
+        if(!snap.exists)return;
+        const d=snap.data();
+        applySiteContent(d);
+        scCacheGuardar(d);
+    }catch(e){console.log('Site content not loaded:',e);}
+}
 loadSiteContent();
 
 // === REVIEWS ===

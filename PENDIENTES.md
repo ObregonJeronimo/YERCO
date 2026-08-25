@@ -120,7 +120,7 @@ Probar en Android y en iPhone (Safari tiene su propio comportamiento con la barr
 
 ---
 
-## 3. Hero: carga lentísima, rediseño y animaciones
+## 3. ~~Hero: carga lentísima, rediseño y animaciones~~ HECHO
 
 ### 3a. La lentitud (diagnóstico confirmado)
 

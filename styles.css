@@ -65,31 +65,65 @@ img { max-width: 100%; height: auto; }
 .navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%231d2500' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e"); }
 
 /* === HERO SECTION === */
-.hero-section { position: relative; min-height: 100vh; background: linear-gradient(135deg, #e8e0d5 0%, #d4c4b0 50%, #c9a87c 100%); overflow: hidden; }
-.hero-overlay { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s ease; z-index: 0; }
-.hero-section::after { content: ''; position: absolute; inset: 0; background: rgba(248, 244, 236, 0.40); z-index: 1; pointer-events: none; }
+/* ============ HERO ============
+   Animaciones de entrada: son varias distintas a proposito (zoom lento del fondo,
+   pop del badge, las dos lineas del titulo entrando de lados opuestos, el subrayado
+   creciendo, subida escalonada de subtitulo/botones/stats y aparicion del indicador
+   de scroll). Todas animan SOLO transform y opacity, que el compositor resuelve sin
+   recalcular layout, asi que no compiten con el LCP ni bloquean el render. */
+@keyframes heroKenBurns { from { transform: scale(1); } to { transform: scale(1.07); } }
+@keyframes heroPop { from { opacity: 0; transform: translateY(10px) scale(0.92); } 60% { opacity: 1; transform: translateY(0) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes heroInLeft { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes heroInRight { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes heroUnderline { from { transform: skewX(-5deg) scaleX(0); } to { transform: skewX(-5deg) scaleX(1); } }
+@keyframes heroRise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes heroStatIn { from { opacity: 0; transform: translateY(16px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes heroScrollIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* svh en vez de vh: el hero ya no queda mas alto que la pantalla visible en el movil
+   (con vh se iba por abajo y el indicador de "Descubri mas" quedaba fuera de cuadro).
+   svh y no dvh a proposito: dvh cambia al esconderse la barra y el hero se redimensionaria
+   mientras se hace scroll. */
+.hero-section { position: relative; min-height: 100vh; min-height: 100svh; background: linear-gradient(135deg, #e8e0d5 0%, #d4c4b0 50%, #c9a87c 100%); overflow: hidden; }
+.hero-overlay { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.5s ease; z-index: 0; animation: heroKenBurns 26s ease-out both; will-change: transform; }
+/* Antes era un velo plano de crema al 40% sobre toda la foto. Ahora es un degradado
+   direccional: bien opaco del lado del texto -que es donde hace falta contraste- y
+   casi transparente del otro, asi la foto se ve de verdad. */
+.hero-section::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 85% at 50% 0%, rgba(255,255,255,0.16), rgba(255,255,255,0) 62%), linear-gradient(100deg, rgba(248,244,236,0.76) 0%, rgba(248,244,236,0.54) 40%, rgba(248,244,236,0.22) 74%, rgba(248,244,236,0.36) 100%); z-index: 1; pointer-events: none; }
 .hero-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
 .particle { position: absolute; width: 10px; height: 10px; background: var(--color-primary-light); border-radius: 50%; opacity: 0.3; animation: float 15s infinite ease-in-out; will-change: transform; }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-100px) rotate(180deg); } }
 .hero-content { position: relative; z-index: 3; padding-top: 100px; }
+/* El .row de adentro usa min-vh-100 de Bootstrap y este contenedor le suma 100px de
+   padding arriba, asi que el hero terminaba midiendo 100vh + 100px: en una pantalla
+   de 800 daba 900 y el indicador de "Descubri mas" caia abajo del pliegue. Se le
+   descuenta el padding para que el hero entre justo en la pantalla. */
+.hero-section .hero-content > .row.min-vh-100 { min-height: calc(100vh - 100px) !important; min-height: calc(100svh - 100px) !important; }
 .hero-text { padding: var(--spacing-xl) 0; }
-.hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(29, 37, 0, 0.12); color: var(--color-primary-dark); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.9rem; font-weight: 600; margin-bottom: var(--spacing-md); animation: fadeInUp 0.6s ease forwards; }
+.hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.42); border: 1px solid rgba(29, 37, 0, 0.14); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--color-primary-dark); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.9rem; font-weight: 600; margin-bottom: var(--spacing-md); animation: heroPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .hero-badge i { font-size: 1.1rem; }
-.hero-title { font-size: clamp(2.5rem, 5vw, 4rem); margin-bottom: var(--spacing-md); animation: fadeInUp 0.6s ease 0.1s forwards; opacity: 0; text-shadow: 0 0 10px rgba(255,255,255,0.85), 0 0 20px rgba(255,255,255,0.55); }
-.title-line { display: block; color: var(--color-text); }
-.title-highlight { display: block; color: var(--color-primary-dark); position: relative; }
-.title-highlight::after { content: ''; position: absolute; bottom: 5px; left: 0; width: 100%; height: 12px; background: rgba(224, 242, 160, 0.4); z-index: -1; transform: skewX(-5deg); }
-.hero-subtitle { font-size: 1.2rem; color: #3a3630; font-weight: 500; max-width: 500px; margin-bottom: var(--spacing-lg); animation: fadeInUp 0.6s ease 0.2s forwards; opacity: 0; text-shadow: 0 0 6px rgba(255,255,255,0.7); }
-.hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: var(--spacing-xl); animation: fadeInUp 0.6s ease 0.3s forwards; opacity: 0; }
+/* La animacion se movio a las dos lineas para que entren por separado. */
+.hero-title { font-size: clamp(2.5rem, 5vw, 4rem); margin-bottom: var(--spacing-md); text-shadow: 0 0 10px rgba(255,255,255,0.85), 0 0 20px rgba(255,255,255,0.55); }
+.title-line { display: block; color: var(--color-text); animation: heroInLeft 0.7s ease 0.10s both; }
+.title-highlight { display: block; color: var(--color-primary-dark); position: relative; animation: heroInRight 0.7s ease 0.24s both; }
+.title-highlight::after { content: ''; position: absolute; bottom: 5px; left: 0; width: 100%; height: 12px; background: rgba(224, 242, 160, 0.4); z-index: -1; transform: skewX(-5deg); transform-origin: left center; animation: heroUnderline 0.55s ease 0.72s both; }
+.hero-subtitle { font-size: 1.2rem; color: #3a3630; font-weight: 500; max-width: 500px; margin-bottom: var(--spacing-lg); animation: heroRise 0.7s ease 0.38s both; text-shadow: 0 0 6px rgba(255,255,255,0.7); }
+/* Los botones entran de a uno, no el bloque entero de golpe. */
+.hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: var(--spacing-xl); }
+.hero-buttons > * { animation: heroRise 0.6s ease both; }
+.hero-buttons > *:nth-child(1) { animation-delay: 0.50s; }
+.hero-buttons > *:nth-child(2) { animation-delay: 0.60s; }
 .btn-primary-custom { background: var(--color-primary); color: white; padding: 0.9rem 2rem; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 2px solid var(--color-primary); transition: all var(--transition-normal); }
 .btn-primary-custom:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); color: white; transform: translateY(-3px); box-shadow: var(--shadow-md); }
 .btn-outline-custom { background: transparent; color: var(--color-primary); padding: 0.9rem 2rem; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 2px solid var(--color-primary); transition: all var(--transition-normal); }
 .btn-outline-custom:hover { background: var(--color-primary); color: white; transform: translateY(-3px); }
-.hero-stats { display: flex; gap: var(--spacing-xl); animation: fadeInUp 0.6s ease 0.4s forwards; opacity: 0; }
-.stat-item { text-align: center; }
-.stat-number { display: block; font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--color-primary-dark); }
+.hero-stats { display: flex; gap: var(--spacing-xl); }
+.stat-item { text-align: center; animation: heroStatIn 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.stat-item:nth-child(1) { animation-delay: 0.70s; }
+.stat-item:nth-child(2) { animation-delay: 0.80s; }
+.stat-number { display: block; font-family: var(--font-display); font-size: 2.15rem; font-weight: 700; color: var(--color-primary-dark); line-height: 1.1; }
 .stat-label { font-size: 0.88rem; color: #3a3630; font-weight: 600; text-shadow: 0 0 6px rgba(255,255,255,0.7); }
-.scroll-indicator { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; animation: bounce 2s infinite; cursor: pointer; z-index: 3; }
+.scroll-indicator { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; animation: heroScrollIn 0.8s ease 1.05s both, bounce 2s 1.85s infinite; cursor: pointer; z-index: 3; }
 .scroll-indicator span { display: block; font-size: 0.9rem; color: #3a3630; font-weight: 600; margin-bottom: 0.3rem; text-shadow: 0 0 6px rgba(255,255,255,0.7); }
 .scroll-indicator i { color: var(--color-primary-dark); font-size: 1.3rem; }
 @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-10px); } 60% { transform: translateX(-50%) translateY(-5px); } }
@@ -464,6 +498,10 @@ img { max-width: 100%; height: auto; }
     .hero-subtitle { margin-left: auto; margin-right: auto; }
     .hero-buttons { justify-content: center; }
     .hero-stats { justify-content: center; }
+    /* Aca el texto va centrado, asi que el degradado direccional del escritorio -que
+       carga el velo del lado izquierdo- dejaria la mitad derecha sin contraste. En
+       vertical se reparte parejo y se refuerza abajo, que es donde caen los botones. */
+    .hero-section::after { background: linear-gradient(180deg, rgba(248,244,236,0.42) 0%, rgba(248,244,236,0.56) 45%, rgba(248,244,236,0.72) 100%); }
     .why-us-content { padding-right: 0; text-align: center; margin-bottom: var(--spacing-xl); }
     .trust-badges { align-items: center; }
     .features-grid { grid-template-columns: repeat(2, 1fr); }
@@ -479,6 +517,20 @@ img { max-width: 100%; height: auto; }
     .stat-number { font-size: 1.5rem; }
     .hero-content { padding-left: 1.25rem; padding-right: 1.25rem; }
     .hero-subtitle { font-size: 1rem; padding: 0 0.5rem; }
+    /* En el telefono el contenido del hero no entraba en la pantalla y el indicador de
+       "Descubri mas" quedaba abajo del pliegue. Se recorta el aire de arriba y abajo
+       -la barra fija mide ~70px, con 78 alcanza- y los margenes entre bloques. */
+    .hero-content { padding-top: 78px; }
+    .hero-text { padding: var(--spacing-md) 0; }
+    .hero-buttons { margin-bottom: var(--spacing-lg); gap: 0.6rem; }
+    /* Los dos botones se partian en dos renglones y se comian 130px de alto, que en
+       una pantalla de 635 es lo que hacia que el hero no entrara. Achicados entran
+       en uno solo. */
+    .hero-buttons .btn-primary-custom, .hero-buttons .btn-outline-custom { padding: 0.75rem 1.15rem; font-size: 0.92rem; }
+    /* El padding de abajo reserva el lugar del indicador de scroll (65px de alto +
+       30px de separacion): sin esto los stats le caian encima. Entra en el
+       min-height porque el box-sizing es border-box. */
+    .hero-section .hero-content > .row.min-vh-100 { min-height: calc(100vh - 78px) !important; min-height: calc(100svh - 78px) !important; padding-bottom: 95px; }
     .features-grid { grid-template-columns: 1fr; }
     .products-grid { grid-template-columns: 1fr; }
     .footer-bottom { text-align: center; flex-direction: column; }
@@ -487,6 +539,12 @@ img { max-width: 100%; height: auto; }
 }
 @media (max-width: 575px) {
     .hero-title { font-size: 2rem; }
+    /* En las pantallas mas chicas (tipo 320x568) el contenido del hero no entra ni
+       apretandolo, asi que ahi se saca el indicador de scroll -es decorativo- y se
+       libera el espacio que tenia reservado. Con eso el hero vuelve a entrar entero
+       y no hace falta hacer scroll para ver de que se trata el sitio. */
+    .scroll-indicator { display: none; }
+    .hero-section .hero-content > .row.min-vh-100 { padding-bottom: 0; }
     .category-filters { gap: 0.5rem; }
     .filter-btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
     .cart-sidebar { max-width: 100%; }

@@ -30,6 +30,29 @@
     <link rel="stylesheet" href="styles.min.css">
     <link rel="stylesheet" href="toolbar.min.css">
     <link rel="stylesheet" href="footer-dev.min.css">
+    <script>
+    /* Arranque rapido del hero. La imagen de fondo se guarda en Firestore, asi que en
+       una visita nueva no hay forma de saber cual es hasta despues de cargar el bundle
+       de Firebase y hacer la consulta: eran tres esperas en cadena y el hero quedaba sin
+       foto todo ese rato (medido en produccion: la imagen ni se pedia hasta los 1225 ms).
+       Si el visitante ya estuvo, la URL quedo cacheada en localStorage: desde aca se
+       precarga durante el parseo del <head> y se pinta por CSS, sin esperar a nadie.
+       loadSiteContent() revalida despues contra Firestore y corrige si cambio.
+       Va DESPUES de las hojas de estilo y con selector mas especifico a proposito: si
+       fuera antes, el opacity:0 de styles.min.css ganaria por orden y no se veria nada. */
+    (function(){try{
+      var raw=localStorage.getItem('yerco_siteContent_v1'); if(!raw)return;
+      var d=JSON.parse(raw), u=d&&d.heroImg;
+      if(!u||u.indexOf('http')!==0)return;
+      var l=document.createElement('link');
+      l.rel='preload'; l.as='image'; l.href=u; l.fetchPriority='high';
+      document.head.appendChild(l);
+      var st=document.createElement('style');
+      st.textContent='.hero-section .hero-overlay{background-image:url("'+u.replace(/"/g,'%22')+'");background-size:cover;background-position:center;opacity:.35}';
+      document.head.appendChild(st);
+      window.__heroPre=u;
+    }catch(e){}})();
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar"><div class="container"><a class="navbar-brand" href="#inicio"><div class="logo-container"><img src="img/LOGOS_Mesa%20de%20trabajo%201%20copia%2025.jpg.jpeg" alt="Yerco" class="logo-img"><img src="img/logo-yerco-dark.png" alt="Yerco" class="brand-text-img"></div></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li><li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li><li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li><li class="nav-item"><a class="nav-link" href="#resenas">Opiniones</a></li><li class="nav-item"><a class="nav-link" href="#contacto-footer">Contacto</a></li></ul></div><div id="authNavBtn" style="display:flex;align-items:center;margin-right:0.5rem">

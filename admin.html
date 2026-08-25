@@ -4411,7 +4411,12 @@ async function previewEditorImg(input,field){
                 const mime=compressed._mime||'image/jpeg';
                 const ref=storage.ref('site/'+f+'.'+ext);
                 if(!hayEspacio(compressed.size))throw new Error('Sin espacio disponible');
-                await ref.put(compressed,{contentType:mime});
+                /* cacheControl: sin esto Firebase Storage sirve las imagenes del sitio con
+                   "private, max-age=0" y el navegador se baja el hero entero (146 KB) en
+                   CADA visita. Las imagenes de producto ya se suben asi; estas quedaron
+                   afuera. Se puede cachear fuerte porque al reemplazar el archivo Storage
+                   emite un token nuevo, la URL cambia y se guarda esa en Firestore. */
+                await ref.put(compressed,{contentType:mime,cacheControl:'public,max-age=31536000'});
                 data[f]=await ref.getDownloadURL();_scImgGuardadas[f]=data[f];}else{
                 /* Si no se subio nada nuevo, se deja EXACTAMENTE lo que ya estaba guardado.
                    Antes esto leia prev.src y lo aceptaba con un startsWith('http'), lo que
