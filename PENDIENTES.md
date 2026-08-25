@@ -90,7 +90,7 @@ medias. Por eso pasa poco.
 
 ---
 
-## 2. En móvil, el botón "Agregar al carrito" del modal de producto queda cortado
+## 2. ~~En móvil, el botón "Agregar al carrito" del modal de producto queda cortado~~ HECHO
 
 **Síntoma:** en Android (verificar también en iPhone), al abrir el modal de detalle de un
 producto, el botón de agregar al carrito se ve apenas un 10%. Se lo come la pantalla.
