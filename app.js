@@ -5,6 +5,21 @@
 const WHATSAPP_NUMBER = '5493515314675';
 const PRODUCTS_PER_PAGE = 10;
 function optImg(url,w){return url||'';}
+/* Etiqueta corta para un botón del sistema viejo de gramajes.
+   Antes el fallback era `h.nombre`, o sea el nombre interno entero: al lado de una
+   máscara de grupo de 5 caracteres ("250gr") salía un botón de 25 o más.
+   Orden elegido mirando los datos que hay cargados de verdad: los hijos que no
+   tienen `gramaje` SÍ tienen `grupoMascara` (los dos casos que existen hoy en la
+   base), asi que esa es la primera alternativa. Si tampoco está, se saca el
+   peso/volumen del nombre, que es lo único corto y previsible que queda. */
+function gramajeLabel(h){
+    if(!h)return 'Otra presentación';
+    if(h.gramaje)return h.gramaje;
+    if(h.grupoMascara)return h.grupoMascara;
+    const m=/(\d+(?:[.,]\d+)?)\s*(kilos|kilo|kg|gramos|gramo|grs|gr|g|litros|litro|lts|lt|ml|cc|unidades|unidad|un)\b/i.exec(h.nombre||'');
+    if(m)return m[1]+' '+m[2].toLowerCase();
+    return 'Otra presentación';
+}
 let productos = [];
 let _gruposMeta = {}; // estructura de grupos incluyendo ocultos: { grupoId: { principalOrden, miembros:[{id,orden,oculto,principal}] } }
 let carrito = [];
@@ -276,30 +291,37 @@ function renderProducts(list) {
         const atcAttrs=qty>0
             ?'class="add-to-cart-btn added"'
             :'class="add-to-cart-btn"'+(noStock?' disabled':'')+' onclick="'+(qty===0?'addToCart(\''+p.id+'\')':'event.stopPropagation()')+'"';
-        /* Gramajes asociados (sistema viejo): hijos de este producto */
-        const hijos=productos.filter(h=>h.gramajePadreId===p.id);
+        /* Grupos de presentación (sistema nuevo): miembros del mismo grupoId.
+           Se resuelve ANTES que los gramajes porque decide si el sistema viejo se
+           dibuja o no (ver el comentario de `hijos`). */
+        const miembros=p.grupoId?productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999)):[];
+        const usaSelectorGrupo=miembros.length>1;
+        /* Gramajes asociados (sistema viejo): hijos de este producto.
+           Los dos sistemas de presentaciones convivían y la tarjeta los concatenaba
+           sin `else`, asi que un producto con grupoId Y ADEMAS hijos gramajePadreId
+           mostraba su presentación dos veces: arriba la máscara corta del grupo y
+           abajo, debajo del botón Agregar, el nombre interno entero.
+           Gana el sistema de grupos: tiene `grupoMascara`, un campo hecho para dar
+           una etiqueta corta; el viejo no tiene con qué y por eso caía al nombre. */
+        const hijos=usaSelectorGrupo?[]:productos.filter(h=>h.gramajePadreId===p.id);
         const gramajeHTML=hijos.length>0?'<div class="gramaje-btns">'+
             '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
-            hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
+            hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(gramajeLabel(h))+'</button>').join('')+
             '</div>':'';
-        /* Grupos de presentación (sistema nuevo): miembros del mismo grupoId */
         let grupoHTML='';
-        if(p.grupoId){
-            const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
-            if(miembros.length>1){
-                grupoHTML='<div class="presentacion-wrap pres-pushdown"><button class="pres-arrow pres-arrow-left" onclick="event.stopPropagation();presScroll(this,-1)" aria-label="Anterior" tabindex="-1"><i class="bi bi-chevron-left"></i></button><div class="presentacion-selector" data-grupo="'+p.grupoId+'" onscroll="presUpdateArrows(this)">'+
-                    miembros.map(m=>{
-                        const lbl=m.grupoMascara||m.gramaje||m.nombre;
-                        const act=m.id===p.id?' active':'';
-                        return '<button class="presentacion-seg'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
-                    }).join('')+
-                    '</div><button class="pres-arrow pres-arrow-right" onclick="event.stopPropagation();presScroll(this,1)" aria-label="Siguiente" tabindex="-1"><i class="bi bi-chevron-right"></i></button></div>';
-                /* Precargar imágenes de las otras presentaciones (diferido) para que el cambio sea instantáneo */
-                if('requestIdleCallback' in window){
-                    requestIdleCallback(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});});
-                }else{
-                    setTimeout(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});},1500);
-                }
+        if(usaSelectorGrupo){
+            grupoHTML='<div class="presentacion-wrap pres-pushdown"><button class="pres-arrow pres-arrow-left" onclick="event.stopPropagation();presScroll(this,-1)" aria-label="Anterior" tabindex="-1"><i class="bi bi-chevron-left"></i></button><div class="presentacion-selector" data-grupo="'+p.grupoId+'" onscroll="presUpdateArrows(this)">'+
+                miembros.map(m=>{
+                    const lbl=m.grupoMascara||m.gramaje||m.nombre;
+                    const act=m.id===p.id?' active':'';
+                    return '<button class="presentacion-seg'+act+'" onclick="event.stopPropagation();selectGrupoMiembro(\''+p.id+'\',\''+m.id+'\')" data-id="'+m.id+'">'+esc(lbl)+'</button>';
+                }).join('')+
+                '</div><button class="pres-arrow pres-arrow-right" onclick="event.stopPropagation();presScroll(this,1)" aria-label="Siguiente" tabindex="-1"><i class="bi bi-chevron-right"></i></button></div>';
+            /* Precargar imágenes de las otras presentaciones (diferido) para que el cambio sea instantáneo */
+            if('requestIdleCallback' in window){
+                requestIdleCallback(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});});
+            }else{
+                setTimeout(()=>{miembros.forEach(m=>{if(m.id!==p.id&&m.imagen){const im=new Image();im.src=optImg(m.imagen,500)||m.imagen;}});},1500);
             }
         }
         const dscPct=Math.min(100,Math.max(0,p.descuento||0));
@@ -641,26 +663,28 @@ function openProductDetailModal(id){
     const precioRowHtml=dscPct>0
         ?'<div class="pdm-price-row"><span class="pdm-price product-price-off">$'+formatPrice(Math.round(p.precio*(1-dscPct/100)))+'</span><span class="price-original" style="font-size:1rem">$'+formatPrice(p.precio)+'</span><span style="background:linear-gradient(135deg,#e6a23c,#d97706);color:#fff;font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:6px;margin-left:6px">-'+(p.descuento||0)+'% OFF</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>'
         :'<div class="pdm-price-row"><span class="pdm-price">$'+formatPrice(p.precio)+'</span>'+(noStock?'<span class="pdm-stock-tag">Sin stock</span>':'')+'</div>';
-    /* Gramajes asociados */
-    const pdmHijos=productos.filter(h=>h.gramajePadreId===p.id);
+    /* Grupos de presentación: botones que cambian de producto en el modal.
+       Igual que en la tarjeta, se resuelve primero porque decide si el sistema
+       viejo de gramajes se dibuja. Antes se concatenaban los dos y salían DOS
+       secciones "Presentaciones" seguidas. */
+    const pdmMiembros=p.grupoId?productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999)):[];
+    const pdmUsaGrupo=pdmMiembros.length>1;
+    let pdmGrupoHtml='';
+    if(pdmUsaGrupo){
+        pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="presentacion-selector">'+
+            pdmMiembros.map(m=>{
+                const lbl=m.grupoMascara||m.gramaje||m.nombre;
+                const act=m.id===p.id?' active':'';
+                return '<button class="presentacion-seg'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
+            }).join('')+
+            '</div></div>';
+    }
+    /* Gramajes asociados (sistema viejo): solo si el grupo no se hizo cargo */
+    const pdmHijos=pdmUsaGrupo?[]:productos.filter(h=>h.gramajePadreId===p.id);
     const pdmGramajeHtml=pdmHijos.length>0?'<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
         '<button class="gramaje-btn active" onclick="addToCart(\''+p.id+'\');showToast(\''+esc((p.nombreMostrado||p.nombre)).replace(/'/g,"")+'\'+\' agregado\',\'success\')">'+esc(p.gramaje||'Base')+'</button>'+
-        pdmHijos.map(h=>'<button class="gramaje-btn" onclick="addToCart(\''+h.id+'\');showToast(\'Agregado\',\'success\')">'+esc(h.gramaje||h.nombre)+'</button>').join('')+
+        pdmHijos.map(h=>'<button class="gramaje-btn" onclick="addToCart(\''+h.id+'\');showToast(\'Agregado\',\'success\')">'+esc(gramajeLabel(h))+'</button>').join('')+
         '</div></div>':'';
-    /* Grupos de presentación: botones que cambian de producto en el modal */
-    let pdmGrupoHtml='';
-    if(p.grupoId){
-        const miembros=productos.filter(m=>m.grupoId===p.grupoId).sort((a,b)=>(a.grupoOrden??999)-(b.grupoOrden??999));
-        if(miembros.length>1){
-            pdmGrupoHtml='<div class="pdm-section"><h4>Presentaciones</h4><div class="presentacion-selector">'+
-                miembros.map(m=>{
-                    const lbl=m.grupoMascara||m.gramaje||m.nombre;
-                    const act=m.id===p.id?' active':'';
-                    return '<button class="presentacion-seg'+act+'" onclick="openProductDetailModal(\''+m.id+'\')">'+esc(lbl)+'</button>';
-                }).join('')+
-                '</div></div>';
-        }
-    }
     document.getElementById('productDetailBody').innerHTML=
         '<div class="pdm-carousel">'+imgsHtml+carouselNav+'</div>'+
         '<div class="pdm-info">'+

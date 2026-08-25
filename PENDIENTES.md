@@ -48,7 +48,7 @@ existen, y medir anchos/altos reales de labels, inputs y botones.
 
 ---
 
-## 1. Presentaciones duplicadas en las tarjetas de la tienda
+## 1. ~~Presentaciones duplicadas en las tarjetas de la tienda~~ HECHO
 
 **Síntoma:** algunos productos muestran su cantidad/presentación dos veces — una arriba
 en el selector segmentado (bien) y otra abajo del botón "Agregar", escrita mucho más
