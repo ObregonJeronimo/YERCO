@@ -113,9 +113,21 @@ document.addEventListener('keydown', function (e) {
   if (e.ctrlKey || e.altKey || e.metaKey) return;
 
   if (e.key === 'Escape') {
-    /* Cierra el modal de más arriba. Es lo único que funciona con un modal abierto. */
+    /* Cierra el modal de más arriba. Es lo único que funciona con un modal abierto.
+       Antes esto le sacaba la clase `show` a mano, salteándose la función de cierre
+       del modal. El modal desaparecía de la pantalla pero el estado quedaba pegado:
+       el caso feo es `_pedidoOrigenVentaId`, que closeVentaModal() limpia justamente
+       para que la SIGUIENTE venta de mostrador no se ate a un pedido viejo. Cerrando
+       con Escape ese candado no corría. Ahora se busca el botón de cerrar del modal
+       y se lo pulsa, que es el mismo camino que el del mouse; si no tiene botón, ahí
+       sí se saca la clase a mano. */
     const abiertos = document.querySelectorAll('.modal-overlay.show');
-    if (abiertos.length) { abiertos[abiertos.length - 1].classList.remove('show'); e.preventDefault(); }
+    if (abiertos.length) {
+      const modal = abiertos[abiertos.length - 1];
+      const cerrar = modal.querySelector('.modal-close[onclick]');
+      if (cerrar) cerrar.click(); else modal.classList.remove('show');
+      e.preventDefault();
+    }
     return;
   }
   if (_enCampo(e.target)) return;

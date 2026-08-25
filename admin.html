@@ -70,7 +70,7 @@
         .alertas-items li{padding:1px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .alertas-items .alertas-mas{color:var(--text-dim);opacity:0.75;font-style:italic}
         .alertas-chev{color:var(--text-dim);font-size:0.75rem;margin-top:3px;flex:0 0 auto}
-        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;padding:1rem}.modal-overlay.show{display:flex}.modal-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:550px;max-height:90vh;overflow-y:auto;padding:2rem}.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+        /* overflow-y:auto + margin:auto en la caja: si la caja no entra, en vez de quedar centrada y desbordar por arriba (con el encabezado y la X fuera de la pantalla, imposibles de tocar) el overlay scrollea y se llega igual. */.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto}.modal-overlay.show{display:flex}.modal-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:550px;max-height:90vh;max-height:90dvh;overflow-y:auto;padding:2rem;margin:auto}/* pegajoso: los modales de venta y pedido son largos y hay que scrollear; sin esto la X se va para arriba y hay que volver al principio para cerrar. */.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;position:sticky;top:-0.5rem;background:var(--bg-card);z-index:2;padding-top:0.25rem}
         /* .modal-footer y .modal-body se usan en los nueve modales del panel y no
            estaban definidas en ninguna parte (admin.html no carga CSS externo). El
            footer quedaba en display:block, asi que Cancelar y el boton principal se
@@ -164,7 +164,7 @@
         .sidebar-item i{font-size:1.1rem;width:20px;text-align:center}
         .sidebar-toggle{background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;display:none;padding:0.2rem}
         .admin-main{flex:1;padding:2rem;min-width:0;overflow-x:auto}
-        @media(max-width:768px){.sidebar{position:fixed;left:-260px;top:57px;z-index:150;width:250px;transition:left 0.3s;box-shadow:none}.sidebar.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,0.4)}.sidebar-toggle{display:block}.admin-main{padding:0.5rem}.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}.search-box{grid-column:1/-1}.toolbar .form-input{font-size:0.8rem;padding:0.4rem 0.6rem;grid-column:1/-1}.toolbar .btn{font-size:0.75rem;padding:0.4rem 0.5rem;width:100%}.form-row{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.stats-row .stat-card{padding:0.75rem}.modal-box{padding:1rem;margin:0.5rem;max-height:95vh;border-radius:12px}.modal-header{margin-bottom:1rem}.form-row[style*="1fr 1fr 1fr 1fr"]{grid-template-columns:1fr 1fr!important}.actions-cell{gap:2px}.btn-icon{padding:5px}.product-img-cell{width:32px;height:32px}th,td{padding:0.4rem 0.3rem;font-size:0.72rem}th{font-size:0.62rem;letter-spacing:0.5px}.cat-badge{font-size:0.65rem;padding:2px 5px}.stock-badge{font-size:0.7rem;padding:2px 6px}.price-cell{font-size:0.72rem!important}.venta-modal-body .form-row{grid-template-columns:1fr!important}.sidebar-item[onclick*="editor"]{display:none}.stock-row{gap:0.5rem;padding:0.5rem}.stock-row img{width:32px;height:32px}.stock-row-info strong{font-size:0.8rem}.cliente-card{padding:8px;gap:8px}.cliente-name{font-size:0.82rem}.cliente-detail{font-size:0.7rem}}
+        @media(max-width:768px){.sidebar{position:fixed;left:-260px;top:57px;z-index:150;width:250px;transition:left 0.3s;box-shadow:none}.sidebar.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,0.4)}.sidebar-toggle{display:block}.admin-main{padding:0.5rem}.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}.search-box{grid-column:1/-1}.toolbar .form-input{font-size:0.8rem;padding:0.4rem 0.6rem;grid-column:1/-1}.toolbar .btn{font-size:0.75rem;padding:0.4rem 0.5rem;width:100%}.form-row{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.stats-row .stat-card{padding:0.75rem}.modal-box{padding:1rem;margin:auto;max-height:95vh;max-height:95dvh;border-radius:12px}.modal-header{margin-bottom:1rem}.form-row[style*="1fr 1fr 1fr 1fr"]{grid-template-columns:1fr 1fr!important}.actions-cell{gap:2px}.btn-icon{padding:5px}.product-img-cell{width:32px;height:32px}th,td{padding:0.4rem 0.3rem;font-size:0.72rem}th{font-size:0.62rem;letter-spacing:0.5px}.cat-badge{font-size:0.65rem;padding:2px 5px}.stock-badge{font-size:0.7rem;padding:2px 6px}.price-cell{font-size:0.72rem!important}.venta-modal-body .form-row{grid-template-columns:1fr!important}.sidebar-item[onclick*="editor"]{display:none}.stock-row{gap:0.5rem;padding:0.5rem}.stock-row img{width:32px;height:32px}.stock-row-info strong{font-size:0.8rem}.cliente-card{padding:8px;gap:8px}.cliente-name{font-size:0.82rem}.cliente-detail{font-size:0.7rem}}
         .stock-row{display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;background:var(--bg-input);border-radius:var(--radius);margin-bottom:0.5rem}.stock-row img{width:40px;height:40px;border-radius:6px;object-fit:cover}.stock-row-info{flex:1;min-width:0}.stock-row-info strong{font-size:0.88rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-row-info small{color:var(--text-dim);font-size:0.75rem}.dlg-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:1rem;animation:dlgFade 0.12s ease-out}
         @keyframes dlgFade{from{opacity:0}to{opacity:1}}
         .dlg-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;padding:1.5rem;box-shadow:0 24px 60px rgba(0,0,0,0.55);animation:dlgPop 0.14s ease-out}
@@ -1002,7 +1002,7 @@ function deltasDeItems(items,signo){
         function _initAuth(){
             if(!firebase.auth){setTimeout(_initAuth,100);return;}
             try{if(!auth)auth=firebase.auth();if(!storage)storage=firebase.storage();}catch(e){}
-            auth.onAuthStateChanged(async u=>{if(u){const allowed=await isAllowedEmail(u.email);if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;Promise.resolve(loadProducts()).then(()=>{if(typeof actualizarBadgeAlertas==='function')actualizarBadgeAlertas();});loadListas();loadFacturaConfig();loadTelegramConfig();loadResenasConfig();loadPedidosCfgEditor();loadAtajos();escucharUso();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
+            auth.onAuthStateChanged(async u=>{if(u){const allowed=await isAllowedEmail(u.email);if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;Promise.resolve(loadProducts()).then(()=>{if(typeof actualizarBadgeAlertas==='function')actualizarBadgeAlertas();});loadListas();loadFacturaConfig();loadTelegramConfig();loadResenasConfig();loadPedidosCfgEditor();/* loadAtajos es la unica de esta lista que vive en otro archivo (admin-atajos.js, que se carga mas abajo en el documento). Si la sesion ya esta en cache, onAuthStateChanged puede responder antes de que ese <script> se haya parseado y la llamada tira ReferenceError, cortando lo que sigue. Se guarda igual que actualizarBadgeAlertas unas lineas mas arriba. */if(typeof loadAtajos==='function')loadAtajos();escucharUso();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
         } // end _initAuth
         _initAuth();
         function logout(){auth.signOut();}
@@ -2751,14 +2751,21 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                 return nombre?(nombre+' ('+cant+')'):'';
             }).filter(function(s){return s;});
         }
+        /* tipo: 'may' ventas mayoristas, 'ped' pedidos, cualquier otra cosa ventas.
+           Los pedidos guardan los productos en `items` igual que las ventas, asi que
+           reusan _lineasProductosVenta y todo el manejo del portapapeles. */
         async function copiarProductosVenta(id,tipo){
-            var lista=(tipo==='may')
-                ?((typeof ventasMayData!=='undefined'&&ventasMayData)||[])
-                :((typeof ventasData!=='undefined'&&ventasData)||[]);
+            var esPedido=(tipo==='ped');
+            var lista=esPedido
+                ?((typeof pedidosData!=='undefined'&&pedidosData)||[])
+                :(tipo==='may')
+                    ?((typeof ventasMayData!=='undefined'&&ventasMayData)||[])
+                    :((typeof ventasData!=='undefined'&&ventasData)||[]);
+            var _queCosa=esPedido?'el pedido':'la venta';
             var v=lista.find(function(x){return x.docId===id||x.id===id;});
-            if(!v){showAdminToast('No se encontro la venta','error');return;}
+            if(!v){showAdminToast('No se encontro '+_queCosa,'error');return;}
             var lineas=_lineasProductosVenta(v);
-            if(!lineas.length){showAdminToast('Esta venta no tiene productos','info');return;}
+            if(!lineas.length){showAdminToast((esPedido?'Este pedido':'Esta venta')+' no tiene productos','info');return;}
             var txt=lineas.join('\n');
             var aviso=lineas.length+' producto'+(lineas.length!==1?'s':'')+' copiado'+(lineas.length!==1?'s':'');
             try{
@@ -2777,6 +2784,8 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
             }
         }
 
+        /* Atajo con nombre propio para los botones de Pedidos. */
+        function copiarProductosPedido(id){return copiarProductosVenta(id,'ped');}
         function renderVentasStats(){renderResumenVentas('vtStat',ventasFiltered||[],'ventaMesFiltro');}function renderVentas(){const c=document.getElementById('ventasList');renderVentasStats();
             /* Con "Todos los meses" la consulta se acota a las 500 mas recientes. Hay que
                decirlo: si no, alguien mira el listado y cree que el negocio vendio menos. */
@@ -2970,6 +2979,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                        o a entregado. openEstadoPedidoModal ya existia y hacia justo esto, pero
                        nada lo llamaba desde la tarjeta. */
                     cards+='<button onclick="event.stopPropagation();openEstadoPedidoModal(\''+p.docId+'\')" style="background:none;border:none;color:var(--accent-light);cursor:pointer;padding:0 2px;font-size:0.85rem;opacity:0.85" title="Cambiar estado"><i class="bi bi-arrow-left-right"></i></button>';
+                    /* El mismo boton que ya tenian las tarjetas de Ventas: copia la lista
+                       de productos al portapapeles para pegarla al preparar el pedido. */
+                    cards+='<button onclick="event.stopPropagation();copiarProductosPedido(\''+p.docId+'\')" style="background:none;border:none;color:var(--accent-light);cursor:pointer;padding:0 2px;font-size:0.85rem;opacity:0.85" title="Copiar la lista de productos de este pedido"><i class="bi bi-clipboard"></i></button>';
                     cards+='<button onclick="event.stopPropagation();deletePedido(\''+p.docId+'\','+String(p.numero||0)+')" style="background:none;border:none;color:#f56c6c;cursor:pointer;padding:0 2px;font-size:0.85rem;opacity:0.7" title="Eliminar"><i class="bi bi-trash"></i></button>';
                     cards+=badge;
                     cards+='</div>';
@@ -6126,6 +6138,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
           </div>
           <div class="form-actions">
             <button class="btn btn-secondary" onclick="closePedidoModal()">Cancelar</button>
+            <button class="btn btn-secondary" id="copiarProdPedidoBtn" onclick="copiarProductosPedido(editingPedidoId)" title="Copiar la lista de productos de este pedido"><i class="bi bi-clipboard"></i> Copiar productos</button>
             <button class="btn btn-sm btn-convertir-venta" id="convertirVentaBtn" style="display:none" onclick="convertirPedidoEnVentaDesdeModal()"><i class="bi bi-cart-check"></i> Convertir a venta</button>
             <button class="btn btn-primary" onclick="savePedidoDesdeModal()" id="savePedidoBtn"><i class="bi bi-check-lg"></i> Guardar pedido</button>
           </div>
