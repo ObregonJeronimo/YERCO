@@ -44,7 +44,7 @@ let paginaActual = 1;
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavbar(); initParticles(); initContactForm(); initCart(); initFooterAnio();
-    loadProductsFromFirebase(); initScrollAnimations();
+    loadProductsFromFirebase(); initScrollAnimations(); initAutoScrollProductos();
     /* Botón atrás/adelante del navegador: abrir o cerrar el producto según la URL */
     window.addEventListener('popstate', () => {
         const path=window.location.pathname;
@@ -1137,6 +1137,61 @@ function scrollAnimObserve(nodos){
         el.style.transition='opacity 0.6s ease, transform 0.6s ease';
         _scrollAnimObserver.observe(el);
     });
+}
+/* ------------------------------------------------- empujon hacia los productos
+   Si pasan 10 segundos sin que el visitante toque NADA, la pagina baja sola hasta
+   el catalogo. Mover la pagina sin que la pidan puede sentirse como que se escapa,
+   asi que esta acotado a lo que de verdad parece "llegue y me quede mirando":
+     - una sola vez por visita, y despues se desarma del todo;
+     - solo si sigue arriba de todo (si ya scrolleo, se respeta donde esta);
+     - nunca con el carrito, el checkout o la ficha de un producto abiertos;
+     - nunca si la pestania esta en segundo plano, para que no se encuentre la
+       pagina movida al volver;
+     - nunca con "reducir movimiento" activado.
+
+   Sobre el costo: no hay sondeo ni requestAnimationFrame. Los oyentes hacen UNA
+   asignacion (guardar la hora) y son todos pasivos, asi que no tocan el hilo del
+   scroll. El temporizador es uno solo: cuando salta mira cuanto falta y, si falta,
+   se vuelve a agendar por ese resto. En una visita normal son dos o tres
+   setTimeout en total, no uno por cada movimiento del mouse. */
+const AUTOSCROLL_MS = 10000;
+let _ultimaActividad = Date.now();
+let _autoScrollVivo = false;
+const _EVENTOS_ACTIVIDAD = ['pointerdown','pointermove','keydown','wheel','touchstart','scroll','click'];
+function _marcarActividad(){ _ultimaActividad = Date.now(); }
+function _hayAlgoAbierto(){
+    return !!document.querySelector('.product-detail-modal.show, .checkout-modal.show, .cart-sidebar.show');
+}
+function initAutoScrollProductos(){
+    if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+    /* Si la URL ya apunta a una seccion, el visitante dijo a donde queria ir. */
+    if(location.hash)return;
+    const destino=document.getElementById('productos');
+    if(!destino)return;
+    _autoScrollVivo=true;
+    _EVENTOS_ACTIVIDAD.forEach(ev=>window.addEventListener(ev,_marcarActividad,{passive:true}));
+    /* Al volver de otra pestania se reinicia la cuenta: si no, el rato que estuvo
+       afuera contaria como inactividad y se encontraria la pagina ya movida. */
+    document.addEventListener('visibilitychange',_marcarActividad,{passive:true});
+    const desarmar=()=>{
+        _autoScrollVivo=false;
+        _EVENTOS_ACTIVIDAD.forEach(ev=>window.removeEventListener(ev,_marcarActividad));
+        document.removeEventListener('visibilitychange',_marcarActividad);
+    };
+    const revisar=()=>{
+        if(!_autoScrollVivo)return;
+        /* Si se fue de la pagina, si abrio algo, o si ya bajo por su cuenta, no se
+           insiste ahora: se vuelve a mirar mas tarde. */
+        if(document.hidden||_hayAlgoAbierto()||window.scrollY>10){
+            setTimeout(revisar,AUTOSCROLL_MS);
+            return;
+        }
+        const inactivo=Date.now()-_ultimaActividad;
+        if(inactivo<AUTOSCROLL_MS){ setTimeout(revisar,AUTOSCROLL_MS-inactivo); return; }
+        desarmar();
+        destino.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+    setTimeout(revisar,AUTOSCROLL_MS);
 }
 function initScrollAnimations(){
     /* Antes esto se apagaba entero debajo de 768px, asi que en el telefono no se
