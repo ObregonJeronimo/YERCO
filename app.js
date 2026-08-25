@@ -29,6 +29,9 @@ function gramajeLabel(h){
     if(m)return m[1]+' '+m[2].toLowerCase();
     return 'Otra presentación';
 }
+/* El año del copyright estaba escrito a mano en index.html y habia quedado en 2024.
+   No merece un campo en el panel: se saca del reloj y no vuelve a envejecer. */
+function initFooterAnio(){const el=document.getElementById('footerAnio');if(el)el.textContent=new Date().getFullYear();}
 let productos = [];
 let _gruposMeta = {}; // estructura de grupos incluyendo ocultos: { grupoId: { principalOrden, miembros:[{id,orden,oculto,principal}] } }
 let carrito = [];
@@ -40,7 +43,7 @@ let busquedaTexto = '';
 let paginaActual = 1;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initNavbar(); initParticles(); initContactForm(); initCart();
+    initNavbar(); initParticles(); initContactForm(); initCart(); initFooterAnio();
     loadProductsFromFirebase(); initScrollAnimations();
     /* Botón atrás/adelante del navegador: abrir o cerrar el producto según la URL */
     window.addEventListener('popstate', () => {
@@ -1190,6 +1193,16 @@ function applySiteContent(d){
     if(d.instagram){const ig=document.querySelector('.social-links a[aria-label="Instagram"]');if(ig)ig.href=d.instagram;}
     if(d.whatsapp){const wa=document.querySelectorAll('a[href*="wa.me"]:not(.wa-dev)');wa.forEach(a=>{a.href=a.href.replace(/wa\.me\/[0-9]+/,'wa.me/'+d.whatsapp);});}
     if(d.email){const em=document.querySelector('.social-links a[aria-label="Email"]');if(em)em.href='mailto:'+d.email;}
+    /* Bloque de contacto del footer. Estaba escrito a mano en index.html y no habia
+       forma de cambiarlo desde el panel: cambiar de local, de telefono o de horario
+       obligaba a tocar el HTML. El caso mas raro era el telefono, que TENIA campo
+       (telefonoDisplay, en SC_FIELDS y en SC_DEFAULTS) pero no tenia ni control en
+       el Editor Web ni una sola linea que lo aplicara, asi que no hacia nada. */
+    if(d.telefonoDisplay){const tel=document.getElementById('footerTelefono');if(tel){tel.textContent=d.telefonoDisplay;tel.href='tel:'+d.telefonoDisplay.replace(/[^0-9+]/g,'');}}
+    if(d.direccion){const dir=document.getElementById('footerDireccion');if(dir){dir.textContent=d.direccion;dir.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d.direccion);}}
+    if(d.horario){const hor=document.getElementById('footerHorario');if(hor)hor.textContent=d.horario;}
+    /* El mail salia en dos lugares y el campo solo actualizaba el icono de arriba. */
+    if(d.email){const fe=document.getElementById('footerEmail');if(fe){fe.textContent=d.email;fe.href='mailto:'+d.email;}}
     const ho=document.querySelector('.hero-overlay');
     if(ho){
         if(d.heroImg&&d.heroImg.startsWith('http')){

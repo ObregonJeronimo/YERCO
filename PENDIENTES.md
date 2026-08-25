@@ -168,7 +168,7 @@ menor a 768px. Revisar si conviene mantener esa exclusión.
 
 ---
 
-## 4. Datos hardcodeados en `index.html` vs el Editor Web
+## 4. ~~Datos hardcodeados en `index.html` vs el Editor Web~~ HECHO
 
 **Sospecha del usuario:** hay datos en `index.html` que están escritos a mano y deberían
 salir del Editor Web del admin.
