@@ -2841,7 +2841,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
         }
 
         let pedidosData=[],pedidosFiltered=[],pedidosPage=0,pedidoFiltroEstado='';
-        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,editingPedidoId=null;pedidoDirty=false;let _pedidoCupon=null;
+        let pedItems=[],pedInsumosUsados=[],pedTipoEntrega='envio',pedClienteSelected=false,_pedClienteDatos={telefono:'',email:''},editingPedidoId=null;pedidoDirty=false;let _pedidoCupon=null;
 
 
         let _pedidosUnsubscribe=null;
@@ -2970,7 +2970,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                     }
                     cards+='</div>';
                     cards+='<div style="font-size:0.8rem;font-weight:600;color:var(--text-main);margin:2px 0">'+esc(p.clienteWeb||p.cliente||'—')+'</div>';
-                    if(p.clienteAuthUid){cards+='<div style="font-size:0.72rem;color:var(--accent-light)">'+(p.clienteEmail||p.clienteId?'#'+esc(p.clienteId||'')+' · '+esc(p.clienteEmail||''):'')+'</div>';}
+                    if(p.clienteAuthUid){/* Sin ficha manual vinculada no hay numero de cliente, que es el
+   caso normal de un pedido web: se imprimia un '#' suelto delante del mail, y al
+   reves un ' · ' colgando cuando habia ficha pero no mail. */var _idm=[p.clienteId?'#'+esc(p.clienteId):'',p.clienteEmail?esc(p.clienteEmail):''].filter(Boolean).join(' · ');cards+='<div style="font-size:0.72rem;color:var(--accent-light)">'+_idm+'</div>';}
                     cards+='<div class="kcard-bottom">';
                     cards+='<span class="kcard-date">'+fecha+'</span>';
                     cards+='<span class="kcard-items">'+itemsTxt+'</span>';
@@ -3247,7 +3249,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
         // Modal pedido
         function openPedidoModal(docId){
             editingPedidoId=docId||null;
-            pedItems=[];pedInsumosUsados=[];pedTipoEntrega=HACE_ENVIOS?'envio':'retiro';pedClienteSelected=false;pedidoDirty=false;_pedidoCupon=null;
+            pedItems=[];pedInsumosUsados=[];pedTipoEntrega=HACE_ENVIOS?'envio':'retiro';pedClienteSelected=false;_pedClienteDatos={telefono:'',email:''};pedidoDirty=false;_pedidoCupon=null;
             document.getElementById('pedFecha').value=new Date().toISOString().split('T')[0];
             document.getElementById('pedCliente').value='';
             document.getElementById('pedClienteId').value='';
@@ -3422,9 +3424,21 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                 const fechaStr=document.getElementById('pedFecha').value;
                 const fp=fechaStr.split('-');
                 const fecha=new Date(fp[0],fp[1]-1,fp[2],now.getHours(),now.getMinutes());
+                /* clienteId y clienteAuthUid se separan igual que en saveVenta: el selector
+                   devuelve 'auth:<uid>' para los clientes de Google. Guardando el valor crudo
+                   en clienteId, el pedido no le aparecia al cliente en su historial (la regla
+                   de lectura mira clienteAuthUid) y la tarjeta del panel imprimia '#auth:uid'.
+                   `origen` y `telefono` faltaban directamente, y sin ellos la regla de creacion
+                   rechazaba el pedido entero: Nuevo Pedido no funciono nunca. */
+                const _pcId=document.getElementById('pedClienteId').value||'';
+                const _esAuth=_pcId.startsWith('auth:');
                 const data={
                     cliente:document.getElementById('pedCliente').value.trim(),
-                    clienteId:document.getElementById('pedClienteId').value||null,
+                    clienteId:_esAuth?null:(_pcId||null),
+                    clienteAuthUid:_esAuth?_pcId.replace('auth:',''):null,
+                    clienteEmail:_pedClienteDatos.email||null,
+                    telefono:_pedClienteDatos.telefono||'',
+                    origen:'mostrador',
                     medioPago:document.getElementById('pedMedio').value,
                     tipoEntrega:pedTipoEntrega,
                     /* precioOriginal y descuento se conservan. Antes se reconstruia el item con
@@ -3503,12 +3517,14 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                 var d=document.createElement('div');
                 d.className='cliente-select-item';
                 d.innerHTML=_clienteItemHTML(cl);
-                d.addEventListener('mousedown',function(){pickPedCliente(cl.id,cl.nombre);});
+                d.addEventListener('mousedown',function(){pickPedCliente(cl.id,cl.nombre,cl.telefono,cl.email);});
                 list.appendChild(d);
             });
             list.classList.add('open');
         }
-        function pickPedCliente(id,nombre){document.getElementById('pedCliente').value=nombre;document.getElementById('pedClienteId').value=id;pedClienteSelected=true;document.getElementById('pedClienteSelectList').classList.remove('open');if(!pedidoDirty){const cvb=document.getElementById('convertirVentaBtn');if(cvb&&cvb.style.display!=='none'){cvb.disabled=false;cvb.title='';}}}
+        function pickPedCliente(id,nombre,telefono,email){document.getElementById('pedCliente').value=nombre;document.getElementById('pedClienteId').value=id;pedClienteSelected=true;/* El telefono y el mail del cliente elegido se guardan aca porque el modal de
+   pedido no tiene campos para ellos y el guardado los necesita: el pedido se
+   guardaba sin telefono y la tarjeta lo mostraba en blanco. */_pedClienteDatos={telefono:telefono||'',email:email||''};document.getElementById('pedClienteSelectList').classList.remove('open');if(!pedidoDirty){const cvb=document.getElementById('convertirVentaBtn');if(cvb&&cvb.style.display!=='none'){cvb.disabled=false;cvb.title='';}}}
         function onBlurPedCliente(){setTimeout(()=>{const list=document.getElementById('pedClienteSelectList');if(list)list.classList.remove('open');},150);}
         document.addEventListener('click',function(e){if(!e.target.closest('#pedidoModal .cliente-select-wrap'))document.getElementById('pedClienteSelectList')?.classList.remove('open');});
 
@@ -6111,7 +6127,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
               <div class="cliente-select-wrap">
                 <input type="text" class="form-input" id="pedCliente" placeholder="Buscar cliente en BDD..." autocomplete="off"
                   onfocus="this.select();showPedClienteSelect()"
-                  oninput="pedClienteSelected=false;document.getElementById('pedClienteId').value='';showPedClienteSelect()"
+                  oninput="pedClienteSelected=false;_pedClienteDatos={telefono:'',email:''};document.getElementById('pedClienteId').value='';showPedClienteSelect()"
                   onblur="onBlurPedCliente()">
                 <input type="hidden" id="pedClienteId" value="">
                 <div class="cliente-select-list" id="pedClienteSelectList"></div>

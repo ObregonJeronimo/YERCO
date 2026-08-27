@@ -82,8 +82,15 @@ service cloud.firestore {
 
     /* ===== PEDIDOS ===== */
     match /pedidos/{doc} {
-      /* Crear: solo usuarios autenticados, validando estructura */
-      allow create: if isAuthUser()
+      /* Crear: el panel, o un cliente logueado con la forma de un pedido web.
+         La rama de admin faltaba y el create se rechazaba SIEMPRE desde el panel:
+         Pedidos > Nuevo Pedido arma un pedido de mostrador, que no lleva
+         origen 'web' y puede no traer telefono. El boton nunca funciono, y
+         encima el numero sale de una transaccion que commitea ANTES del add:
+         cada intento quemaba un numero de pedido que despues faltaba en la
+         numeracion de la web. */
+      allow create: if isAdmin()
+        || (isAuthUser()
         && request.resource.data.keys().hasAll(['cliente','telefono','items','total','origen','estado','creadoEn'])
         && validString(request.resource.data.cliente, 120)
         && validString(request.resource.data.telefono, 30)
@@ -101,7 +108,7 @@ service cloud.firestore {
            asi que un mayorista las junta sin darse cuenta. Mismo final silencioso que
            arriba. 300 sigue acotando el abuso sin tirar pedidos de verdad. */
         && request.resource.data.items.size() <= 300
-        && request.resource.data.origen == 'web';
+        && request.resource.data.origen == 'web');
       /* Leer: admin o el propio cliente */
       allow read: if isAdmin()
         || (isAuthUser() && 'clienteAuthUid' in resource.data && resource.data.clienteAuthUid == request.auth.uid);
@@ -237,7 +244,16 @@ service cloud.firestore {
          `read` es publico, cualquiera lista los tokens pendientes y una sola cuenta podia
          completar las 40 resenas abiertas con una estrella. Los tickets de mostrador sin
          cuenta no traen el campo y siguen funcionando como antes. */
-      allow update: if isAuthUser()
+      /* El admin solo puede tocar `visible`, que es lo unico que hace el boton
+         Ocultar/Mostrar del panel. Sin esta rama el update se rechazaba y el
+         dueño no tenia forma de bajar una resena mala: resena.html las publica
+         con visible:true y la tienda muestra todo lo que tenga visible==true,
+         asi que la unica salida era borrarla. Acotado a esa sola clave para que
+         el panel no pueda reescribir lo que el cliente opino. */
+      allow update: if (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visible'])
+          && request.resource.data.visible is bool)
+        || (isAuthUser()
         && request.resource.data.clienteAuthUid == request.auth.uid
         && (!('clienteAuthUid' in resource.data)
             || resource.data.clienteAuthUid == null
@@ -249,7 +265,7 @@ service cloud.firestore {
         && validString(request.resource.data.comentario, 1000)
         && request.resource.data.estrellas is number
         && request.resource.data.estrellas >= 1
-        && request.resource.data.estrellas <= 5;
+        && request.resource.data.estrellas <= 5);
       allow delete: if isAdmin();
     }
 
