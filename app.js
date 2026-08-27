@@ -1077,6 +1077,26 @@ async function confirmCheckout(){
     if(tipoEntrega==='envio'&&!direccion){showToast('Para envío necesitamos tu dirección','error');document.getElementById('chkDireccion').focus();return;}
     /* Guardar datos en localStorage para próxima vez */
     try{localStorage.setItem('yerco_checkout_data',JSON.stringify({nombre,apellido,telefono,direccion,notas,tipoEntrega}));}catch(e){}
+    /* El checkout ya exige nombre, apellido y telefono, pero eso solo iba a
+       localStorage: en clientesAuth el cliente seguia figurando "incompleto" en el
+       panel por mas pedidos que hiciera. El unico lugar que completaba esos campos
+       era el modal "Completa tus datos", que solo aparece justo despues de apretar
+       "Iniciar sesion" y nunca al restaurar la sesion. Se completa con lo que la
+       persona acaba de escribir, sin pisar lo que ya tenga cargado, y sin frenar el
+       pedido si la escritura falla. */
+    if(clienteAuth){
+        const _faltan={};
+        if(!clienteAuth.nombre&&nombre)_faltan.nombre=nombre;
+        if(!clienteAuth.apellido&&apellido)_faltan.apellido=apellido;
+        if(!clienteAuth.telefono&&telefono)_faltan.telefono=telefono;
+        if(Object.keys(_faltan).length){
+            try{
+                await db.collection('clientesAuth').doc(clienteAuth.uid).update(_faltan);
+                Object.assign(clienteAuth,_faltan);
+                if(typeof authClient!=='undefined'&&authClient.currentUser)_updateNavAuth(authClient.currentUser);
+            }catch(e){console.warn('No se pudieron completar los datos del cliente:',e.message);}
+        }
+    }
     const btn=document.getElementById('chkConfirmBtn');
     btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Confirmando...';
     try{
@@ -1544,6 +1564,23 @@ async function _onUserLogin(user, showModal=false) {
                 }).catch(e => console.warn('ultimoAcceso:', e.message));
             }
         } catch (e) { console.warn('ultimoAcceso error:', e.message); }
+        /* Los clientes dados de alta antes de 51e3f84 tienen el documento creado con el
+           nombre en blanco, asi que arreglar el alta no los alcanza: en el panel siguen
+           como "Sin nombre" para siempre. Google sigue diciendo como se llaman en cada
+           login, no solo en el primero, asi que se completa lo que falta la proxima vez
+           que entran. Solo si los DOS campos estan vacios, para no pisar lo que la
+           persona haya editado despues a mano. */
+        try {
+            const _dn = (user.displayName || '').trim();
+            if (_dn && !clienteAuth.nombre && !clienteAuth.apellido) {
+                const _corte = _dn.indexOf(' ');
+                const _nombre = _corte > 0 ? _dn.slice(0, _corte) : _dn;
+                const _apellido = _corte > 0 ? _dn.slice(_corte + 1).trim() : '';
+                await ref.update({ nombre: _nombre, apellido: _apellido });
+                clienteAuth.nombre = _nombre;
+                clienteAuth.apellido = _apellido;
+            }
+        } catch (e) { console.warn('No se pudo completar el nombre:', e.message); }
     }
     _updateNavAuth(user);
     /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */
