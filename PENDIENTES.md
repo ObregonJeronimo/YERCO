@@ -1,7 +1,7 @@
 # YERCO — Pendientes
 
 Estado del repo al escribir esto: `main`, todo commiteado y pusheado, árbol limpio.
-Último commit: `4b912b0` (la tienda lee la Configuración del panel: mínimo y envíos).
+Último commit: `46c2086` (el perfil del cliente se completa solo al entrar y al comprar).
 
 Las tareas están ordenadas por riesgo: las dos primeras son bugs que se ven hoy en
 producción, la tercera es rediseño, la cuarta es auditoría.
@@ -230,6 +230,7 @@ produccion. Despues salieron estos pedidos, todos hechos y desplegados:
 | `cae1967` | a los 10 s sin actividad la pagina baja sola al catalogo |
 | `51e3f84` | etiqueta de ejemplo con envio gratis + alta de cliente guarda el nombre de Google |
 | `4b912b0` | la tienda lee `config/pedidos`: minimo, envios y envio gratis salen del panel |
+| `46c2086` | el perfil del cliente se completa al restaurar la sesion y al confirmar un pedido |
 
 ## Bancos de prueba (no se commitean, los ignora .gitignore)
 
@@ -243,6 +244,14 @@ y `_test-admin.html`. Se sirven con `npm run dev` (puerto 5173).
 como se midio el PENDIENTE 1: `?neg=none` (el documento no existe, o sea
 produccion hoy), `?neg=off` (envios apagados), `?neg=nogratis`, y los montos
 sueltos `?min=50000&envio=3500&gratis=80000`.
+
+Y sabe simular un cliente logueado con la sesion restaurada, que es la unica
+forma de medir lo que se escribe en `clientesAuth`: `?user=viejo` (documento ya
+creado con el nombre en blanco), `?user=sintel` (con nombre y sin telefono),
+`?user=nuevo` (primer login). Toda escritura a Firestore queda registrada en
+`window.__writes`. Ojo al armar un carrito a mano para probar el checkout: si el
+precio no coincide con el del producto, `reconciliarCarrito()` corta
+`confirmCheckout()` antes de escribir nada y parece que el arreglo no anda.
 
 Dos cosas del entorno que conviene saber antes de medir:
 - Con el panel del navegador oculto NO corren `requestAnimationFrame` ni las
@@ -294,17 +303,57 @@ del panel. La tienda no toca el stock en ningún momento, así que ese interrupt
 no tiene nada que aplicar del lado del cliente. El comentario de `admin.html` que
 decía lo contrario quedó corregido en el mismo commit.
 
-## PENDIENTE 2 — Los 3 clientes que ya existen siguen sin nombre
+## ~~PENDIENTE 2 — Los 3 clientes que ya existen siguen sin nombre~~ HECHO
+## ~~PENDIENTE 3 — El modal "Completa tus datos" solo aparece en el login activo~~ HECHO
 
-El arreglo `51e3f84` guarda el nombre de Google **en las altas nuevas**. Los tres
-que ya estan en `clientesAuth` tienen el documento creado, asi que siguen en
-blanco. Si se quieren completar hay que hacerlo a mano desde el panel o con un
-script de migracion.
+Los dos en `46c2086`, porque eran el mismo problema visto de dos lados:
+`clientesAuth` solo se completaba en el alta o en ese modal, y entre esas dos
+puertas no había ninguna otra.
 
-## PENDIENTE 3 — El modal "Completa tus datos" solo aparece en el login activo
+- Al **restaurar la sesión** se completan nombre y apellido con lo que dice Google,
+  que lo dice en cada login y no solo en el primero. Eso alcanza a los tres que
+  estaban en blanco, sin script de migración ni credenciales: se arreglan solos la
+  próxima vez que entren a la tienda.
+- Al **confirmar un pedido** se guardan en el perfil los campos que estén vacíos con
+  lo que la persona acaba de escribir en el checkout, que ya se los exigía. Nunca
+  pisa lo que ya esté cargado.
 
-`_onUserLogin(user, showModal)` recibe `showModal = _loginActivo`, que solo es
-true justo despues de apretar "Iniciar sesion". Al restaurar la sesion no se
-vuelve a pedir nada, y el modal no tiene boton de cerrar pero se escapa
-recargando. Por eso alguien puede comprar sin telefono cargado nunca. Si molesta,
-la idea seria volver a pedirlo cuando falten datos y el cliente vaya a comprar.
+No hizo falta tocar reglas: `clientesAuth` ya deja al cliente escribir `nombre`,
+`apellido`, `telefono` y `direcciones` de su propio documento.
+
+Lo que **no** se hizo, por si vuelve la duda: no se fuerza el modal cuando faltan
+datos. Con el arreglo de arriba deja de hacer falta para el caso que preocupaba
+(comprar sin teléfono cargado): el checkout ya lo pide y ahora además lo guarda.
+El modal sigue apareciendo solo en el login activo y sigue sin botón de cerrar.
+
+---
+
+## PENDIENTE 4 — Las visitas y el último acceso de los clientes web no se guardan
+
+Salió mirando las reglas al hacer lo de arriba. `_onUserLogin()` hace, en cada
+primer acceso del día:
+
+```js
+ref.update({ ultimoAcceso: serverTimestamp(), visitas: increment(1) })
+```
+
+y la regla de `clientesAuth` deja al cliente tocar **solo** `nombre`, `apellido`,
+`telefono` y `direcciones` (`firestore.rules:135`, el `hasOnly`). Un cliente no es
+admin, así que esa escritura se rechaza siempre, y el error se lo come el
+`.catch(e => console.warn(...))` de la línea de al lado.
+
+Consecuencia: en el panel, todo cliente que entra por la web queda con
+`visitas: 1` y `ultimoAcceso` clavado en la fecha del alta. Las métricas de
+clientes están mal desde que existen.
+
+Esto lo leí de la regla, **no lo medí ejecutando** (haría falta loguearse como un
+cliente de verdad). Se confirma en dos segundos mirando el panel: si los clientes
+web tienen todos `visitas: 1`, es esto.
+
+Arreglarlo es una decisión, no un tramite: hay que **ampliar la regla** para que el
+cliente pueda escribir `ultimoAcceso` y `visitas` en su propio documento, y eso
+significa que también podría ponerse las visitas que se le antojen (son datos de
+métrica, no de plata, pero ensucian el panel). Las alternativas son moverlo a una
+Cloud Function con el Admin SDK, o derivar la métrica de `pedidos` y borrar los
+dos campos. Ojo con el orden si se toca la regla: **desplegar reglas ANTES de
+pushear el código**, como dice el contexto de arriba.
