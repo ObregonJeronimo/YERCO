@@ -4287,8 +4287,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
 /* HACE_ENVIOS manda en todo el panel: si es false, Ventas y Pedidos no ofrecen
    envio. Se carga al iniciar sesion, no solo al abrir la Configuracion. */
 let HACE_ENVIOS=true;
-/* Mismo interruptor que usa la tienda (app.js lee config/pedidos.descontarStock).
-   Si esta en false, ni el local ni la web tocan el stock: queda todo a mano. */
+/* Solo manda en el panel: la tienda no descuenta stock en ningun momento, asi
+   que este interruptor afecta a Ventas y Pedidos y nada mas. De config/pedidos la
+   tienda si lee los envios y el minimo de pedido (app.js, loadNegocioCfg). */
 let DESCONTAR_STOCK=true;
 async function loadPedidosCfgEditor(){
   let d={};

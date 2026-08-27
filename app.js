@@ -772,7 +772,7 @@ function updateCartUI() {
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
-    if(ckBtn){ckBtn.disabled=carrito.length===0||tp<30000;if(tp>0&&tp<30000){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $30.000';}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
+    if(ckBtn){const min=negMinimo();ckBtn.disabled=carrito.length===0||tp<min;if(min>0&&tp>0&&tp<min){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $'+formatPrice(min);}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
     updateShippingBar(tp);
 }
 function renderCartItems() {
@@ -796,13 +796,76 @@ function renderCartItems() {
     });
 }
 
+/* ===== CONFIGURACION DEL NEGOCIO (config/pedidos) =====
+   El panel guarda ahi haceEnvios / minimoPedido / envioPrecio / envioGratisActivo /
+   envioGratisDesde, y hasta ahora la tienda no lo leia: tenia esos mismos numeros
+   escritos a mano. Coincidian con los defaults del panel, asi que no se notaba; el
+   desfasaje empezaba el dia que el comercio guardara ese formulario, porque el
+   cliente iba a seguir viendo el minimo y el envio viejos, y podia pedir envio a
+   domicilio con los envios apagados.
+   Se lee sin bloquear el render: se pinta con lo cacheado de la visita anterior (o
+   con los defaults) y se repinta cuando responde Firestore, igual que siteContent. */
+const NEG_DEFAULTS={haceEnvios:true,minimoPedido:30000,envioPrecio:2000,envioGratisActivo:true,envioGratisDesde:100000};
+const NEG_CACHE_KEY='yerco_negocio_v1';
+let NEGOCIO=Object.assign({},NEG_DEFAULTS);
+function negMinimo(){return Math.max(0,Number(NEGOCIO.minimoPedido)||0);}
+function negEnvioPrecio(){return NEGOCIO.haceEnvios?Math.max(0,Number(NEGOCIO.envioPrecio)||0):0;}
+/* Infinity = no hay meta de envio gratis que perseguir (envios apagados o promo apagada) */
+function negEnvioGratisDesde(){return (NEGOCIO.haceEnvios&&NEGOCIO.envioGratisActivo)?Math.max(0,Number(NEGOCIO.envioGratisDesde)||0):Infinity;}
+function negTipoEntrega(){return NEGOCIO.haceEnvios?(window._chkTipoEntrega==='retiro'?'retiro':'envio'):'retiro';}
+function negCostoEnvio(subtotal){return negTipoEntrega()==='retiro'?0:(subtotal>=negEnvioGratisDesde()?0:negEnvioPrecio());}
+/* Abrevia un monto para los marcadores de la barra: 30000 -> "30k" */
+function negMontoCorto(n){n=Math.round(Number(n)||0);return n>=1000?String(Math.round(n/100)/10).replace('.',',')+'k':String(n);}
+function negNormalizar(d){
+    if(!d||typeof d!=='object')return null;
+    const b=k=>typeof d[k]==='boolean'?d[k]:NEG_DEFAULTS[k];
+    const n=k=>{const v=Number(d[k]);return isFinite(v)&&v>=0?v:NEG_DEFAULTS[k];};
+    return {haceEnvios:b('haceEnvios'),minimoPedido:n('minimoPedido'),envioPrecio:n('envioPrecio'),envioGratisActivo:b('envioGratisActivo'),envioGratisDesde:n('envioGratisDesde')};
+}
+function negAplicar(d){
+    const cfg=negNormalizar(d);
+    if(!cfg)return;
+    NEGOCIO=cfg;
+    aplicarModoEnviosTienda();
+    try{updateCartUI();}catch(e){}
+    if(document.getElementById('checkoutModal')?.classList.contains('show'))updateCheckoutResumen();
+}
+/* Con los envios apagados no hay nada que elegir: se esconden la pregunta y los dos
+   botones, pero NO la direccion de retiro, que ahi pasa a ser el unico dato util. */
+function aplicarModoEnviosTienda(){
+    const lbl=document.getElementById('chkEntregaLabel'),tog=document.getElementById('chkEntregaToggle');
+    if(lbl)lbl.style.display=NEGOCIO.haceEnvios?'':'none';
+    if(tog)tog.style.display=NEGOCIO.haceEnvios?'':'none';
+    if(!NEGOCIO.haceEnvios)window._chkTipoEntrega='retiro';
+}
+async function loadNegocioCfg(){
+    try{const raw=localStorage.getItem(NEG_CACHE_KEY);if(raw)negAplicar(JSON.parse(raw));}catch(e){}
+    try{
+        const snap=await db.collection('config').doc('pedidos').get();
+        if(!snap.exists)return;
+        negAplicar(snap.data());
+        try{localStorage.setItem(NEG_CACHE_KEY,JSON.stringify(NEGOCIO));}catch(e){}
+    }catch(e){console.log('Config del negocio no cargada:',e);}
+}
+loadNegocioCfg();
+
 function updateShippingBar(total) {
-    const msg=document.getElementById('shippingMsg'),fill=document.getElementById('shippingBarFill');
+    const prog=document.getElementById('shippingProgress'),msg=document.getElementById('shippingMsg'),fill=document.getElementById('shippingBarFill');
     if(!msg||!fill)return;
-    const MIN_ORDER=30000,FREE_SHIPPING=100000;
-    if(total<MIN_ORDER){const faltan=MIN_ORDER-total;msg.textContent='Faltan $'+formatPrice(faltan)+' para pedido minimo ($30.000)';msg.className='shipping-msg under-min';fill.style.width=(total/FREE_SHIPPING*100)+'%';fill.style.background='#c0392b';}
-    else if(total<FREE_SHIPPING){const faltan=FREE_SHIPPING-total;msg.textContent='Faltan $'+formatPrice(faltan)+' para envio gratis!';msg.className='shipping-msg near-free';fill.style.width=(total/FREE_SHIPPING*100)+'%';fill.style.background='#e67e22';}
-    else{msg.textContent='Tenes envio gratis!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
+    const min=negMinimo(),free=negEnvioGratisDesde();
+    /* Sin minimo y sin envio gratis no queda ninguna meta que mostrar */
+    if(!min&&!isFinite(free)){if(prog)prog.style.display='none';return;}
+    if(prog)prog.style.display='';
+    /* La barra se escala contra la meta mas lejana, no contra un 100000 fijo */
+    const escala=Math.max(min,isFinite(free)?free:0)||1;
+    const pct=v=>Math.max(0,Math.min(100,v/escala*100));
+    const mMin=document.getElementById('shippingMarkMin'),mFree=document.getElementById('shippingMarkFree');
+    if(mMin){if(min>0){mMin.style.display='';mMin.style.left=pct(min)+'%';mMin.textContent=negMontoCorto(min);}else mMin.style.display='none';}
+    if(mFree){if(isFinite(free)&&free!==min){mFree.style.display='';mFree.style.left=pct(free)+'%';mFree.textContent=negMontoCorto(free);}else mFree.style.display='none';}
+    if(min>0&&total<min){msg.textContent='Faltan $'+formatPrice(min-total)+' para el pedido mínimo ($'+formatPrice(min)+')';msg.className='shipping-msg under-min';fill.style.width=pct(total)+'%';fill.style.background='#c0392b';}
+    else if(isFinite(free)&&total<free){msg.textContent='¡Faltan $'+formatPrice(free-total)+' para envío gratis!';msg.className='shipping-msg near-free';fill.style.width=pct(total)+'%';fill.style.background='#e67e22';}
+    else if(isFinite(free)){msg.textContent='¡Tenés envío gratis!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
+    else{msg.textContent='¡Listo para confirmar!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
 }
 
 function checkout() {
@@ -863,7 +926,8 @@ function openCheckoutModal(){
             if(dEl&&!dEl.value&&saved.direccion)dEl.value=saved.direccion;
         }catch(e){}
     }
-    setCheckoutEntrega('envio');
+    aplicarModoEnviosTienda();
+    setCheckoutEntrega(NEGOCIO.haceEnvios?'envio':'retiro');
     /* Limpiar cupón al abrir nuevo checkout */
     quitarCupon();
     updateCheckoutResumen();
@@ -902,6 +966,7 @@ function closeCheckoutModal(){
 }
 
 function setCheckoutEntrega(tipo){
+    if(!NEGOCIO.haceEnvios)tipo='retiro';
     window._chkTipoEntrega=tipo==='retiro'?'retiro':'envio';
     document.querySelectorAll('.chk-entrega-btn').forEach(b=>{
         b.classList.toggle('active',b.getAttribute('data-tipo')===window._chkTipoEntrega);
@@ -921,10 +986,10 @@ function setCheckoutEntrega(tipo){
 
 function updateCheckoutResumen(){
     const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
-    const tipoEntrega=window._chkTipoEntrega||'envio';
+    const tipoEntrega=negTipoEntrega();
     const dcMonto=_cuponAplicado?Math.min(_cuponAplicado.monto||0,subtotal):0;
     const subtotalConDesc=subtotal-dcMonto;
-    const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
+    const envio=negCostoEnvio(subtotalConDesc);
     const total=subtotalConDesc+envio;
     const el=document.getElementById('chkResumen');
     if(!el)return;
@@ -1002,7 +1067,7 @@ async function confirmCheckout(){
     const telefono=sanitizePhone(document.getElementById('chkTelefono').value);
     const direccion=sanitizeText(document.getElementById('chkDireccion').value, 200);
     const notas=sanitizeText(document.getElementById('chkNotas').value, 500);
-    const tipoEntrega=window._chkTipoEntrega||'envio';
+    const tipoEntrega=negTipoEntrega();
     /* Validaciones */
     if(!nombre){showToast('Ingresá tu nombre','error');document.getElementById('chkNombre').focus();return;}
     if(!apellido){showToast('Ingresá tu apellido','error');document.getElementById('chkApellido').focus();return;}
@@ -1020,7 +1085,7 @@ async function confirmCheckout(){
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
         const dcMonto=cuponParaRegistrar?Math.min(cuponParaRegistrar.monto||0,subtotal):0;
         const subtotalConDesc=subtotal-dcMonto;
-        const envio=tipoEntrega==='retiro'?0:(subtotalConDesc>=100000?0:2000);
+        const envio=negCostoEnvio(subtotalConDesc);
         const total=subtotalConDesc+envio;
         const clienteNombreCompleto=nombre+' '+apellido;
         /* Obtener numero de pedido secuencial con transaction atomica */
