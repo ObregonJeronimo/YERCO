@@ -1440,10 +1440,21 @@ async function _onUserLogin(user, showModal=false) {
             });
         } catch(e) { console.warn('clienteId error:', e); }
         /* Nuevo cliente — crear doc básico */
+        /* Google ya nos dice como se llama la persona: displayName viene en el mismo
+           objeto `user` y de hecho se usa mas abajo para las iniciales del avatar. Pero
+           el alta lo guardaba en blanco, asi que en el panel el cliente quedaba como
+           "Sin nombre / datos incompletos" para siempre si nunca completaba el modal
+           -que solo aparece en el login activo, no al restaurar la sesion-.
+           Se parte por el primer espacio: lo que sigue es apellido. El telefono no lo
+           da Google, asi que "datos incompletos" se mantiene hasta que lo carguen. */
+        const _dn = (user.displayName || '').trim();
+        const _corte = _dn.indexOf(' ');
+        const _nombre = _corte > 0 ? _dn.slice(0, _corte) : _dn;
+        const _apellido = _corte > 0 ? _dn.slice(_corte + 1).trim() : '';
         await ref.set({
             email: user.email,
-            nombre: '',
-            apellido: '',
+            nombre: _nombre,
+            apellido: _apellido,
             telefono: '',
             direcciones: [],
             clienteId: clienteId,
@@ -1451,7 +1462,7 @@ async function _onUserLogin(user, showModal=false) {
             ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
             visitas: 1
         });
-        clienteAuth = { uid: user.uid, email: user.email, nombre: '', apellido: '', telefono: '', direcciones: [], clienteId };
+        clienteAuth = { uid: user.uid, email: user.email, nombre: _nombre, apellido: _apellido, telefono: '', direcciones: [], clienteId };
     } else {
         clienteAuth = { uid: user.uid, ...snap.data(), clienteId: snap.data().clienteId || null };
         /* Registrar ultimo acceso para las metricas del admin.
