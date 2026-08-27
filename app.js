@@ -1140,10 +1140,19 @@ async function confirmCheckout(){
             origen:'web',
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
+        let _pedidoGuardado=true;
         try{
             await db.collection('pedidos').add(pedido);
         }catch(e){
-            /* Si falla el guardado (billing, red, reglas), NO frenar: el pedido por WhatsApp es lo importante */
+            /* Si falla el guardado (billing, red, reglas), NO frenar: el pedido por WhatsApp
+               es lo importante. Pero fallaba EN SILENCIO, y ese es el problema de verdad: el
+               cliente veia "Pedido confirmado", el mensaje salia por WhatsApp igual, y en el
+               panel no aparecia nada, con el numero de pedido ya consumido por la transaccion
+               de arriba. El comercio se enteraba cuando el cliente venia a buscar algo que no
+               existia. Y no pasaba solo con la red caida: pasaba con CUALQUIER rechazo de las
+               reglas. El aviso viaja ahora en el propio mensaje, que es lo unico que el
+               comercio mira seguro. */
+            _pedidoGuardado=false;
             console.warn('No se pudo guardar el pedido en BDD, se continua con WhatsApp:',e);
         }
         /* Construir mensaje de WhatsApp con el numero de pedido */
@@ -1155,6 +1164,7 @@ async function confirmCheckout(){
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
         if(cuponParaRegistrar)msg+='*Cupón:* '+cuponParaRegistrar.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
+        if(!_pedidoGuardado)msg+='\n*(Este pedido no se registro automaticamente en el sistema: hay que cargarlo a mano)*\n';
         msg+='\nGracias!';
         /* Limpiar carrito y resetear las cards de productos */
         const idsAResetear=carrito.map(i=>i.id);

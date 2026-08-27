@@ -88,11 +88,19 @@ service cloud.firestore {
         && validString(request.resource.data.cliente, 120)
         && validString(request.resource.data.telefono, 30)
         && request.resource.data.total is number
-        && request.resource.data.total > 0
+        /* >= 0 y no > 0: un cupon de monto fijo puede cubrir el carrito entero y, con
+           retiro en local, el total da exactamente 0. Ese pedido es legitimo y la regla
+           lo rechazaba; como confirmCheckout() se come el error del add(), el cliente
+           veia "Pedido confirmado", el mensaje salia por WhatsApp y en el panel no
+           aparecia nada, con el numero de pedido ya consumido. */
+        && request.resource.data.total >= 0
         && request.resource.data.total < 10000000
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0
-        && request.resource.data.items.size() <= 100
+        /* 100 lineas se alcanzan: el carrito no tiene tope y sobrevive en localStorage,
+           asi que un mayorista las junta sin darse cuenta. Mismo final silencioso que
+           arriba. 300 sigue acotando el abuso sin tirar pedidos de verdad. */
+        && request.resource.data.items.size() <= 300
         && request.resource.data.origen == 'web';
       /* Leer: admin o el propio cliente */
       allow read: if isAdmin()
