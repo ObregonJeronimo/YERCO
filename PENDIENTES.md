@@ -1,7 +1,7 @@
 # YERCO — Pendientes
 
 Estado del repo al escribir esto: `main`, todo commiteado y pusheado, árbol limpio.
-Último commit: `55fabc7` (las visitas de los clientes web se rechazaban en silencio).
+Último commit: `0d24b0b` (había pedidos que se perdían sin que nadie se enterara).
 
 Las tareas están ordenadas por riesgo: las dos primeras son bugs que se ven hoy en
 producción, la tercera es rediseño, la cuarta es auditoría.
@@ -232,6 +232,7 @@ produccion. Despues salieron estos pedidos, todos hechos y desplegados:
 | `4b912b0` | la tienda lee `config/pedidos`: minimo, envios y envio gratis salen del panel |
 | `46c2086` | el perfil del cliente se completa al restaurar la sesion y al confirmar un pedido |
 | `55fabc7` | reglas: las visitas y el ultimo acceso de los clientes web se rechazaban en silencio |
+| `0d24b0b` | pedidos que se perdian: total 0 por cupon, +100 items, y el fallo era invisible |
 
 ## Bancos de prueba (no se commitean, los ignora .gitignore)
 
@@ -378,50 +379,89 @@ No hubo cambio de código: la tienda ya hacía el write correcto.
 
 ---
 
-# Lo que sigue
+# Auditoría de huecos de lógica — primera pasada HECHA
 
-## Auditoría de huecos de lógica (pedido del dueño)
+El pedido del dueño: *"no quiero que haya huecos de lógica en ningún lado, quiero
+que la experiencia del admin como del usuario común sean excepcionales"*.
 
-El pedido textual: *"no quiero que haya huecos de lógica en ningún lado, quiero que
-la experiencia del admin como del usuario común sean excepcionales"*.
+Hay que decirlo derecho: **"cero huecos" no se puede garantizar ni verificar**. Lo
+que sí se hizo es pasar un método sistemático, y encontró cosas. El método, con lo
+que rindió cada paso:
 
-Vale ser honesto sobre esto: **"cero huecos" no es algo que se pueda garantizar ni
-verificar**. Lo que sí se puede es pasar un método sistemático, y hay uno que ya
-demostró servir: los PENDIENTES 1 y 4 salieron los dos del mismo patrón —
-**el panel ofrece algo y del otro lado no hay nadie que lo haga cumplir**. En los dos
-casos el síntoma era invisible (ningún error en consola, ningún test en rojo) y el
-dato quedaba en silencio.
+### 1. Cada opción del panel contra quien la obedece — SIN HALLAZGOS NUEVOS
 
-Ese es el hilo del que hay que tirar. El método, en orden de rendimiento:
+Por cada documento de `config/` que escribe `admin.html`, quién lo lee:
 
-1. **Cruzar cada opción del panel contra quien la obedece.** Por cada campo que
-   `admin.html` guarda en Firestore, buscar quién lo lee: el panel, la tienda, una
-   Cloud Function, o nadie. La columna "nadie" son los huecos. Así salieron los dos
-   de hoy. Sospechosos inmediatos: el resto de `config/pedidos`, `config/factura`,
-   y todo lo que el Editor Web ofrece.
-2. **Cruzar cada write del código contra la regla que lo tiene que dejar pasar.**
-   Con `test-reglas.js` esto se mide, no se opina. Todo `.update()`/`.set()` de
-   `app.js` y `admin.html` debería tener un caso que pruebe que pasa. Los que se
-   rechazan en silencio se ven igual que los que funcionan, porque casi todos están
-   envueltos en `try/catch` o `.catch(console.warn)`.
-3. **Recorrer los flujos del cliente de punta a punta en el banco de pruebas**, con
-   los `?user=` y `?neg=` que ya existen: comprar sin sesión, con sesión restaurada,
-   con datos incompletos, con cupón, con stock justo, con envíos apagados.
-4. **Lo mismo del lado del admin** con `_test-admin.html`.
-5. **Cazar los `catch` mudos.** `grep -n "catch" app.js admin.html`: cada uno que
-   solo hace `console.warn` es un lugar donde un fallo real es invisible. No hay que
-   sacarlos, hay que saber cuáles esconden algo que debería avisar en pantalla.
+| Documento | Lo lee | ¿Hueco? |
+|---|---|---|
+| `config/pedidos` | panel + tienda (`loadNegocioCfg`) | no, desde `4b912b0` |
+| `config/siteContent` | panel + tienda (`loadSiteContent`) | no |
+| `config/resenasConfig` | panel + **`resena.html`** (línea 205) | no — ojo, el lector no es `app.js` |
+| `config/factura` | panel (tickets) | no, es del panel a propósito |
+| `config/storage` | panel | no |
+| `config/telegram` | Cloud Function | no |
+| contadores | panel + tienda | no |
 
-La auditoría la corre Claude sola: están todas las herramientas (banco de pruebas
-con cliente y config falsos, `test-reglas.js` contra el motor de Google, el
-navegador para medir el DOM). Lo único que conviene que aporte el dueño es qué le
-molesta HOY al usarlo, porque eso no se deduce del código.
+`descontarStock` sigue siendo del panel a propósito: la tienda no toca el stock.
 
-## Temas menores que quedaron anotados al pasar
+### 2. Cada write de la tienda contra la regla que lo deja pasar — DOS HALLAZGOS
 
-- El modal "Completá tus datos" sigue apareciendo solo en el login activo y sigue
-  sin botón de cerrar. Se decidió no forzarlo (ver PENDIENTE 3), pero el botón de
-  cerrar sigue faltando.
-- `optImg(url, w)` sigue siendo un stub que ignora el ancho (`app.js:7`): todas las
-  imágenes de producto se sirven al tamaño que se subieron. Se resolvió el hero por
-  otro lado, pero el resto del catálogo sigue igual.
+Este paso es el que rinde, y ahora **se mide** con `test-reglas.js` /
+`test-pedidos.js` / `test-resto.js` (ver la sección de herramientas). Resultado:
+
+- **Pedidos que se perdían** (`0d24b0b`). La regla pedía `total > 0` y ≤100 items, y
+  `confirmCheckout()` se come el error del `add()` a propósito. Juntas: el cliente ve
+  "Pedido confirmado", el mensaje sale por WhatsApp, el número ya quedó consumido, y
+  en el panel no hay nada. Alcanzable con un cupón (son de monto **fijo**) que cubra
+  el carrito entero + retiro, o con 100 líneas de carrito (no hay tope y sobrevive en
+  `localStorage`). Arreglado: `total >= 0`, tope 300, y si no se pudo guardar **el
+  aviso viaja en el propio mensaje de WhatsApp**.
+- **Visitas y último acceso** (`55fabc7`), ya descrito arriba.
+
+Lo demás quedó verificado ejecutando y **pasa**: `cuponesUsos` del cliente logueado
+(si esto se rechazara, el cupón se reusaría para siempre), el alta de cliente, el
+paso del contador de pedidos, guardar una dirección, y los rechazos que sí queremos
+(saltear números de pedido, más de 5 direcciones, tocar el documento de otro).
+
+### 3–5. Lo que falta de la pasada
+
+- Recorrer los flujos del cliente de punta a punta en el banco (`?user=` / `?neg=`):
+  hecho para comprar con sesión restaurada, datos incompletos, envíos apagados y
+  guardado fallido. **Falta**: con cupón real, con stock justo, y el flujo de reseña.
+- **Falta entero el lado del admin** con `_test-admin.html` (paso 4).
+- Barrido de `catch` mudos: hay **8 catch vacíos y 16 que solo loguean** en `app.js`.
+  Se revisaron los que envuelven escrituras a Firestore, que eran los peligrosos. Los
+  demás no se miraron uno por uno.
+
+---
+
+# Lo que queda abierto
+
+## Huecos conocidos que NO se arreglaron
+
+- **El checkout de invitado es código muerto y contradictorio.** Las tres puertas al
+  checkout exigen sesión (`app.js:385`, `529`, `873` llaman a `requireLoginToBuy()`),
+  pero adentro conviven un aviso "Opcional: iniciá sesión" que no se puede llegar a
+  ver (`index.html:130`), un comentario que dice "no obligamos a login", y una rama de
+  invitado en el registro de cupones que, si alguien sacara el gate, **se rechazaría
+  en silencio** (verificado: `cuponesUsos` sin `uid` da DENY). Hay que decidir una
+  cosa y que el código cuente una sola historia.
+- **El modal "Completá tus datos" no tiene botón de cerrar** y se escapa recargando.
+- **`optImg(url, w)` es un stub que ignora el ancho** (`app.js:7`): todas las imágenes
+  de producto se sirven al tamaño que se subieron. El hero se resolvió por otro lado.
+- **El `create` del contador está roto en la regla**, pero es inalcanzable: los dos
+  contadores ya existen (`pedidosCount: 54`, `clientesAuthCount: 40`). Solo afectaría
+  a una instalación desde cero. Puede ser también un artefacto del harness de test.
+
+## Dato que corrige lo anotado antes
+
+`clientesAuthCount` está en **40**, no en 3. Lo de "los 3 clientes sin nombre" era
+cuántos estaban en blanco, no cuántos hay. El arreglo del nombre y el de las visitas
+tocan a bastante más gente de la que decía este archivo.
+
+## Para que la experiencia sea "excepcional"
+
+Eso ya no es auditoría, es criterio, y conviene que lo marque el dueño: **qué le
+molesta HOY al usarlo**, del panel y de la tienda. Una lista inventada desde el
+código va a estar llena de cosas que no le importan y le van a faltar las que sí.
+Con eso, el método de arriba sirve para verificar cada cambio midiendo.
