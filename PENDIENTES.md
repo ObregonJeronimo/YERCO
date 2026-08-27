@@ -211,3 +211,81 @@ escritos a mano.
 - Commitear con mensajes que expliquen la causa, no solo el síntoma.
 - Pushear y confirmar en `https://www.yerco.ar` que lo desplegado es lo nuevo.
 - Ir tachando de este archivo lo que quede hecho.
+
+---
+
+# Estado al 27/08/2026
+
+Las 4 tareas de arriba estan HECHAS, verificadas midiendo y confirmadas en
+produccion. Despues salieron estos pedidos, todos hechos y desplegados:
+
+| Commit | Que |
+|---|---|
+| `a238145` | una sola lista de presentaciones por producto |
+| `0d15c9a` | modal de producto al viewport visible (dvh) en movil |
+| `000b3af` | hero fuera del camino critico de Firestore + rediseno y animaciones |
+| `a546acf` | datos de contacto del footer desde el panel |
+| `b440ecd` | la X de los modales largos quedaba fuera de pantalla + copiar productos en Pedidos |
+| `8b27436` | control deslizante para el velo blanco del hero |
+| `cae1967` | a los 10 s sin actividad la pagina baja sola al catalogo |
+| `51e3f84` | etiqueta de ejemplo con envio gratis + alta de cliente guarda el nombre de Google |
+
+## Bancos de prueba (no se commitean, los ignora .gitignore)
+
+Se regeneran con los scripts del scratchpad de la sesion. Si no estan, hay que
+volver a escribirlos: son una copia de `index.html` / `admin.html` con los
+`<script>` de Firebase reemplazados por un stub inline (auth que devuelve un
+admin, Firestore falso con datos de ejemplo), guardadas como `_test-tienda.html`
+y `_test-admin.html`. Se sirven con `npm run dev` (puerto 5173).
+
+Dos cosas del entorno que conviene saber antes de medir:
+- Con el panel del navegador oculto NO corren `requestAnimationFrame` ni las
+  animaciones/transiciones CSS, y los `setTimeout` se estrangulan a ~1 s. Cualquier
+  sondeo por tiempo da numeros inventados: usar `MutationObserver` o espiar la
+  llamada (por ejemplo pisar `Element.prototype.scrollIntoView`).
+- Ahi mismo el scroll queda inerte (`scrollTop=500` devuelve 0) y `document.hidden`
+  es `true`.
+- `vh` y `dvh` valen lo mismo en ese navegador, asi que un bug de `vh` en movil no
+  se reproduce solo: hay que forzar el alto que daria el telefono y medir.
+
+---
+
+## PENDIENTE 1 — La tienda ignora `config/negocio` (envios y minimo de pedido)
+
+Salio al verificar lo del "envio gratis". El panel tiene en Configuracion
+`haceEnvios`, `minimoPedido`, `envioPrecio`, `envioGratisActivo` y
+`envioGratisDesde`, y **la tienda no lee ninguno**: `grep haceEnvios app.js
+index.html` da 0.
+
+Lo que hay hoy escrito a mano en `app.js`:
+- `updateShippingBar()` (~linea 799): `const MIN_ORDER=30000, FREE_SHIPPING=100000`.
+- El checkout ofrece siempre el toggle envio/retiro (`setCheckoutEntrega`, ~904).
+
+O sea que si el comercio apaga los envios en el panel, el cliente igual ve la
+barra de "faltan $X para envio gratis" y puede elegir envio a domicilio. Es el
+mismo caso que la tarea 4 (dato del negocio escrito a mano en vez de salir del
+panel), pero este toca plata y expectativa del cliente.
+
+No lo hice porque cambia el comportamiento de compra de cara al cliente (minimo
+de pedido y costo de envio) y no es un arreglo de una linea: hay que leer
+`config/negocio` desde la tienda, esconder el toggle cuando `haceEnvios` es false
+y recalcular el total del checkout. Decision del duenio antes de tocarlo.
+
+Ojo con lo que ya dice el contexto de arriba: `config-negocio.js` es solo para el
+panel. Esto seria leer `config/negocio` de Firestore desde la tienda, que es otra
+cosa.
+
+## PENDIENTE 2 — Los 3 clientes que ya existen siguen sin nombre
+
+El arreglo `51e3f84` guarda el nombre de Google **en las altas nuevas**. Los tres
+que ya estan en `clientesAuth` tienen el documento creado, asi que siguen en
+blanco. Si se quieren completar hay que hacerlo a mano desde el panel o con un
+script de migracion.
+
+## PENDIENTE 3 — El modal "Completa tus datos" solo aparece en el login activo
+
+`_onUserLogin(user, showModal)` recibe `showModal = _loginActivo`, que solo es
+true justo despues de apretar "Iniciar sesion". Al restaurar la sesion no se
+vuelve a pedir nada, y el modal no tiene boton de cerrar pero se escapa
+recargando. Por eso alguien puede comprar sin telefono cargado nunca. Si molesta,
+la idea seria volver a pedirlo cuando falten datos y el cliente vaya a comprar.
