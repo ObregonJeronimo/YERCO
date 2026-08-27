@@ -875,11 +875,13 @@ function checkout() {
 }
 
 function openCheckoutModal(){
-    const loginRequired = document.getElementById('chkLoginRequired');
+    /* Comprar exige sesión. Las tres puertas que llegan acá ya lo piden, pero la
+       invariante se deja escrita: si alguien entra sin sesión, se pide login en
+       vez de mostrar un formulario que Firestore no va a dejar guardar. */
+    if (!clienteAuth) { requireLoginToBuy(); return; }
     const datosSection = document.getElementById('chkDatosSection');
     const confirmBtn = document.getElementById('chkConfirmBtn');
 
-    /* El botón y los campos SIEMPRE visibles - no obligamos a login */
     if (datosSection) datosSection.style.display = 'block';
     if (confirmBtn) confirmBtn.style.display = '';
 
@@ -888,9 +890,7 @@ function openCheckoutModal(){
     const nuevaDirWrap = document.getElementById('chkNuevaDirWrap');
     const nomDirWrap = document.getElementById('chkNombreDirWrap');
 
-    if (clienteAuth) {
-        /* Logueado: ocultar aviso de login y pre-llenar datos */
-        if (loginRequired) loginRequired.style.display = 'none';
+    {
         const nEl=document.getElementById('chkNombre'),aEl=document.getElementById('chkApellido'),tEl=document.getElementById('chkTelefono');
         if(nEl&&!nEl.value)nEl.value = clienteAuth.nombre || '';
         if(aEl&&!aEl.value)aEl.value = clienteAuth.apellido || '';
@@ -910,21 +910,6 @@ function openCheckoutModal(){
             if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
             if (nomDirWrap) nomDirWrap.style.display = 'block';
         }
-    } else {
-        /* No logueado: mostrar aviso opcional de login, campos vacíos editables */
-        if (loginRequired) loginRequired.style.display = 'block';
-        if (wrap) wrap.style.display = 'none';
-        if (nuevaDirWrap) nuevaDirWrap.style.display = 'block';
-        if (nomDirWrap) nomDirWrap.style.display = 'none';
-        /* Pre-llenar desde localStorage si compró antes (sin login) */
-        try{
-            const saved=JSON.parse(localStorage.getItem('yerco_checkout_data')||'{}');
-            const nEl=document.getElementById('chkNombre'),aEl=document.getElementById('chkApellido'),tEl=document.getElementById('chkTelefono'),dEl=document.getElementById('chkDireccion');
-            if(nEl&&!nEl.value&&saved.nombre)nEl.value=saved.nombre;
-            if(aEl&&!aEl.value&&saved.apellido)aEl.value=saved.apellido;
-            if(tEl&&!tEl.value&&saved.telefono)tEl.value=saved.telefono;
-            if(dEl&&!dEl.value&&saved.direccion)dEl.value=saved.direccion;
-        }catch(e){}
     }
     aplicarModoEnviosTienda();
     setCheckoutEntrega(NEGOCIO.haceEnvios?'envio':'retiro');
@@ -1076,7 +1061,6 @@ async function confirmCheckout(){
     if(telefonoLimpio.length<8){showToast('El teléfono debe tener al menos 8 dígitos','error');document.getElementById('chkTelefono').focus();return;}
     if(tipoEntrega==='envio'&&!direccion){showToast('Para envío necesitamos tu dirección','error');document.getElementById('chkDireccion').focus();return;}
     /* Guardar datos en localStorage para próxima vez */
-    try{localStorage.setItem('yerco_checkout_data',JSON.stringify({nombre,apellido,telefono,direccion,notas,tipoEntrega}));}catch(e){}
     /* El checkout ya exige nombre, apellido y telefono, pero eso solo iba a
        localStorage: en clientesAuth el cliente seguia figurando "incompleto" en el
        panel por mas pedidos que hiciera. El unico lugar que completaba esos campos
@@ -1200,8 +1184,9 @@ async function confirmCheckout(){
                             fecha: firebase.firestore.FieldValue.serverTimestamp(),
                             pedidoNum: pedidoNum
                         };
-                        if (clienteAuth) { usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email; }
-                        else if (nombre && apellido) { usoData.nombreCliente = nombre+' '+apellido; usoData.telefono = telefono; }
+                        /* Siempre hay sesión: comprar la exige. La rama de invitado que
+                           estaba acá escribía cuponesUsos sin uid, que la regla rechaza. */
+                        usoData.uid = clienteAuth.uid; usoData.email = clienteAuth.email;
                         await db.collection('cuponesUsos').doc().set(usoData);
                     }
                 }
@@ -1604,17 +1589,13 @@ async function _onUserLogin(user, showModal=false) {
 }
 
 function _refreshCheckoutAuth() {
-    const loginRequired = document.getElementById('chkLoginRequired');
+    /* Se cerró la sesión con el checkout abierto: no queda un formulario que no
+       se puede confirmar, se cierra y se avisa. */
+    if (!clienteAuth) { closeCheckoutModal(); showToast('Cerraste la sesión: iniciá sesión para comprar','info'); return; }
     const datosSection = document.getElementById('chkDatosSection');
     const confirmBtn = document.getElementById('chkConfirmBtn');
-    /* El botón y los datos siempre visibles. El login solo pre-llena y oculta el aviso. */
     if (datosSection) datosSection.style.display = 'block';
     if (confirmBtn) confirmBtn.style.display = '';
-    if (!clienteAuth) {
-        if (loginRequired) loginRequired.style.display = 'block';
-        return;
-    }
-    if (loginRequired) loginRequired.style.display = 'none';
     /* Pre-llenar solo si el campo está vacío (no pisar lo que el usuario escribió) */
     const n = document.getElementById('chkNombre');
     const a = document.getElementById('chkApellido');
