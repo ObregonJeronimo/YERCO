@@ -139,7 +139,22 @@ service cloud.firestore {
           && (!('nombre' in request.resource.data) || validString(request.resource.data.nombre, 80))
           && (!('apellido' in request.resource.data) || validString(request.resource.data.apellido, 80))
           && (!('telefono' in request.resource.data) || validString(request.resource.data.telefono, 30))
-          && (!('direcciones' in request.resource.data) || (request.resource.data.direcciones is list && request.resource.data.direcciones.size() <= 5)));
+          && (!('direcciones' in request.resource.data) || (request.resource.data.direcciones is list && request.resource.data.direcciones.size() <= 5)))
+      /* Las metricas del panel. _onUserLogin() escribe estos dos campos en el primer
+         acceso de cada dia, y la regla de arriba los rechazaba: solo deja pasar los
+         cuatro campos de perfil. El error se lo comia el .catch() de al lado, asi que
+         en el panel todo cliente que entra por la web quedaba con visitas:1 y el
+         ultimo acceso clavado en la fecha del alta, desde siempre.
+         Se permite el paso EXACTO que hace la tienda, con el mismo criterio que
+         pedidosCount: el timestamp lo pone el servidor (no lo elige el cliente) y
+         visitas solo puede subir de a uno. Asi nadie se inventa el numero de visitas
+         ni antedata su ultimo acceso. Los cuatro campos de perfil siguen yendo por la
+         rama de arriba: un mismo write no puede mezclar perfil y metricas. */
+      || (isAuthUser() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['ultimoAcceso','visitas'])
+          && request.resource.data.ultimoAcceso == request.time
+          && request.resource.data.visitas == resource.data.get('visitas', 0) + 1);
     }
 
     /* ===== CUPONES ===== */
