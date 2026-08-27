@@ -1,7 +1,7 @@
 # YERCO — Pendientes
 
 Estado del repo al escribir esto: `main`, todo commiteado y pusheado, árbol limpio.
-Último commit: `46c2086` (el perfil del cliente se completa solo al entrar y al comprar).
+Último commit: `55fabc7` (las visitas de los clientes web se rechazaban en silencio).
 
 Las tareas están ordenadas por riesgo: las dos primeras son bugs que se ven hoy en
 producción, la tercera es rediseño, la cuarta es auditoría.
@@ -231,6 +231,7 @@ produccion. Despues salieron estos pedidos, todos hechos y desplegados:
 | `51e3f84` | etiqueta de ejemplo con envio gratis + alta de cliente guarda el nombre de Google |
 | `4b912b0` | la tienda lee `config/pedidos`: minimo, envios y envio gratis salen del panel |
 | `46c2086` | el perfil del cliente se completa al restaurar la sesion y al confirmar un pedido |
+| `55fabc7` | reglas: las visitas y el ultimo acceso de los clientes web se rechazaban en silencio |
 
 ## Bancos de prueba (no se commitean, los ignora .gitignore)
 
@@ -252,6 +253,28 @@ creado con el nombre en blanco), `?user=sintel` (con nombre y sin telefono),
 `window.__writes`. Ojo al armar un carrito a mano para probar el checkout: si el
 precio no coincide con el del producto, `reconciliarCarrito()` corta
 `confirmCheckout()` antes de escribir nada y parece que el arreglo no anda.
+
+**Para probar reglas de Firestore ejecutandolas, no leyendolas.** El emulador NO
+sirve en esta maquina: `firebase emulators:exec` exige Java 21 y hay Java 8. La via
+que si funciona es la API oficial `firebaserules projects.test`, que corre el motor
+de reglas de Google sobre un archivo sin desplegarlo. Hay un script armado en
+`<scratchpad de la sesion>/test-reglas.js` (sobrevive al /clear, se borra al cerrar
+la sesion). Lo esencial para rehacerlo:
+
+- `POST https://firebaserules.googleapis.com/v1/projects/yerco-bb620:test`
+- Token: `gcloud auth print-access-token` (gcloud esta autenticado como el duenio).
+- **Hace falta el header `x-goog-user-project: yerco-bb620`**, si no da 403 pidiendo
+  un "quota project". Es el error que mas tiempo hace perder.
+- Body: `{source:{files:[{name,content}]}, testSuite:{testCases:[...]}}`.
+- Cada caso: `{expectation:'ALLOW'|'DENY', request:{path,method,auth,time,resource:{data}},
+  resource:{data}, functionMocks:[...], pathEncoding:'URL_ENCODED'}`. `resource.data` es
+  el documento ANTES; `request.resource.data` es como queda DESPUES (documento
+  completo, no solo los campos que cambian).
+- `isAdmin()` hace `exists(/admins/<mail>)`: sin un `functionMock` de `exists` el motor
+  no sabe que contestar. Para probar un cliente comun se moquea en `false`.
+- Truco que vale oro: correr la MISMA bateria contra `git show HEAD:firestore.rules`.
+  Si el caso que se quiere arreglar falla ahi y pasa con el archivo nuevo, eso es la
+  prueba de que el bug existia y de que el cambio lo arregla.
 
 Dos cosas del entorno que conviene saber antes de medir:
 - Con el panel del navegador oculto NO corren `requestAnimationFrame` ni las
@@ -328,32 +351,77 @@ El modal sigue apareciendo solo en el login activo y sigue sin botón de cerrar.
 
 ---
 
-## PENDIENTE 4 — Las visitas y el último acceso de los clientes web no se guardan
+## ~~PENDIENTE 4 — Las visitas y el último acceso de los clientes web no se guardan~~ HECHO
 
-Salió mirando las reglas al hacer lo de arriba. `_onUserLogin()` hace, en cada
-primer acceso del día:
+Commit `55fabc7`, reglas desplegadas (ruleset `5accacc2`) **antes** de pushear.
 
-```js
-ref.update({ ultimoAcceso: serverTimestamp(), visitas: increment(1) })
-```
+`_onUserLogin()` escribía `ultimoAcceso` y `visitas` en el primer acceso de cada
+día, y la regla de `clientesAuth` solo dejaba pasar los cuatro campos de perfil, así
+que se rechazaba siempre y el error se lo comía el `.catch()` de al lado. En el
+panel, todo cliente web quedaba con `visitas: 1` y el último acceso clavado en la
+fecha del alta.
 
-y la regla de `clientesAuth` deja al cliente tocar **solo** `nombre`, `apellido`,
-`telefono` y `direcciones` (`firestore.rules:135`, el `hasOnly`). Un cliente no es
-admin, así que esa escritura se rechaza siempre, y el error se lo come el
-`.catch(e => console.warn(...))` de la línea de al lado.
+Se agregó una rama aparte para esos dos campos, con el mismo criterio que ya usaba
+`pedidosCount`: no se permite cualquier valor, se permite **exactamente** el paso
+que hace la tienda. El timestamp tiene que ser `request.time`, así que nadie
+antedata su último acceso; `visitas` solo puede ser el anterior más uno, así que
+nadie se inventa el número. Y al ser rama separada, un mismo write no puede mezclar
+perfil con métricas.
 
-Consecuencia: en el panel, todo cliente que entra por la web queda con
-`visitas: 1` y `ultimoAcceso` clavado en la fecha del alta. Las métricas de
-clientes están mal desde que existen.
+Verificado ejecutando (9 casos contra el motor de Google, ver la sección de
+herramientas de arriba). La misma batería contra las reglas anteriores da 8/9:
+falla justo el caso que este commit arregla.
 
-Esto lo leí de la regla, **no lo medí ejecutando** (haría falta loguearse como un
-cliente de verdad). Se confirma en dos segundos mirando el panel: si los clientes
-web tienen todos `visitas: 1`, es esto.
+No hubo cambio de código: la tienda ya hacía el write correcto.
 
-Arreglarlo es una decisión, no un tramite: hay que **ampliar la regla** para que el
-cliente pueda escribir `ultimoAcceso` y `visitas` en su propio documento, y eso
-significa que también podría ponerse las visitas que se le antojen (son datos de
-métrica, no de plata, pero ensucian el panel). Las alternativas son moverlo a una
-Cloud Function con el Admin SDK, o derivar la métrica de `pedidos` y borrar los
-dos campos. Ojo con el orden si se toca la regla: **desplegar reglas ANTES de
-pushear el código**, como dice el contexto de arriba.
+**Ojo:** el histórico no se recupera. Las visitas empiezan a contar desde ahora.
+
+---
+
+# Lo que sigue
+
+## Auditoría de huecos de lógica (pedido del dueño)
+
+El pedido textual: *"no quiero que haya huecos de lógica en ningún lado, quiero que
+la experiencia del admin como del usuario común sean excepcionales"*.
+
+Vale ser honesto sobre esto: **"cero huecos" no es algo que se pueda garantizar ni
+verificar**. Lo que sí se puede es pasar un método sistemático, y hay uno que ya
+demostró servir: los PENDIENTES 1 y 4 salieron los dos del mismo patrón —
+**el panel ofrece algo y del otro lado no hay nadie que lo haga cumplir**. En los dos
+casos el síntoma era invisible (ningún error en consola, ningún test en rojo) y el
+dato quedaba en silencio.
+
+Ese es el hilo del que hay que tirar. El método, en orden de rendimiento:
+
+1. **Cruzar cada opción del panel contra quien la obedece.** Por cada campo que
+   `admin.html` guarda en Firestore, buscar quién lo lee: el panel, la tienda, una
+   Cloud Function, o nadie. La columna "nadie" son los huecos. Así salieron los dos
+   de hoy. Sospechosos inmediatos: el resto de `config/pedidos`, `config/factura`,
+   y todo lo que el Editor Web ofrece.
+2. **Cruzar cada write del código contra la regla que lo tiene que dejar pasar.**
+   Con `test-reglas.js` esto se mide, no se opina. Todo `.update()`/`.set()` de
+   `app.js` y `admin.html` debería tener un caso que pruebe que pasa. Los que se
+   rechazan en silencio se ven igual que los que funcionan, porque casi todos están
+   envueltos en `try/catch` o `.catch(console.warn)`.
+3. **Recorrer los flujos del cliente de punta a punta en el banco de pruebas**, con
+   los `?user=` y `?neg=` que ya existen: comprar sin sesión, con sesión restaurada,
+   con datos incompletos, con cupón, con stock justo, con envíos apagados.
+4. **Lo mismo del lado del admin** con `_test-admin.html`.
+5. **Cazar los `catch` mudos.** `grep -n "catch" app.js admin.html`: cada uno que
+   solo hace `console.warn` es un lugar donde un fallo real es invisible. No hay que
+   sacarlos, hay que saber cuáles esconden algo que debería avisar en pantalla.
+
+La auditoría la corre Claude sola: están todas las herramientas (banco de pruebas
+con cliente y config falsos, `test-reglas.js` contra el motor de Google, el
+navegador para medir el DOM). Lo único que conviene que aporte el dueño es qué le
+molesta HOY al usarlo, porque eso no se deduce del código.
+
+## Temas menores que quedaron anotados al pasar
+
+- El modal "Completá tus datos" sigue apareciendo solo en el login activo y sigue
+  sin botón de cerrar. Se decidió no forzarlo (ver PENDIENTE 3), pero el botón de
+  cerrar sigue faltando.
+- `optImg(url, w)` sigue siendo un stub que ignora el ancho (`app.js:7`): todas las
+  imágenes de producto se sirven al tamaño que se subieron. Se resolvió el hero por
+  otro lado, pero el resto del catálogo sigue igual.
