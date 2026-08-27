@@ -27,8 +27,12 @@ anterior, que funciona. Vercel corre el build en cada push.
 impresión de tickets. Cualquier reemplazo con `str.replace` sin contador rompe el bloque
 JS entero. Usar siempre la última ocurrencia.
 
-**Finales de línea:** `admin.html` e `index.html` en CRLF, `app.js` en LF. Preservarlos
-al escribir con scripts, o el diff queda inservible.
+**Finales de línea (medido el 27/08; lo que decía antes estaba mal):** `index.html`
+y `firestore.rules` en CRLF; **`admin.html` está en LF** (le quedan 19 líneas CRLF
+sueltas) y `app.js` en LF. Preservarlos al escribir con scripts, o el diff queda
+inservible. Y ojo: contar CRLF con `grep` **miente** en este entorno (el harness se
+come el retorno de carro del patrón y termina contando todas las líneas). Medirlo
+con Python: `io.open(f, newline='').read().count(chr(13)+chr(10))`.
 
 **Firebase CLI está autenticado** (`jeroobregon03@gmail.com`, proyecto `yerco-bb620`
 fijado en `.firebaserc`). Reglas, índices, Storage y las 10 Cloud Functions ya están
@@ -435,33 +439,165 @@ paso del contador de pedidos, guardar una dirección, y los rechazos que sí que
 
 ---
 
+# Segunda pasada de auditoría — 27/08/2026
+
+Se cerró lo que faltaba del método: el lado del admin entero y los tres flujos de
+cliente que quedaban. Todo medido ejecutando.
+
+## Lo que se pasó, y con qué
+
+| Paso | Cómo se midió | Resultado |
+|---|---|---|
+| Las 18 secciones del panel | banco nuevo, `switchSection` una por una | renderizan, 0 errores |
+| 389 `getElementById` vs el DOM | cruce contra los `id` que existen | 0 colgados (los 11 que faltaban se crean en runtime) |
+| 32 modales del panel | geometría real en 1280x720 y 375x812 | 0 desbordan, la X siempre visible |
+| **41 escrituras del panel vs las reglas** | motor de reglas de Google | **3 rechazos reales**, arreglados |
+| Flujo de cupón, 9 variantes | banco de tienda con `?cupon=` | correcto, incluido el tope a total 0 |
+| Stock justo | producto agotado con el carrito ya armado | correcto, `reconciliarCarrito()` corta |
+| Flujo de reseña, 14 casos | motor de reglas | correcto salvo la moderación del admin |
+
+## Lo que encontró (commit `af04760`)
+
+- **Pedidos > Nuevo Pedido no guardó nunca nada.** La regla `create` de `pedidos`
+  exigía `origen == 'web'` y la lista completa de campos de un pedido web, sin rama
+  de admin; el modal arma un pedido de mostrador, sin `origen` ni `telefono`. Y el
+  número sale de una transacción que commitea **antes** del `add`, así que cada
+  intento quemaba un número que después faltaba en la numeración de la web.
+- Al destrabarlo aparecieron dos errores tapados por el camino muerto: el selector
+  devuelve `auth:<uid>` y ese valor crudo iba a `clienteId` (el pedido no le
+  aparecía al cliente, porque la regla de lectura mira `clienteAuthUid`), y
+  `pickPedCliente` tiraba el teléfono del cliente elegido.
+- **El dueño no podía ocultar una reseña.** `allow update` de `resenas` solo
+  contemplaba al cliente completando su token (`usado: false -> true`); el botón
+  Ocultar/Mostrar hace un update sobre una reseña ya usada. Como `resena.html`
+  publica con `visible:true` y la tienda muestra todo lo que tenga `visible==true`,
+  la única salida era borrarla. La rama nueva deja al admin tocar **únicamente**
+  `visible`.
+- La tarjeta de un pedido web imprimía un `#` suelto delante del mail.
+
+## Dos sustos que no eran
+
+Anotados para no volver a investigarlos:
+
+- **El contador `usos` de los cupones sí funciona.** Nada en `app.js` lo escribe,
+  pero lo incrementa la Cloud Function `procesarUsoCupon`, que además pone el cupón
+  en `activo:false` al llegar a `maxUsos`. El "límite de usos totales" del panel no
+  es un control muerto.
+- **La sección Reseñas del panel no está inflada.** En la colección hay 88
+  documentos pero solo 12 son reseñas: los otros 76 son tokens que nadie completó.
+  No ensucian la lista porque no tienen campo `fecha` y la consulta usa
+  `orderBy('fecha')`, que los excluye sola. El panel muestra 12 y promedio 5,0, que
+  es lo correcto.
+
+---
+
+# El checkout de invitado — DECIDIDO (commit `b4b0d74`)
+
+**Comprar exige sesión, y el código ahora lo dice en un solo idioma.** No es
+preferencia de diseño: era lo único coherente con las reglas ya desplegadas.
+
+- `/pedidos` `create` exige `isAuthUser()`: un pedido de invitado lo rechaza
+  Firestore, y `confirmCheckout()` se come el error del `add()`. El invitado vería
+  "Pedido confirmado", el mensaje saldría por WhatsApp y en el panel no habría nada:
+  exactamente el bug que arregló `0d24b0b`.
+- `/cuponesUsos` exige sesión a propósito (sin eso alcanzaba con omitir el `uid`
+  para escribir usos en loop y matar una promoción).
+
+Sostener el invitado significaba aflojar las dos reglas justo por donde se
+endurecieron. Se sacó el aviso inalcanzable de `index.html`, la rama de invitado de
+`openCheckoutModal()`, el `yerco_checkout_data` que solo leía esa rama, y la rama de
+invitado del canje de cupón. Se agregó una puerta explícita: sin sesión se pide
+login en vez de abrir un formulario que no se va a poder confirmar, y si la sesión
+se cierra con el checkout abierto ahora se cierra y se avisa.
+
+---
+
+# `optImg()` — CERRADO (commit `998f3b9`)
+
+El pendiente decía "ignora el ancho, todo se sirve al tamaño que se subió". Se
+midieron las 778 imágenes del catálogo en producción y **el diagnóstico era otro:
+el ancho estaba bien, el formato no.**
+
+| | n | peso | promedio |
+|---|---|---|---|
+| JPG | 594 | 11,7 MB | 20 KB, 600x600 |
+| **PNG** | **127** | **73,9 MB** | **595 KB, hasta 1,5 MB** |
+| WebP | 57 | 3,1 MB | 55 KB |
+
+El 16% de las imágenes era el 83% del peso. No era un bug del código actual:
+`uploadImage()` ya pasa todo por `compressImage()` (WebP, 1200 de ancho máximo,
+`cacheControl` de un año) en las tres puertas de subida del panel. Los PNG eran
+legado, de antes de que eso existiera.
+
+Se migraron con la misma receta del panel: **142 imágenes, 78,5 MB → 2,2 MB (97%
+menos)**. El catálogo completo pasó de 88,6 MB a **19,1 MB** y no queda ni un PNG.
+
+Cómo se cuidó que no se rompiera ninguna:
+
+- Cada imagen se baja de su **URL definitiva** y se comprueba que abre y que mide lo
+  esperado **antes** de tocar el producto. Si eso falla, el producto se queda con su
+  PNG.
+- Después se revisaron las **900 imágenes de los 879 productos**: todas responden y
+  abren.
+- En una muestra se comprobó que no quedaran transparentes ni planas (PSNR 38–45 dB
+  contra el original: invisible a 400 px).
+- Los PNG originales **siguen en Storage** de respaldo, y el manifiesto guarda la URL
+  vieja y la nueva de cada una: volver atrás es cambiar solo Firestore.
+
+**Queda pendiente, si se quiere:** borrar los 142 PNG viejos de Storage para liberar
+los 78 MB de cuota. Es irreversible, por eso no se hizo.
+
+`optImg()` sigue devolviendo la URL tal cual, y ahora está bien que así sea: lo que
+llega ya viene comprimido de la subida. Si algún día se instala la extensión Resize
+Images, ese es el lugar.
+
+---
+
 # Lo que queda abierto
 
 ## Huecos conocidos que NO se arreglaron
 
-- **El checkout de invitado es código muerto y contradictorio.** Las tres puertas al
-  checkout exigen sesión (`app.js:385`, `529`, `873` llaman a `requireLoginToBuy()`),
-  pero adentro conviven un aviso "Opcional: iniciá sesión" que no se puede llegar a
-  ver (`index.html:130`), un comentario que dice "no obligamos a login", y una rama de
-  invitado en el registro de cupones que, si alguien sacara el gate, **se rechazaría
-  en silencio** (verificado: `cuponesUsos` sin `uid` da DENY). Hay que decidir una
-  cosa y que el código cuente una sola historia.
 - **El modal "Completá tus datos" no tiene botón de cerrar** y se escapa recargando.
-- **`optImg(url, w)` es un stub que ignora el ancho** (`app.js:7`): todas las imágenes
-  de producto se sirven al tamaño que se subieron. El hero se resolvió por otro lado.
 - **El `create` del contador está roto en la regla**, pero es inalcanzable: los dos
-  contadores ya existen (`pedidosCount: 54`, `clientesAuthCount: 40`). Solo afectaría
-  a una instalación desde cero. Puede ser también un artefacto del harness de test.
+  contadores ya existen. Solo afectaría a una instalación desde cero. Puede ser
+  también un artefacto del harness de test.
+- **Barrido de `catch` mudos**: quedan 8 catch vacíos y 16 que solo loguean en
+  `app.js`. Se revisaron los que envuelven escrituras a Firestore, que eran los
+  peligrosos; los demás no se miraron uno por uno.
+- **Con un cupón mayor al carrito, el cartel promete de más.** Dice "$200.000 de
+  descuento aplicado" cuando el carrito es de $36.000. El total se topea bien en 0 y
+  el pedido se guarda correcto, pero el texto exagera.
+- **Un producto que se agota con el carrito ya armado corta el checkout con un cartel
+  correcto pero sin salida**: dice "Quitalo del carrito" y hay que hacerlo a mano.
 
-## Dato que corrige lo anotado antes
+## Rechazos que SÍ queremos (no tocar)
 
-`clientesAuthCount` está en **40**, no en 3. Lo de "los 3 clientes sin nombre" era
-cuántos estaban en blanco, no cuántos hay. El arreglo del nombre y el de las visitas
-tocan a bastante más gente de la que decía este archivo.
+De las 41 escrituras del panel, dos siguen rechazadas a propósito: un admin no puede
+borrar al dueño, ni borrarse a sí mismo.
 
 ## Para que la experiencia sea "excepcional"
 
-Eso ya no es auditoría, es criterio, y conviene que lo marque el dueño: **qué le
-molesta HOY al usarlo**, del panel y de la tienda. Una lista inventada desde el
-código va a estar llena de cosas que no le importan y le van a faltar las que sí.
-Con eso, el método de arriba sirve para verificar cada cambio midiendo.
+Sigue siendo criterio del dueño: **qué le molesta HOY al usarlo**, del panel y de la
+tienda. Con esa lista, el método de arriba sirve para verificar cada cambio midiendo.
+
+---
+
+## Herramientas de esta sesión (scratchpad, se borran al cerrarla)
+
+- `gen-banco-admin.py` — regenera `_test-admin.html`. El stub nuevo **filtra de
+  verdad** en `where`/`orderBy`/`limit` (el viejo devolvía la colección entera),
+  anota **toda** escritura en `window.__writes`, tiene las colecciones con sus
+  nombres reales (`ventasMayoristas`, no `ventasMay`; `config/resenasConfig`, no
+  `config/resenas`), y guarda los errores en `window.__errores` porque **el lector de
+  consola de este entorno devuelve un buffer viejo** y no sirve para medir.
+- `_test-tienda.html` ahora también filtra de verdad, y acepta `?cupon=` (ok, cubre,
+  usado, agotado, minimo, inactivo, cero) y `?stock=justo`.
+- `test-admin-writes.js` — las 41 escrituras del panel contra el motor de reglas.
+- `test-resenas.js` — los 14 casos del flujo de reseña.
+- `migrar-pngs.py` — la migración de imágenes, con `--solo=N` y verificación.
+- `verificar-imagenes.py` — revisa que las 900 imágenes de producto respondan.
+
+Al armar datos de prueba, **usar los nombres de campo reales**: las reseñas son
+`comentario`/`visible` (no `texto`/`aprobada`), los cupones `monto`/`limiteCompra`
+(no `descuento`/`minimoCompra`), y los contadores usan `count` (no `n`). Con nombres
+inventados el banco "encuentra" bugs que no existen: pasó dos veces en esta sesión.
