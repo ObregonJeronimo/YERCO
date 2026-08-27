@@ -12,7 +12,19 @@ const PRODUCTS_PER_PAGE = 10;
    sin ahorrar casi nada. Lo que si dolia era otra cosa: Storage lo servia con
    "private, max-age=0" y el navegador se lo bajaba entero en cada visita. Eso ya
    esta arreglado (metadata del objeto + cacheControl al subir desde el panel).
-   Si algun dia se suben imagenes grandes de verdad, aca va el resize. */
+
+   Las imagenes de PRODUCTO se midieron aparte, las 778 del catalogo: 88,6 MB en
+   total, y el problema no era el ancho sino el formato. Los JPG pesaban 20 KB de
+   promedio a 600x600, que para una tarjeta de 400 esta bien; los 127 PNG pesaban
+   595 KB de promedio y sumaban 73,9 MB, o sea el 16% de las imagenes era el 83%
+   del peso, con casos de 1,5 MB para una tarjeta de 400 px. Eran de antes de que
+   el panel comprimiera al subir: hoy uploadImage() las pasa por compressImage()
+   a WebP y 1200 de ancho maximo, asi que el goteo estaba cortado y lo que quedaba
+   era el legado. Se migraron a WebP con la misma receta del panel (78,7 MB -> 2,2 MB)
+   y los PNG originales quedaron en Storage de respaldo.
+
+   O sea que aca ya no hay nada que redimensionar: lo que llega esta comprimido al
+   subir. Si algun dia se instala la extension Resize Images, este es el lugar. */
 function optImg(url,w){return url||'';}
 /* Etiqueta corta para un botón del sistema viejo de gramajes.
    Antes el fallback era `h.nombre`, o sea el nombre interno entero: al lado de una
