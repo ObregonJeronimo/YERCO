@@ -1,7 +1,7 @@
 # YERCO — Pendientes
 
 Estado del repo al escribir esto: `main`, todo commiteado y pusheado, árbol limpio.
-Último commit: `57b19c4` (copiar productos: la cantidad va siempre, entre paréntesis).
+Último commit: `4b912b0` (la tienda lee la Configuración del panel: mínimo y envíos).
 
 Las tareas están ordenadas por riesgo: las dos primeras son bugs que se ven hoy en
 producción, la tercera es rediseño, la cuarta es auditoría.
@@ -229,6 +229,7 @@ produccion. Despues salieron estos pedidos, todos hechos y desplegados:
 | `8b27436` | control deslizante para el velo blanco del hero |
 | `cae1967` | a los 10 s sin actividad la pagina baja sola al catalogo |
 | `51e3f84` | etiqueta de ejemplo con envio gratis + alta de cliente guarda el nombre de Google |
+| `4b912b0` | la tienda lee `config/pedidos`: minimo, envios y envio gratis salen del panel |
 
 ## Bancos de prueba (no se commitean, los ignora .gitignore)
 
@@ -237,6 +238,11 @@ volver a escribirlos: son una copia de `index.html` / `admin.html` con los
 `<script>` de Firebase reemplazados por un stub inline (auth que devuelve un
 admin, Firestore falso con datos de ejemplo), guardadas como `_test-tienda.html`
 y `_test-admin.html`. Se sirven con `npm run dev` (puerto 5173).
+
+`_test-tienda.html` ademas sabe pisar `config/pedidos` desde la URL, que es
+como se midio el PENDIENTE 1: `?neg=none` (el documento no existe, o sea
+produccion hoy), `?neg=off` (envios apagados), `?neg=nogratis`, y los montos
+sueltos `?min=50000&envio=3500&gratis=80000`.
 
 Dos cosas del entorno que conviene saber antes de medir:
 - Con el panel del navegador oculto NO corren `requestAnimationFrame` ni las
@@ -250,30 +256,43 @@ Dos cosas del entorno que conviene saber antes de medir:
 
 ---
 
-## PENDIENTE 1 — La tienda ignora `config/negocio` (envios y minimo de pedido)
+## ~~PENDIENTE 1 — La tienda ignora la Configuracion del panel~~ HECHO
 
-Salio al verificar lo del "envio gratis". El panel tiene en Configuracion
-`haceEnvios`, `minimoPedido`, `envioPrecio`, `envioGratisActivo` y
-`envioGratisDesde`, y **la tienda no lee ninguno**: `grep haceEnvios app.js
-index.html` da 0.
+Commit `4b912b0`. Tres cosas que estaban mal anotadas acá y conviene no volver a
+creer:
 
-Lo que hay hoy escrito a mano en `app.js`:
-- `updateShippingBar()` (~linea 799): `const MIN_ORDER=30000, FREE_SHIPPING=100000`.
-- El checkout ofrece siempre el toggle envio/retiro (`setCheckoutEntrega`, ~904).
+- **El documento es `config/pedidos`, no `config/negocio`.** `config/negocio` no
+  existe ni existió nunca. El panel guarda en `config/pedidos` (`savePedidosCfg`).
+- **No hacía falta tocar reglas.** `match /config/{doc}` ya da lectura pública a
+  todo salvo el doc `telegram`, así que la tienda podía leerlo desde siempre.
+  Verificado ejecutando el `get()` desde la propia página de producción.
+- **No era un bug activo, era uno latente.** `config/pedidos` todavía **no existe**
+  en producción: el comercio nunca guardó ese formulario, así que el panel venía
+  mostrando sus `PC_DEFAULTS`, que son exactamente los números que la tienda tenía
+  escritos a mano (30000 / 2000 / 100000, envíos activos). Nadie estaba viendo un
+  dato falso; el desfasaje empezaba el día que se guardara por primera vez.
 
-O sea que si el comercio apaga los envios en el panel, el cliente igual ve la
-barra de "faltan $X para envio gratis" y puede elegir envio a domicilio. Es el
-mismo caso que la tarea 4 (dato del negocio escrito a mano en vez de salir del
-panel), pero este toca plata y expectativa del cliente.
+Los números estaban en cinco lugares, no en uno: el botón Confirmar, la barra del
+carrito, los marcadores `30k`/`100k` del HTML, el resumen del checkout y el total
+que se guarda en el pedido y se manda por WhatsApp.
 
-No lo hice porque cambia el comportamiento de compra de cara al cliente (minimo
-de pedido y costo de envio) y no es un arreglo de una linea: hay que leer
-`config/negocio` desde la tienda, esconder el toggle cuando `haceEnvios` es false
-y recalcular el total del checkout. Decision del duenio antes de tocarlo.
+Cómo quedó:
 
-Ojo con lo que ya dice el contexto de arriba: `config-negocio.js` es solo para el
-panel. Esto seria leer `config/negocio` de Firestore desde la tienda, que es otra
-cosa.
+- `loadNegocioCfg()` lee `config/pedidos` sin bloquear el render: pinta con lo
+  cacheado de la visita anterior (`localStorage`, `yerco_negocio_v1`) y repinta
+  cuando responde Firestore, igual que `config/siteContent`.
+- Si el documento no existe o la lectura falla, quedan los valores de antes, que
+  son los mismos defaults del panel. O sea que **no cambia nada hasta que el
+  comercio guarde esa Configuración por primera vez.**
+- Con `haceEnvios` en false se esconden la pregunta y los dos botones de entrega
+  (no la dirección de retiro, que ahí es lo único útil), el pedido se registra
+  como retiro aunque alguien fuerce `setCheckoutEntrega('envio')`, y la barra del
+  carrito pasa a medir el mínimo. Sin mínimo y sin envío gratis se esconde entera.
+
+Lo que **no** entró, por si aparece la duda: `descontarStock` sigue siendo solo
+del panel. La tienda no toca el stock en ningún momento, así que ese interruptor
+no tiene nada que aplicar del lado del cliente. El comentario de `admin.html` que
+decía lo contrario quedó corregido en el mismo commit.
 
 ## PENDIENTE 2 — Los 3 clientes que ya existen siguen sin nombre
 
