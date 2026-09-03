@@ -991,18 +991,31 @@ function deltasDeItems(items,signo){
             const mail=(email||'').trim().toLowerCase();
             if(!mail)return false;
             if(mail===MAIL_DUENIO)return true;
-            try{
-                const snap=await db.collection('admins').doc(mail).get();
-                return snap.exists;
-            }catch(e){
-                console.warn('No se pudo verificar el admin:',e);
-                return false;
+            /* Se reintenta la lectura. En un navegador nuevo la primera consulta a
+               Firestore puede fallar por App Check en frio o porque el token recien
+               creado todavia no propago; antes cualquiera de esos fallos caia en el
+               catch y devolvia false, que el login trataba como "no sos admin" y te
+               echaba. Un admin recien agregado que nunca habia entrado a la tienda
+               quedaba afuera hasta que pasaba por el ecommerce y volvia. Ahora se
+               distingue "el documento no existe" (no sos admin, devuelve false) de "no
+               se pudo leer" (se reintenta y, si no hay caso, se propaga el error para
+               que el login ofrezca reintentar en vez de expulsar). */
+            let ultimoError=null;
+            for(let intento=0;intento<4;intento++){
+                try{
+                    const snap=await db.collection('admins').doc(mail).get();
+                    return snap.exists;
+                }catch(e){
+                    ultimoError=e;
+                    await new Promise(r=>setTimeout(r,400*(intento+1)));
+                }
             }
+            throw ultimoError||new Error('No se pudo verificar el acceso');
         }
         function _initAuth(){
             if(!firebase.auth){setTimeout(_initAuth,100);return;}
             try{if(!auth)auth=firebase.auth();if(!storage)storage=firebase.storage();}catch(e){}
-            auth.onAuthStateChanged(async u=>{if(u){const allowed=await isAllowedEmail(u.email);if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;Promise.resolve(loadProducts()).then(()=>{if(typeof actualizarBadgeAlertas==='function')actualizarBadgeAlertas();});loadListas();loadFacturaConfig();loadTelegramConfig();loadResenasConfig();loadPedidosCfgEditor();/* loadAtajos es la unica de esta lista que vive en otro archivo (admin-atajos.js, que se carga mas abajo en el documento). Si la sesion ya esta en cache, onAuthStateChanged puede responder antes de que ese <script> se haya parseado y la llamada tira ReferenceError, cortando lo que sigue. Se guarda igual que actualizarBadgeAlertas unas lineas mas arriba. */if(typeof loadAtajos==='function')loadAtajos();escucharUso();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
+            auth.onAuthStateChanged(async u=>{if(u){/* Refrescar el token trae el custom claim `admin` que la Cloud Function aplica al primer ingreso (hace falta para subir imagenes a Storage) y de paso destraba App Check en un navegador nuevo. Si falla no es fatal: se sigue. */try{await u.getIdToken(true);}catch(_e){}let allowed;try{allowed=await isAllowedEmail(u.email);}catch(e){/* No se pudo verificar (transitorio). NO se hace signOut: se deja la sesion y se ofrece reintentar, en vez de echar a un admin legitimo por un fallo de red o de App Check. */const err=document.getElementById('loginError');err.innerHTML='No pudimos verificar tu acceso (puede ser la conexion). <button type="button" onclick="location.reload()" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0">Reintentar</button>';err.style.display='block';console.warn('Verificacion de admin no concluyente:',e);return;}if(!allowed){auth.signOut();const err=document.getElementById('loginError');err.textContent='Tu cuenta no tiene permisos para acceder.';err.style.display='block';return;}document.getElementById('loginScreen').style.display='none';document.getElementById('dashboard').style.display='block';document.getElementById('userEmail').textContent=u.email;Promise.resolve(loadProducts()).then(()=>{if(typeof actualizarBadgeAlertas==='function')actualizarBadgeAlertas();});loadListas();loadFacturaConfig();loadTelegramConfig();loadResenasConfig();loadPedidosCfgEditor();/* loadAtajos es la unica de esta lista que vive en otro archivo (admin-atajos.js, que se carga mas abajo en el documento). Si la sesion ya esta en cache, onAuthStateChanged puede responder antes de que ese <script> se haya parseado y la llamada tira ReferenceError, cortando lo que sigue. Se guarda igual que actualizarBadgeAlertas unas lineas mas arriba. */if(typeof loadAtajos==='function')loadAtajos();escucharUso();}else{document.getElementById('loginScreen').style.display='flex';document.getElementById('dashboard').style.display='none';}});
         } // end _initAuth
         _initAuth();
         function logout(){auth.signOut();}
