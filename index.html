@@ -209,10 +209,10 @@
     
 
     <!-- MODAL COMPLETAR DATOS -->
-    <div class="modal-auth-overlay" id="modalCompletarDatos" style="display:none">
+    <div class="modal-auth-overlay" id="modalCompletarDatos" style="display:none" onclick="if(event.target===this)cerrarCompletarDatos()">
       <div class="modal-auth-box">
-        <div class="modal-auth-header"><h3><i class="bi bi-person-check"></i> Completá tus datos</h3></div>
-        <p style="font-size:0.9rem;color:#666;margin-bottom:1.25rem">Para continuar necesitamos algunos datos de contacto.</p>
+        <div class="modal-auth-header"><h3><i class="bi bi-person-check"></i> Completá tus datos</h3><button type="button" onclick="cerrarCompletarDatos()" aria-label="Cerrar" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#666"><i class="bi bi-x-lg"></i></button></div>
+        <p style="font-size:0.9rem;color:#666;margin-bottom:1.25rem">Así agilizás tus próximos pedidos. Podés completarlos ahora o cuando quieras desde tu perfil.</p>
         <div class="auth-form-group"><label>Nombre *</label><input type="text" id="cdNombre" class="auth-input" placeholder="Tu nombre"></div>
         <div class="auth-form-group"><label>Apellido *</label><input type="text" id="cdApellido" class="auth-input" placeholder="Tu apellido"></div>
         <div class="auth-form-group"><label>Teléfono *</label><input type="tel" id="cdTelefono" class="auth-input" placeholder="Ej: 3512345678"></div>

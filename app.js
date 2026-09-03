@@ -1027,9 +1027,24 @@ async function confirmCheckout(){
     const cambiosPrev=reconciliarCarrito();
     const conProblema=carrito.filter(i=>i._noDisponible||i._sinStock);
     if(conProblema.length){
-        updateCartUI();
+        /* Se quitan solos. Son productos que ya no se pueden comprar (agotados o dados de
+           baja), asi que el mensaje anterior —"quitalos del carrito"— dejaba al cliente
+           trabado buscando cual sacar, sin ninguna otra salida que confirmar. Ahora se
+           sacan, se avisa que paso y confirma de nuevo con lo que queda. */
         const nombres=conProblema.map(i=>i.nombre).join(', ');
-        showToast('No se puede confirmar: '+nombres+' no disponible'+(conProblema.length>1?'s':'')+' temporalmente. Quitalo'+(conProblema.length>1?'s':'')+' del carrito.','error');
+        const idsFuera=conProblema.map(i=>i.id);
+        const plural=conProblema.length>1;
+        carrito=carrito.filter(i=>!(i._noDisponible||i._sinStock));
+        saveCart();
+        updateCartUI();
+        idsFuera.forEach(id=>updateProductCard(id));
+        if(document.getElementById('checkoutModal')?.classList.contains('show'))updateCheckoutResumen();
+        if(!carrito.length){
+            closeCheckoutModal();
+            showToast('Quitamos '+nombres+': se quedó sin stock. Tu carrito quedó vacío.','info');
+        }else{
+            showToast('Quitamos '+nombres+': '+(plural?'se quedaron':'se quedó')+' sin stock. Revisá y confirmá de nuevo.','info');
+        }
         return;
     }
     /* Si hubo cambios de precio/stock, avisar y dejar que revise antes de seguir */
@@ -1770,6 +1785,19 @@ function _showModalDatos() {
         document.getElementById('cdTelefono').value = clienteAuth.telefono || '';
     }
 }
+/* El modal no tenia forma de cerrarse: solo se salia recargando. Ahora tiene X,
+   cierra al clickear afuera y con Escape. Completar los datos dejo de ser obligatorio
+   (el checkout ya los pide y los guarda, y el nombre se completa solo desde Google),
+   asi que dejar cerrar no rompe ningun flujo. */
+function cerrarCompletarDatos() {
+    const m = document.getElementById('modalCompletarDatos');
+    if (m) m.style.display = 'none';
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    const m = document.getElementById('modalCompletarDatos');
+    if (m && m.style.display !== 'none') cerrarCompletarDatos();
+});
 
 async function guardarDatosCliente() {
     const nombre = document.getElementById('cdNombre').value.trim();
@@ -2038,7 +2066,12 @@ async function aplicarCupon() {
         _cuponAplicado = { codigo, monto: monto, id: cupDoc.id };
         if(input){input.disabled=true;input.style.opacity='0.6';}
         if(btn){btn.disabled=true;btn.textContent='Aplicado ✓';btn.style.background='#2d6b4a';}
-        if(msg) msg.innerHTML='<span style="color:#2d6b4a;font-weight:600">✓ $'+monto.toLocaleString('es-AR')+' de descuento aplicado.</span> <button onclick="quitarCupon()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.8rem;text-decoration:underline">Quitar</button>';
+        /* El descuento que se muestra es el EFECTIVO: un cupón de monto fijo mayor que el
+           carrito no puede descontar más que el subtotal (el total se topea en 0). Antes el
+           mensaje anunciaba el monto entero del cupón —"$200.000 de descuento" sobre un
+           carrito de $36.000— y el resumen de abajo mostraba otro número. */
+        const _descEfectivo = Math.min(monto, subtotal);
+        if(msg) msg.innerHTML='<span style="color:#2d6b4a;font-weight:600">✓ $'+_descEfectivo.toLocaleString('es-AR')+' de descuento aplicado.</span> <button onclick="quitarCupon()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.8rem;text-decoration:underline">Quitar</button>';
         updateCheckoutResumen();
     } catch(e) {
         if(msg) msg.innerHTML='<span style="color:#e53e3e">Error al verificar el cupón.</span>';
