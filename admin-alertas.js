@@ -57,13 +57,63 @@ async function calcularAlertas(forzar) {
     const prods = (typeof allProducts !== 'undefined' && allProducts) ? allProducts : [];
     const aLaVenta = prods.filter(p => p && p.oculto !== true);
 
+    /* Nombre base (sin el gramaje del final) y gramaje limpio de una presentacion.
+       En este catalogo el gramaje NO es un campo aparte: vive dentro del nombre
+       ("... x 500gr") y ademas, para los grupos, en grupoMascara ("500gr"). Para no
+       repetirlo, se recorta del nombre el " x <cantidad><unidad>" final. */
+    function _baseYmask(p) {
+      const mask = p.grupoMascara || p.gramaje || '';
+      let base = p.nombreMostrado || p.nombre || '(sin nombre)';
+      if (mask) {
+        const sinCola = base.replace(/\s*[x\u00d7]\s*[\d.,]+\s*(kg|kilos?|grs?|gr|g|ml|lt|l|cc|unidades?|un|u)\b.*$/i, '').trim();
+        if (sinCola) base = sinCola;
+      }
+      return { base: base, mask: mask };
+    }
+    /* Agrupa presentaciones del mismo producto (grupoId, o gramajePadreId del
+       sistema viejo; si no tiene ninguno, va sola). Devuelve una linea por
+       producto con sus presentaciones afectadas. */
+    function _agrupar(lista, conConteo) {
+      const porProducto = new Map();
+      lista.forEach(p => {
+        const k = p.grupoId || p.gramajePadreId || ('__' + p.id);
+        if (!porProducto.has(k)) porProducto.set(k, []);
+        porProducto.get(k).push(p);
+      });
+      const items = [];
+      porProducto.forEach(miembros => {
+        const hayGramaje = miembros.some(m => m.grupoMascara || m.gramaje);
+        if (!hayGramaje) {
+          const p = miembros[0];
+          items.push((p.nombreMostrado || p.nombre || '(sin nombre)') +
+            (conConteo ? (' · ' + Number(p.stock || 0)) : ''));
+          return;
+        }
+        const base = _baseYmask(miembros[0]).base;
+        const partes = miembros
+          .slice().sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0))
+          .map(m => {
+            const mask = m.grupoMascara || m.gramaje || '?';
+            return conConteo ? (mask + ' (' + Number(m.stock || 0) + ')') : mask;
+          });
+        items.push(base + ' — ' + partes.join(', '));
+      });
+      return items;
+    }
+    /* Cuenta productos distintos, no presentaciones: 3 gramajes de una yerba en cero
+       es un problema de UN producto, y asi lo dice el titulo. */
+    function _cuentaProductos(lista) {
+      return new Set(lista.map(p => p.grupoId || p.gramajePadreId || ('__' + p.id))).size;
+    }
+
     const sinStock = aLaVenta.filter(p => Number(p.stock || 0) <= 0);
     if (sinStock.length) {
+      const n = _cuentaProductos(sinStock);
       out.push({
         id: 'sin-stock', nivel: 'critico', icono: 'bi-x-octagon',
-        titulo: sinStock.length + (sinStock.length === 1 ? ' producto sin stock' : ' productos sin stock'),
-        detalle: 'Están publicados en la tienda y no se pueden vender.',
-        items: sinStock.map(p => p.nombre || '(sin nombre)'), seccion: 'stock'
+        titulo: n + (n === 1 ? ' producto sin stock' : ' productos sin stock'),
+        detalle: 'Hay presentaciones publicadas en la tienda que no se pueden vender.',
+        items: _agrupar(sinStock, false), seccion: 'stock'
       });
     }
 
@@ -72,13 +122,12 @@ async function calcularAlertas(forzar) {
       return s > 0 && s <= ALERTAS_STOCK_BAJO;
     });
     if (bajos.length) {
+      const n = _cuentaProductos(bajos);
       out.push({
         id: 'stock-bajo', nivel: 'aviso', icono: 'bi-exclamation-triangle',
-        titulo: bajos.length + (bajos.length === 1 ? ' producto con poco stock' : ' productos con poco stock'),
-        detalle: 'Queda' + (bajos.length === 1 ? '' : 'n') + ' ' + ALERTAS_STOCK_BAJO + ' unidades o menos.',
-        items: bajos
-          .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0))
-          .map(p => (p.nombre || '(sin nombre)') + ' · ' + Number(p.stock || 0)),
+        titulo: n + (n === 1 ? ' producto con poco stock' : ' productos con poco stock'),
+        detalle: 'Presentaciones con ' + ALERTAS_STOCK_BAJO + ' unidades o menos.',
+        items: _agrupar(bajos, true),
         seccion: 'stock'
       });
     }
