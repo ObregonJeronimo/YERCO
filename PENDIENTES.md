@@ -553,22 +553,58 @@ Images, ese es el lugar.
 
 ---
 
+# Sesión 03/09/2026 — pedidos del dueño + cierre de la lista abierta
+
+Todo medido, desplegado y confirmado en producción.
+
+| Commit | Qué |
+|---|---|
+| `11b284f` | un admin recién agregado no podía entrar si nunca había usado la tienda |
+| `0a6a575` + `99f9efb` | la "f" de "confianza" se montaba sobre la "i" en el hero |
+| `1b4856b` | el aviso de stock bajo ahora entiende gramajes, no solo unidades |
+| `8fb4e7a` | generar e imprimir código de barras de un producto |
+| `5a4c11a` | tres frenos del checkout que quedaban en la lista abierta |
+
+**Login de admin (`11b284f`).** Un mail recién habilitado desde Configuración no
+podía entrar a /admin hasta pasar por la tienda, loguearse y volver. `isAllowedEmail`
+lee `/admins/{mail}`; en un navegador nuevo esa primera lectura falla por App Check en
+frío o token sin propagar, y el `catch` devolvía `false`, que el login trataba como
+"no sos admin" (signOut + rechazo). Ahora distingue "no existe el doc" de "no se pudo
+leer" (reintenta 4 veces; ante error deja la sesión y ofrece Reintentar, no expulsa) y
+fuerza `getIdToken(true)` para traer el claim de admin y destrabar App Check.
+
+**Hero "fi" (`0a6a575`, ajustado en `99f9efb`).** Medido en canvas: el terminal de la
+"f" de Playfair sobresale ~5,5px y esta versión de la fuente no trae ligadura `fi`.
+`letter-spacing: 0.07em` en `.hero-title` despega el par (solape medido → 0). Confirmado
+visualmente en prod.
+
+**Alertas de gramaje (`1b4856b`).** Los gramajes son productos sueltos (grupoId); la
+campana los listaba por nombre interno largo y en baldes separados. Ahora agrupa por
+producto y muestra cada presentación con su máscara limpia. El gramaje no es campo
+aparte: se recorta el " x <cantidad><unidad>" del nombre.
+
+**Código de barras (`8fb4e7a`).** Previsualización en vivo, "Generar" (EAN-13 interno
+prefijo 200 + verificador) e "Imprimir etiqueta". Usa JsBarcode desde cdnjs.
+
+**Tres frenos del checkout (`5a4c11a`).** El modal "Completá tus datos" ahora cierra
+(X, click afuera, Escape) y es opcional; un producto agotado se quita solo del checkout
+en vez de trabar; el cupón mayor al carrito muestra el descuento efectivo, no el monto
+entero.
+
+---
+
 # Lo que queda abierto
 
-## Huecos conocidos que NO se arreglaron
+## Huecos revisados esta sesión y dejados a propósito
 
-- **El modal "Completá tus datos" no tiene botón de cerrar** y se escapa recargando.
-- **El `create` del contador está roto en la regla**, pero es inalcanzable: los dos
-  contadores ya existen. Solo afectaría a una instalación desde cero. Puede ser
-  también un artefacto del harness de test.
-- **Barrido de `catch` mudos**: quedan 8 catch vacíos y 16 que solo loguean en
-  `app.js`. Se revisaron los que envuelven escrituras a Firestore, que eran los
-  peligrosos; los demás no se miraron uno por uno.
-- **Con un cupón mayor al carrito, el cartel promete de más.** Dice "$200.000 de
-  descuento aplicado" cuando el carrito es de $36.000. El total se topea bien en 0 y
-  el pedido se guarda correcto, pero el texto exagera.
-- **Un producto que se agota con el carrito ya armado corta el checkout con un cartel
-  correcto pero sin salida**: dice "Quitalo del carrito" y hay que hacerlo a mano.
+- **El `create` del contador en la regla**: se re-verificó y el DENY del test es
+  artefacto del harness (no pasa `resource` para un create; con `{count:1}` la regla
+  lo permite). En producción los contadores ya existen (54/40), así que es inalcanzable.
+  Tocar una regla viva por un escenario que nunca ocurre es riesgo sin beneficio.
+- **`catch` mudos de `app.js`**: se barrieron los 6 vacíos y son todos benignos
+  (sessionStorage, scrollIntoView, updateCartUI, cache de localStorage, y la lectura no
+  crítica del cupón fresco). El único peligroso —guardar el pedido— ya lleva su fallo
+  en el propio mensaje de WhatsApp desde `0d24b0b`. Nada accionable.
 
 ## Rechazos que SÍ queremos (no tocar)
 
