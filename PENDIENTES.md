@@ -553,6 +553,32 @@ Images, ese es el lugar.
 
 ---
 
+# Sesión 14/09/2026 — cambio de producto padre + App Check
+
+**Bug (`f350f28`): "Missing or insufficient permissions" al reemplazar/desconectar el
+producto padre de un envasado propio.** No era la regla (verificado contra el ruleset
+desplegado: el admin puede escribir productos). La causa es que **App Check está
+ENFORCED en Firestore** (confirmado via la API: `firestore.googleapis.com -> ENFORCED`;
+Storage está UNENFORCED). Su token se vence en una pestaña abierta hace rato —el
+auto-refresh no corre en segundo plano porque los timers se estrangulan— y el write sale
+sin token válido: el servidor lo rechaza con **el mismo mensaje que una regla denegada**.
+Los reads viejos ya estaban en pantalla, por eso parecía que la sesión andaba.
+
+Arreglo: `_writeConReintento` refresca App Check (`getToken(true)`) **y** auth
+(`getIdToken(true)`) y reintenta una vez; refresco proactivo de ambos al volver a la
+pestaña (`visibilitychange`), que cubre TODO el panel. Y la UX del botón Desconectar:
+explica las dos salidas (cambiar el padre / volverlo normal) y el botón verde dice
+"Cambiar padre a X" cuando ya hay un padre.
+
+**OJO para el futuro (contexto que rompe cosas):** App Check ENFORCED en Firestore
+significa que un `permission-denied` en el panel puede NO ser la regla, sino el token de
+App Check vencido. Antes de tocar reglas por un "permisos insuficientes", descartar esto.
+Cualquier write nuevo del panel que sea sensible a esto conviene envolverlo en
+`_writeConReintento`. En el banco `firebase.appCheck` es `undefined`, así que el refresco
+se saltea solo (no reproduce el bug: hay que medir la config real con la API de App Check).
+
+---
+
 # Sesión 03/09/2026 — pedidos del dueño + cierre de la lista abierta
 
 Todo medido, desplegado y confirmado en producción.
