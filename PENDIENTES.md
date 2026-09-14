@@ -555,27 +555,42 @@ Images, ese es el lugar.
 
 # Sesión 14/09/2026 — cambio de producto padre + App Check
 
-**Bug (`f350f28`): "Missing or insufficient permissions" al reemplazar/desconectar el
-producto padre de un envasado propio.** No era la regla (verificado contra el ruleset
-desplegado: el admin puede escribir productos). La causa es que **App Check está
-ENFORCED en Firestore** (confirmado via la API: `firestore.googleapis.com -> ENFORCED`;
-Storage está UNENFORCED). Su token se vence en una pestaña abierta hace rato —el
-auto-refresh no corre en segundo plano porque los timers se estrangulan— y el write sale
-sin token válido: el servidor lo rechaza con **el mismo mensaje que una regla denegada**.
-Los reads viejos ya estaban en pantalla, por eso parecía que la sesión andaba.
+**Bug: "Missing or insufficient permissions" al reemplazar/desconectar el producto padre
+de un envasado propio.** No era la regla (verificado contra el ruleset desplegado: el
+admin puede escribir productos). La causa es que **App Check está ENFORCED en Firestore**
+(confirmado via la API: `firestore.googleapis.com -> ENFORCED`; Storage está UNENFORCED).
+El token se cae por ratos —reCAPTCHA que no responde, PC suspendida, una extensión— y el
+write sale sin token válido: el servidor lo rechaza con **el mismo mensaje que una regla
+denegada**. Los reads viejos ya estaban en pantalla, por eso parecía que la sesión andaba.
+Métricas de App Check (14/09): 22 rechazos por token inválido entre 14:05 y 14:15 UTC y
+cero en las 2 h alrededor; rechazos así en 17 de 25 días (21/08–14/09). `tokenTtl` 24 h,
+`minValidScore` 0.5.
 
-Arreglo: `_writeConReintento` refresca App Check (`getToken(true)`) **y** auth
-(`getIdToken(true)`) y reintenta una vez; refresco proactivo de ambos al volver a la
-pestaña (`visibilitychange`), que cubre TODO el panel. Y la UX del botón Desconectar:
-explica las dos salidas (cambiar el padre / volverlo normal) y el botón verde dice
-"Cambiar padre a X" cuando ya hay un padre.
+**Cómo quedó (dos commits del mismo bug, unificados):**
+- `c71a869` (`firebase-config.js`): **el arreglo que manda**. Envuelve globalmente las
+  ops de Firestore (`DocumentReference.set/update/delete/get`, `CollectionReference.add`,
+  `Query.get`, `WriteBatch.commit`): ante `permission-denied` pide un token nuevo a App
+  Check (`getToken(true)`) y reintenta UNA vez; el batch no se reintenta (Firestore lo
+  marca usado), solo renueva token y avisa. Idempotente (`__reintentoAppCheck`). Cubre
+  **tienda Y panel**, todas las ops comunes. Verificado 25/25.
+- `f350f28` + limpieza posterior (`admin.html`): quedó SOLO la UX del cambio de padre —el
+  botón Desconectar explica las dos salidas (cambiar el padre / volverlo normal) y el
+  botón verde dice "Cambiar padre a X" cuando ya hay un padre. El `_writeConReintento`
+  por-write y el refresco por `visibilitychange` **se sacaron por redundantes**: el
+  wrapper global ya cubre esos writes.
 
-**OJO para el futuro (contexto que rompe cosas):** App Check ENFORCED en Firestore
-significa que un `permission-denied` en el panel puede NO ser la regla, sino el token de
-App Check vencido. Antes de tocar reglas por un "permisos insuficientes", descartar esto.
-Cualquier write nuevo del panel que sea sensible a esto conviene envolverlo en
-`_writeConReintento`. En el banco `firebase.appCheck` es `undefined`, así que el refresco
-se saltea solo (no reproduce el bug: hay que medir la config real con la API de App Check).
+> Nota: `c71a869` lo commiteó por error la sesión de **brotesdietetica** (otro proyecto,
+> misma máquina) sobre este repo, y quedó bajo `f350f28`. Es correcto y ya está unificado.
+
+**OJO para el futuro (contexto que rompe cosas):**
+- App Check ENFORCED en Firestore: un `permission-denied` en el panel puede NO ser la
+  regla, sino el token de App Check caído. Antes de tocar reglas por un "permisos
+  insuficientes", descartar esto (recargar la página trae un token nuevo).
+- El reintento de App Check ya es **global** (`firebase-config.js`). Un write nuevo **no**
+  necesita envolverse en nada: hereda el reintento. Lo que el wrapper NO cubre:
+  `db.runTransaction` (la Transaction tiene sus propios get/set) y `onSnapshot`.
+- En el banco `firebase.appCheck` es `undefined` y el wrapper se saltea solo (no reproduce
+  el bug): la config real se mide con la API de App Check, no en el banco.
 
 ---
 
