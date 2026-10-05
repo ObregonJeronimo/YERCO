@@ -1,5 +1,21 @@
 # YERCO — Pendientes
 
+## PENDIENTE ACTIVO (04/10/2026) — Video motion graphics con Three.js
+
+El dueno quiere un **video de motion graphics** que muestre **cómo se hace una compra**
+en YERCO. Requisitos que dio: usar **Three.js**, que sea **precioso y fluido**, y que
+**no hace falta usar las interfaces reales** de YERCO (puede ser una representación
+abstracta/estilizada del flujo de compra).
+
+**Cómo encararlo (pedido explícito del dueno):** NO empezar a construir de una. Primero
+**preguntarle qué quiere en el video** y proponerle un **listado de ideas/conceptos**
+(distintos enfoques de motion graphics para 'cómo se hace una compra'); él elige uno y
+recién ahí se construye. Entregar como artifact HTML (Three.js desde cdnjs) o como
+archivo, lo que convenga para que lo pueda ver y, si quiere, grabar.
+
+---
+
+
 Estado del repo al escribir esto: `main`, todo commiteado y pusheado, árbol limpio.
 Último commit: `0d24b0b` (había pedidos que se perdían sin que nadie se enterara).
 
