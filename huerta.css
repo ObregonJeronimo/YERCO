@@ -325,6 +325,31 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 
 /* ========================= CARRITO, FICHA Y VARIOS ========================= */
 .cart-item { background: var(--h-bg); border-radius: 14px; }
+/* Cabecera del carrito: "Vaciar" como pastilla suave (el rojo aparece solo al
+   apuntarlo) y la X como boton redondo. */
+.cart-header-actions { gap: 6px; }
+.btn-clear-cart { height: 38px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--h-bg); color: var(--h-muted);
+    font-family: var(--font-body); font-size: .85rem; font-weight: 600; gap: 6px; transition: background .2s, color .2s; }
+.btn-clear-cart i { font-size: .9rem; }
+.btn-clear-cart:hover, .btn-clear-cart[aria-expanded="true"] { background: #FBE6DD; color: var(--h-off); border: 0; }
+.cart-close { width: 40px; height: 40px; padding: 0; border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem; color: var(--h-ink); transition: background .2s; }
+.cart-close:hover { background: var(--h-bg); color: var(--h-ink); }
+.btn-clear-cart:focus-visible, .cart-close:focus-visible, .hu-vaciar button:focus-visible { outline: 2px solid var(--h-green); outline-offset: 2px; }
+/* Confirmacion de vaciar, dentro del carrito */
+/* visibility: cerrada no se puede tabular a sus botones */
+.hu-vaciar { flex: none; overflow: hidden; max-height: 0; visibility: hidden; transition: max-height .25s ease, visibility 0s .25s; }
+.hu-vaciar.show { max-height: 240px; visibility: visible; transition: max-height .25s ease; }
+.hu-vaciar-in { margin: 12px var(--spacing-lg); padding: 14px 16px; background: #FBE6DD; border-radius: 14px; }
+.hu-vaciar p { margin: 0 0 12px; color: var(--h-ink); font-size: .92rem; line-height: 1.4; }
+.hu-vaciar-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.hu-vaciar-btns button { min-height: 40px; padding: 0 18px; border-radius: 999px; font-family: var(--font-body); font-weight: 700; font-size: .88rem; border: 0; cursor: pointer; transition: background .2s, transform .15s; }
+.hu-vaciar-no { background: #fff; color: var(--h-ink); }
+.hu-vaciar-no:hover { background: var(--h-bg); }
+.hu-vaciar-si { background: var(--h-off); color: #fff; display: inline-flex; align-items: center; gap: 6px; }
+.hu-vaciar-si:hover { background: #BF4520; }
+.hu-vaciar-btns button:active { transform: scale(.97); }
+@media (max-width: 400px) { .hu-vaciar-btns button { flex: 1; } .hu-vaciar-in { margin-inline: 12px; } }
+@media (prefers-reduced-motion: reduce) { .hu-vaciar { transition: none; } }
 .total-amount { font-family: var(--font-display); font-weight: 800; color: var(--h-ink); letter-spacing: -.02em; }
 .product-detail-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .pdm-add-btn { border-radius: 999px; }

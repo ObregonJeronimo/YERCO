@@ -254,7 +254,8 @@ function aplicarFiltros() {
     if (subcategoriaActual) r = r.filter(p => p.subcategoria === subcategoriaActual);
     if (busquedaTexto) { r=r.filter(p=>_searchScore(busquedaTexto,p)>0); }
     r.sort((a,b)=>{
-        if(ordenAlfa){const cmp=(a.nombre||'').localeCompare(b.nombre||'','es');if(cmp!==0)return ordenAlfa==='asc'?cmp:-cmp;}
+        /* Por el nombre que ve el cliente: el interno ("-Del Olivo- AC OLIVA...") dejaba la lista desordenada a la vista */
+        if(ordenAlfa){const cmp=(a.nombreMostrado||a.nombre||'').trim().localeCompare((b.nombreMostrado||b.nombre||'').trim(),'es',{sensitivity:'base',numeric:true});if(cmp!==0)return ordenAlfa==='asc'?cmp:-cmp;}
         if(ordenPrecio){const cmp=precioFinal(a)-precioFinal(b);if(cmp!==0)return ordenPrecio==='asc'?cmp:-cmp;}
         return 0;
     });
@@ -499,7 +500,7 @@ function initCart() {
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart();});
 }
 function openCart(){document.getElementById('cartSidebar')?.classList.add('show');document.getElementById('cartOverlay')?.classList.add('show');document.body.style.overflow='hidden';}
-function closeCart(){document.getElementById('cartSidebar')?.classList.remove('show');document.getElementById('cartOverlay')?.classList.remove('show');document.body.style.overflow='';}
+function closeCart(){cancelClearCart();document.getElementById('cartSidebar')?.classList.remove('show');document.getElementById('cartOverlay')?.classList.remove('show');document.body.style.overflow='';}
 
 function updateProductQuantity(id,ch) {
     if(!clienteAuth&&ch>0){requireLoginToBuy();return;}
@@ -739,7 +740,24 @@ function avisarCambiosCarrito(cambios){
         showToast('Tu carrito se actualizó: '+msgs.join(', '),'info');
     }
 }
-function clearCart(){if(carrito.length===0)return;if(!confirm('Vaciar todo el carrito?'))return;const ids=carrito.map(i=>i.id);carrito=[];saveCart();updateCartUI();ids.forEach(id=>updateProductCard(id));showToast('Carrito vaciado','info');}
+/* Vaciar pide confirmacion dentro del mismo carrito (antes era la ventanita gris del
+   navegador, que no se parecia en nada a la tienda). */
+function clearCart(){
+    if(carrito.length===0)return;
+    let bar=document.getElementById('huVaciar');
+    if(bar&&bar.classList.contains('show')){cancelClearCart();return;}
+    if(!bar){
+        bar=document.createElement('div');bar.id='huVaciar';bar.className='hu-vaciar';bar.setAttribute('role','alertdialog');bar.setAttribute('aria-labelledby','huVaciarTxt');
+        bar.innerHTML='<div class="hu-vaciar-in"><p id="huVaciarTxt"></p><div class="hu-vaciar-btns"><button type="button" class="hu-vaciar-no" onclick="cancelClearCart()">Cancelar</button><button type="button" class="hu-vaciar-si" onclick="confirmClearCart()"><i class="bi bi-trash3"></i> Sí, vaciar</button></div></div>';
+        document.querySelector('#cartSidebar .cart-header')?.after(bar);
+    }
+    const n=carrito.reduce((s,i)=>s+(i.cantidad||1),0);
+    bar.querySelector('p').innerHTML='<strong>¿Vaciar el carrito?</strong> Se van a quitar '+n+(n===1?' producto.':' productos.');
+    bar.classList.add('show');document.getElementById('clearCartBtn')?.setAttribute('aria-expanded','true');
+    bar.querySelector('.hu-vaciar-no').focus();
+}
+function cancelClearCart(){document.getElementById('huVaciar')?.classList.remove('show');const b=document.getElementById('clearCartBtn');b?.setAttribute('aria-expanded','false');}
+function confirmClearCart(){cancelClearCart();if(carrito.length===0)return;const ids=carrito.map(i=>i.id);carrito=[];saveCart();updateCartUI();ids.forEach(id=>updateProductCard(id));showToast('Carrito vaciado','info');}
 
 let _pdmCurrentImgIdx=0;
 let _pdmImages=[];
@@ -895,7 +913,9 @@ function updateCartUI() {
        nada. No en la primera pasada (carrito guardado de la visita anterior). */
     if(_huConteo!==null&&ti>_huConteo){const cb=document.getElementById('cartToggle');if(cb){cb.classList.remove('hu-bump');void cb.offsetWidth;cb.classList.add('hu-bump');}}
     _huConteo=ti;
-    if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
+    /* Sin productos no hay nada que vaciar: el boton no aparece */
+    document.getElementById('clearCartBtn')?.classList.toggle('d-none',carrito.length===0);
+    if(carrito.length===0){cancelClearCart();if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
     if(ckBtn){const min=negMinimo();ckBtn.disabled=carrito.length===0||tp<min;if(min>0&&tp>0&&tp<min){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $'+formatPrice(min);}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
     updateShippingBar(tp);
