@@ -751,7 +751,8 @@ function clearCart(){
         bar.innerHTML='<div class="hu-vaciar-in"><p id="huVaciarTxt"></p><div class="hu-vaciar-btns"><button type="button" class="hu-vaciar-no" onclick="cancelClearCart()">Cancelar</button><button type="button" class="hu-vaciar-si" onclick="confirmClearCart()"><i class="bi bi-trash3"></i> Sí, vaciar</button></div></div>';
         document.querySelector('#cartSidebar .cart-header')?.after(bar);
     }
-    const n=carrito.reduce((s,i)=>s+(i.cantidad||1),0);
+    /* Productos distintos, igual que "Subtotal (N productos)" del checkout */
+    const n=carrito.length;
     bar.querySelector('p').innerHTML='<strong>¿Vaciar el carrito?</strong> Se van a quitar '+n+(n===1?' producto.':' productos.');
     bar.classList.add('show');document.getElementById('clearCartBtn')?.setAttribute('aria-expanded','true');
     bar.querySelector('.hu-vaciar-no').focus();
