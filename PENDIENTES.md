@@ -1,5 +1,43 @@
 # YERCO — Pendientes
 
+## ▶ LEER PRIMERO — estado al 08/10/2026 y pendientes en orden
+
+Árbol: `main`, todo commiteado y pusheado (último `4d0d2a2`), salvo `publicaciones/` (el reel,
+fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
+
+### 1. PENDIENTE ACTIVO — "¿está todo bien en yerco, tanto en el ecommerce como en el admin?"
+Pedido textual del dueño. Hacer una verificación integral EN PRODUCCIÓN, midiendo, no leyendo código.
+- **Ya verificado (08/10):** tienda en yerco.ar con datos reales de Firestore, PC 1366 y celular 390:
+  productos, 20 categorías con ícono, platos de la portada, cinta, 0 errores de JS, sin desborde
+  horizontal, carrito visible. En el BANCO (`_test-huerta.html?user=sintel`): agregar al carrito,
+  +/− cantidad, contador que salta, subcategorías, ficha de producto y carrito, sin errores.
+  Panel en producción: carga sin errores, pantalla de login, trae el arreglo de factura (100×150).
+- **Falta:**
+  - (a) **Panel por dentro en producción**: necesita sesión de admin. El navegador del agente NO
+    tiene sesión y el agente NO puede ingresar credenciales: pedirle al dueño que inicie sesión en
+    el panel del navegador integrado (Ctrl+Shift+B) y recién ahí recorrer las secciones SOLO
+    LEYENDO (Ventas, Pedidos, Productos, Clientes, Editor Web, Configuración, abrir una factura sin
+    imprimir y confirmar `_fcCargada===true` y `facturaConfig.termicaAncho===100`).
+  - (b) **Tienda con sesión en producción**: agregar al carrito con un cliente logueado y abrir el
+    checkout SIN confirmar (confirmar crea un pedido real y manda WhatsApp). Revisar ficha de
+    producto, buscador, orden por precio/A-Z, paginación, subcategorías en celular (hoja de abajo).
+  - (c) Otras páginas que comparten estilos: `/politicas`, `/mayoristas`, `/resena` (no cargan
+    `huerta.css`, deberían verse igual que antes; confirmarlo).
+  - (d) Revisar en un celular real o con viewport 360 px (el más angosto común).
+
+### 2. Decisiones que esperan al dueño
+- El control **"velo blanco del hero"** del Editor Web ya no hace nada con Huerta. ¿Sacarlo del panel?
+  (admin.html tiene DOS `</body>`: editar con cuidado.)
+- **Lienzo de diseño vacío** creado por error en su galería de claude.ai ("YERCO — Propuestas
+  visuales", tipo Design). Solo se borra si el dueño lo pide.
+- **Factura**: confirmar con el socio que usó el botón **Térmica** (y si salió con otro logo o con
+  @yerco.diet en vez de @yerco.va: eso prueba que fue la config no leída). Que recargue el panel.
+
+### 3. Reel publicitario (en `publicaciones/reel-yerco/`, ver sección más abajo)
+- Idea 1 (personaje 2D) **rehecha y entregada el 05/10**; el dueño todavía no dio devolución.
+  Abiertos: subtítulo de la línea 2 dice "boludo" (fiel al audio; ¿sacarlo?) y el "ierco" de la
+  línea 3 en la voz. Después: Idea 2 (adolescente y mamá), ya detallada abajo.
+
 ## Sesión 08/10/2026 — diseño "Huerta" + factura térmica (HECHO, en producción)
 
 | Commit | Qué |
@@ -31,7 +69,7 @@ valores de respaldo del código, que eran los de Brotes (80 mm, alto libre). Aho
 100×150, reintenta 3 veces y `showFactura` vuelve a probar. Medido en el banco forzando el fallo.
 En Firestore, `config/factura` tiene termicaAncho=100 / termicaAlto=150 (sin cambios desde 05/2026).
 
-## PENDIENTE ACTIVO (05/10/2026) — Reel publicitario de YERCO (Three.js + voz)
+## Reel publicitario de YERCO (05/10/2026) — estado actual en "LEER PRIMERO", punto 3
 
 Anuncio para Instagram (9:16) que cuenta una compra en YERCO con un personaje. Hubo una
 primera versión ARMADA y entregada (`reel-yerco.mp4`, 38s, con voz), pero el dueño pidió
