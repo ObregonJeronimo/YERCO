@@ -5,25 +5,37 @@
 Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
 fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
 
-### 1. PENDIENTE ACTIVO — "¿está todo bien en yerco, tanto en el ecommerce como en el admin?"
-Pedido textual del dueño. Hacer una verificación integral EN PRODUCCIÓN, midiendo, no leyendo código.
-- **Ya verificado (08/10):** tienda en yerco.ar con datos reales de Firestore, PC 1366 y celular 390:
-  productos, 20 categorías con ícono, platos de la portada, cinta, 0 errores de JS, sin desborde
-  horizontal, carrito visible. En el BANCO (`_test-huerta.html?user=sintel`): agregar al carrito,
-  +/− cantidad, contador que salta, subcategorías, ficha de producto y carrito, sin errores.
-  Panel en producción: carga sin errores, pantalla de login, trae el arreglo de factura (100×150).
-- **Falta:**
-  - (a) **Panel por dentro en producción**: necesita sesión de admin. El navegador del agente NO
-    tiene sesión y el agente NO puede ingresar credenciales: pedirle al dueño que inicie sesión en
-    el panel del navegador integrado (Ctrl+Shift+B) y recién ahí recorrer las secciones SOLO
-    LEYENDO (Ventas, Pedidos, Productos, Clientes, Editor Web, Configuración, abrir una factura sin
-    imprimir y confirmar `_fcCargada===true` y `facturaConfig.termicaAncho===100`).
-  - (b) **Tienda con sesión en producción**: agregar al carrito con un cliente logueado y abrir el
-    checkout SIN confirmar (confirmar crea un pedido real y manda WhatsApp). Revisar ficha de
-    producto, buscador, orden por precio/A-Z, paginación, subcategorías en celular (hoja de abajo).
-  - (c) Otras páginas que comparten estilos: `/politicas`, `/mayoristas`, `/resena` (no cargan
-    `huerta.css`, deberían verse igual que antes; confirmarlo).
-  - (d) Revisar en un celular real o con viewport 360 px (el más angosto común).
+### 1. HECHO (08/10) — verificación integral "¿está todo bien en yerco, ecommerce y admin?"
+Medido en producción (yerco.ar) con sesión de admin y de cliente, PC y 360 px. Resultado: todo
+funciona; se encontraron y arreglaron 4 cosas (en producción y verificadas en yerco.ar):
+
+| Commit | Qué |
+|---|---|
+| `4796291` | la cinta verde dejaba un hueco vacío en pantallas > ~1290 px (solo 2 copias del texto); ahora repite el texto hasta cubrir el ancho |
+| `c1faaf1` | orden A-Z comparaba el nombre interno ("-Del Olivo- AC OLIVA…") y no `nombreMostrado`; y botón **Vaciar** del carrito rediseñado (pastilla + confirmación dentro del carrito en vez del `confirm()` del navegador; oculto con carrito vacío) |
+| `ba5e1b7` | la confirmación de vaciar contaba unidades ("9 productos") y el checkout productos ("2 productos") |
+
+- **Tienda sin sesión:** /politicas, /mayoristas, /resena OK en PC y 360 (sin errores ni desborde;
+  /resena sin token muestra "Link inválido", correcto). 360 px sin desborde. Ficha, buscador (y
+  "No se encontraron productos"), precio ↑/↓, A-Z/Z-A, paginación, subcategorías en celular: OK.
+  Sin sesión "Agregar" manda al login de Google (esperado).
+- **Tienda con sesión (cliente):** agregar, +/−, contador, carrito, Vaciar (cancelar y vaciar),
+  checkout con datos precargados, envío $2.000 / retiro sin cargo, totales correctos, 360 px OK.
+  No se confirmó ningún pedido; el carrito de la cuenta quedó vacío como estaba.
+- **Panel (admin):** las 15 secciones cargan sin errores de JS. Ventas oct = 7 / $323.417 y
+  Estadísticas coincide (local $154.144 + web $169.273). Factura abre bien; `_fcCargada===true`,
+  `termicaAncho=100`, `termicaAlto=150`. El botón de la Térmica en el modal se llama **"Pedido web"**.
+- **Observaciones para el dueño (no son errores, no se tocó nada):**
+  - Sección **Clientes** muestra 0: la colección `clientes` está vacía de verdad; los clientes
+    reales están en **Clientes Auth** (40). ¿Ocultar "Clientes" del menú?
+  - En el Editor Web, el texto de Nosotros dice **"Una diétetica distinta"** (debería ser
+    "dietética"). Lo corrige el dueño desde el panel.
+- **Queda:** probar en un celular REAL (todo lo de 360 px fue con viewport emulado).
+- **OJO para próximas verificaciones:** con el panel del navegador integrado oculto, las
+  transiciones/animaciones de CSS quedan congeladas en el tiempo 0 (medir con
+  `getAnimations().forEach(a=>a.finish())` antes de leer alturas, si no dan valores falsos).
+  Y `localhost:5173/` (sin `_test-`) es la tienda con el Firebase REAL y comparte localStorage
+  (carrito) con el banco.
 
 ### 2. Decisiones que esperan al dueño
 - El control **"velo blanco del hero"** del Editor Web ya no hace nada con Huerta. ¿Sacarlo del panel?
