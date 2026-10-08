@@ -55,7 +55,7 @@ let busquedaTexto = '';
 let paginaActual = 1;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initNavbar(); initParticles(); initContactForm(); initCart(); initFooterAnio();
+    initNavbar(); initParticles(); initContactForm(); initCart(); initFooterAnio(); huCinta();
     loadProductsFromFirebase(); initScrollAnimations(); initAutoScrollProductos();
     /* Botón atrás/adelante del navegador: abrir o cerrar el producto según la URL */
     window.addEventListener('popstate', () => {
@@ -94,6 +94,41 @@ function initParticles() {
     for (let i = 0; i < count; i++) { const p = document.createElement('div'); p.className='particle'; p.style.left=Math.random()*100+'%'; p.style.top=Math.random()*100+'%'; p.style.animationDelay=Math.random()*15+'s'; p.style.animationDuration=(15+Math.random()*10)+'s'; p.style.width=(5+Math.random()*15)+'px'; p.style.height=p.style.width; c.appendChild(p); }
 }
 
+/* Los dos platos chicos de la portada muestran productos reales: los primeros
+   marcados como populares en el panel que tengan foto y stock. Tocarlos abre la ficha.
+   Mientras no responde Firestore quedan como platos vacios con una hoja dibujada. */
+function huPlatos(){
+    const slots=[document.getElementById('huPlato1'),document.getElementById('huPlato2')];
+    if(!slots[0])return;
+    const conFoto=productos.filter(p=>p.imagen&&p.stock>0);
+    const pop=conFoto.filter(p=>p.popular);
+    const lista=(pop.length>=2?pop:conFoto).slice(0,2);
+    slots.forEach((s,i)=>{
+        const p=lista[i];if(!s||!p)return;
+        const nom=p.nombreMostrado||p.nombre;
+        s.innerHTML='<button type="button" class="hu-plato-btn" aria-label="Ver '+esc(nom)+'"><img src="'+esc(optImg(p.imagen,300)||p.imagen)+'" alt="" decoding="async" onload="this.classList.add(\'ok\')" onerror="this.remove()"></button>';
+        s.querySelector('button').addEventListener('click',()=>openProductDetailModal(p.id));
+    });
+}
+/* La cinta que corre debajo de la portada se arma con textos que ya se editan desde
+   el panel (insignia, los dos numeros del hero, las dos insignias de "Nosotros") y,
+   si esta activo, el envio gratis de la Configuracion. Asi no aparece ningun dato
+   escrito a mano que despues quede desactualizado. */
+function huCinta(){
+    const el=document.getElementById('huCinta');if(!el)return;
+    const t=s=>(s||'').replace(/\s+/g,' ').trim();
+    const items=[t(document.querySelector('.hero-badge span')?.textContent)];
+    document.querySelectorAll('.hero-stats .stat-item').forEach(s=>{const n=t(s.querySelector('.stat-number')?.textContent),l=t(s.querySelector('.stat-label')?.textContent);if(n||l)items.push((n+' '+l.toLowerCase()).trim());});
+    document.querySelectorAll('.trust-badge span').forEach(s=>items.push(t(s.textContent)));
+    try{const g=negEnvioGratisDesde();if(isFinite(g)&&g>0)items.push('Envío gratis desde $'+formatPrice(g));}catch(e){}
+    const lista=[...new Set(items.filter(Boolean))];
+    if(!lista.length)return;
+    const uno=lista.map(x=>'<span>'+esc(x)+'</span>').join('');
+    /* Dos copias seguidas: la animacion corre media cinta y vuelve a empezar sin salto.
+       La segunda copia no la lee el lector de pantalla. */
+    el.innerHTML='<div class="hu-cinta-track">'+uno+'<span class="hu-cinta-copia" aria-hidden="true">'+uno+'</span></div>';
+    el.classList.add('anim');
+}
 function initContactForm() {
     const form = document.getElementById('contactForm'); if (!form) return;
     form.addEventListener('submit', (e) => { e.preventDefault(); const n=document.getElementById('nombre').value.trim(),em=document.getElementById('email').value.trim(),m=document.getElementById('mensaje').value.trim(); const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s; const msg='Hola! Mi nombre es *'+cap(n)+'*, tengo una consulta:\n\n'+cap(m)+'\n\nMi mail es: '+em; window.open('https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg),'_blank'); form.reset(); if(document.getElementById('chatFloatBox'))document.getElementById('chatFloatBox').classList.remove('show'); if(document.getElementById('chatFloatBtn'))document.getElementById('chatFloatBtn').classList.remove('hide'); });
@@ -116,7 +151,7 @@ async function loadProductsFromFirebase(retries) {
             if (p.grupoPrincipal === true) _gruposMeta[p.grupoId].principalOrden = ord;
         });
         productos = _todos.filter(p => !p.oculto);
-        renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros();
+        renderCategoryFilters(getCategoriasConSub(productos)); aplicarFiltros(); huPlatos();
         _searchCache.clear();
         /* Sincronizar carrito guardado con productos actuales (precio, stock, disponibilidad) */
         const cambiosCarrito=reconciliarCarrito();
@@ -213,28 +248,70 @@ function toggleSortPrice() { ordenAlfa=null; if(!ordenPrecio)ordenPrecio='asc';e
 function toggleSortAlfa() { ordenPrecio=null; if(!ordenAlfa)ordenAlfa='asc';else if(ordenAlfa==='asc')ordenAlfa='desc';else ordenAlfa='asc'; paginaActual=1; aplicarFiltros(); }
 function updateSortButtonUI() { const b=document.getElementById('sortBtn'),a=document.getElementById('sortAlfaBtn'); if(b){b.innerHTML=ordenPrecio==='desc'?'<i class="bi bi-sort-numeric-down-alt"></i> Mayor precio':'<i class="bi bi-sort-numeric-up"></i> Menor precio';b.style.borderColor=ordenPrecio?'var(--color-primary)':'';b.style.opacity=ordenPrecio?'1':'0.5';} if(a){a.innerHTML=ordenAlfa==='desc'?'<i class="bi bi-sort-alpha-up-alt"></i> Z-A':'<i class="bi bi-sort-alpha-down"></i> A-Z';a.style.borderColor=ordenAlfa?'var(--color-primary)':'';a.style.opacity=ordenAlfa?'1':'0.5';} }
 
+/* Iconos de las categorias (trazo SVG en linea, sin pedir nada a la red). Las
+   categorias las carga el comercio desde el panel, asi que no hay una lista fija:
+   se elige el icono por palabras del nombre y, si no encaja ninguna, va la hoja. */
+const HU_ICONOS={
+    hoja:'<path d="M5 19c0-8.5 6-14 14.5-14C19.5 13.5 13.5 19 5 19z"/><path d="M5 19l8.5-8.5"/>',
+    nuez:'<path d="M12 3c4.2 3.2 6 7.2 6 11a6 6 0 0 1-12 0c0-3.8 1.8-7.8 6-11z"/><path d="M12 8v9"/>',
+    taza:'<path d="M5 10h11v4a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 11.5h1.5a2.2 2.2 0 0 1 0 4.4H16"/><path d="M9 3.5c-.9 1.7.9 2.5 0 4.3M12.5 3.5c-.9 1.7.9 2.5 0 4.3"/>',
+    trigo:'<path d="M12 21V8"/><path d="M12 8c-2.8 0-4-1.8-4-4.8 2.8 0 4 1.8 4 4.8zM12 8c2.8 0 4-1.8 4-4.8-2.8 0-4 1.8-4 4.8zM12 13c-2.8 0-4-1.8-4-4.8 2.8 0 4 1.8 4 4.8zM12 13c2.8 0 4-1.8 4-4.8-2.8 0-4 1.8-4 4.8zM12 18c-2.8 0-4-1.8-4-4.8 2.8 0 4 1.8 4 4.8zM12 18c2.8 0 4-1.8 4-4.8-2.8 0-4 1.8-4 4.8z"/>',
+    vaina:'<path d="M3.5 15.5C7 9 14 6 20.5 6c-.8 6.8-6.8 12.5-14 12.5"/><circle cx="8.5" cy="14" r="1.7"/><circle cx="12.5" cy="11.3" r="1.7"/><circle cx="16.3" cy="8.9" r="1.5"/>',
+    gota:'<path d="M12 3s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11z"/><path d="M9.5 15a2.6 2.6 0 0 0 2.5 2.4"/>',
+    galleta:'<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="1"/><circle cx="14.5" cy="8.8" r="1"/><circle cx="14" cy="14.5" r="1"/><circle cx="9.3" cy="14.8" r="1"/>',
+    semilla:'<ellipse cx="7.5" cy="14" rx="2.6" ry="4" transform="rotate(-25 7.5 14)"/><ellipse cx="15.5" cy="15" rx="2.6" ry="4" transform="rotate(20 15.5 15)"/><ellipse cx="12" cy="7" rx="2.4" ry="3.7"/>',
+    etiqueta:'<path d="M3.5 12.5V4h8.5l9 9-8.5 8.5z"/><circle cx="8" cy="8.5" r="1.6"/>',
+    estrella:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+    grilla:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+    bowl:'<path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z"/><path d="M8 8c1.5-1.5 3-1.5 4 0s2.5 1.5 4 0"/>',
+    fruta:'<path d="M12 7c-4.5-2-8 1-8 5.5S7 21 12 19c5 2 8-2.5 8-6.5S16.5 5 12 7z"/><path d="M12 7c0-2 1-3.5 3-4"/>',
+    frasco:'<rect x="6" y="8" width="12" height="12.5" rx="3"/><path d="M7.5 4.5h9V8h-9z"/><path d="M9 13h6"/>',
+    fideo:'<path d="M4 8c2.7-2 5.3 2 8 0s5.3-2 8 0M4 12.5c2.7-2 5.3 2 8 0s5.3-2 8 0M4 17c2.7-2 5.3 2 8 0s5.3-2 8 0"/>',
+    capsula:'<rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/>',
+    torta:'<path d="M4 20h16v-7H4z"/><path d="M4 15.5c2 1.3 4 1.3 6 0s4-1.3 6 0 3 1 4 .5"/><path d="M12 13V9M12 6.5v.1"/>',
+    especia:'<path d="M8 21h8l1-11H7z"/><path d="M8.5 10V7h7v3M10 4h4"/>'
+};
+function huSvg(k){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(HU_ICONOS[k]||HU_ICONOS.hoja)+'</svg>';}
+function huIconoCategoria(nombre){
+    const n=_norm(nombre);
+    const reglas=[['aceite','gota'],['arroz','bowl'],['cereal','bowl'],['avena','bowl'],['granola','bowl'],['condiment','especia'],['especia','especia'],['fideo','fideo'],['premezcla','fideo'],['pasta','fideo'],['tropical','fruta'],['desecad','fruta'],['frutas secas','nuez'],['frutos secos','nuez'],['mix','nuez'],['almendra','nuez'],['nuez','nuez'],['mani','nuez'],['harina','trigo'],['fecula','trigo'],['legumbre','vaina'],['reposter','torta'],['semilla','semilla'],['snack','galleta'],['galleta','galleta'],['suplement','capsula'],['regional','frasco'],['miel','frasco'],['endulz','frasco'],['yerba','taza'],['cafe','taza'],['infus','taza'],['te ','taza']];
+    for(const [pal,ic] of reglas){if((n+' ').includes(pal))return ic;}
+    return 'hoja';
+}
+function huBotonCategoria(btn, texto, icono, i){
+    btn.type='button';
+    /* Las categorias se cargan en mayusculas ("FRUTAS SECAS"); debajo de un icono se
+       leen mejor en oracion ("Frutas secas"). Si alguna ya viene escrita normal, se
+       respeta tal cual. */
+    if(texto===texto.toUpperCase())texto=texto.charAt(0)+texto.slice(1).toLowerCase();
+    btn.innerHTML='<span class="cat-ic t'+(i%6)+'">'+huSvg(icono)+'</span><span class="cat-lb">'+esc(texto)+'</span>';
+}
 function renderCategoryFilters(mapa) {
     const container = document.getElementById('categoryFilters'); if (!container) return;
     container.innerHTML = '';
+    /* Las subcategorias van en su propio renglon, debajo de la fila deslizable: adentro
+       de la fila quedarian apretadas entre los botones. */
+    const subHost = document.getElementById('subFiltersHost'); if (subHost) subHost.innerHTML = '';
+    let nIc = 0;
     const popBtn = document.createElement('button');
-    popBtn.className = 'filter-btn'+(categoriaActual==='Populares'?' active':''); popBtn.innerHTML = '<i class="bi bi-star-fill" style="margin-right:4px"></i>Populares';
+    popBtn.className = 'filter-btn'+(categoriaActual==='Populares'?' active':''); huBotonCategoria(popBtn,'Populares','estrella',nIc++);
     popBtn.addEventListener('click', () => { setActiveFilter(popBtn); hideAllSubFilters(); filterByCategory('Populares'); });
     container.appendChild(popBtn);
     const todosBtn = document.createElement('button');
-    todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); todosBtn.textContent = 'Todos';
+    todosBtn.className = 'filter-btn'+(categoriaActual==='Todos'?' active':''); huBotonCategoria(todosBtn,'Todos','grilla',nIc++);
     todosBtn.addEventListener('click', () => { setActiveFilter(todosBtn); hideAllSubFilters(); filterByCategory('Todos'); });
     container.appendChild(todosBtn);
     if(productos.some(p=>(p.descuento||0)>0)){
         const ofBtn=document.createElement('button');
-        ofBtn.className='filter-btn'+(categoriaActual==='Ofertas'?' active':'');
-        ofBtn.innerHTML='<i class="bi bi-tag-fill" style="margin-right:4px;color:#e6a23c"></i>Ofertas';
+        ofBtn.className='filter-btn filter-ofertas'+(categoriaActual==='Ofertas'?' active':'');
+        huBotonCategoria(ofBtn,'Ofertas','etiqueta',nIc++);
         ofBtn.addEventListener('click',()=>{setActiveFilter(ofBtn);hideAllSubFilters();subcategoriaActual=null;paginaActual=1;filterByCategory('Ofertas');});
         container.appendChild(ofBtn);
     }
     Object.keys(mapa).sort((a,b)=>{const yA=a.toUpperCase().startsWith('YERBA')?1:0;const yB=b.toUpperCase().startsWith('YERBA')?1:0;if(yA!==yB)return yA-yB;return a.localeCompare(b);}).forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
-        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; catBtn.textContent = cat;
+        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; huBotonCategoria(catBtn,cat,huIconoCategoria(cat),nIc++);
         const subRow = document.createElement('div'); subRow.className = 'sub-filters-row';
         if (subs.length > 0) {
             const allBtn = document.createElement('button'); allBtn.className = 'sub-btn active'; allBtn.textContent = 'Todo';
@@ -248,9 +325,21 @@ function renderCategoryFilters(mapa) {
         }
         catBtn.addEventListener('click', () => { setActiveFilter(catBtn); hideAllSubFilters(); if(subs.length>0)subRow.classList.add('show'); subcategoriaActual=null; paginaActual=1; filterByCategory(cat); });
         wrapper.appendChild(catBtn);
-        if (subs.length > 0) wrapper.appendChild(subRow);
+        if (subs.length > 0) (subHost || wrapper).appendChild(subRow);
         container.appendChild(wrapper);
     });
+    huCatsFlechas();
+}
+/* Flechas de la fila de categorias (en la compu no hay dedo para deslizarla). Solo
+   se muestran las que sirven: al principio no hay "anterior" y al final no hay
+   "siguiente". */
+function huCatsScroll(dir){const c=document.getElementById('categoryFilters');if(c)c.scrollBy({left:dir*Math.max(240,c.clientWidth*0.8),behavior:'smooth'});}
+function huCatsFlechas(){
+    const c=document.getElementById('categoryFilters'),w=c&&c.parentElement;if(!w||!w.classList.contains('hu-cats'))return;
+    const max=c.scrollWidth-c.clientWidth;
+    w.classList.toggle('hay-prev',c.scrollLeft>4);
+    w.classList.toggle('hay-next',c.scrollLeft<max-4);
+    if(!c.dataset.huFlechas){c.dataset.huFlechas='1';c.addEventListener('scroll',huCatsFlechas,{passive:true});window.addEventListener('resize',huCatsFlechas,{passive:true});}
 }
 function setActiveFilter(btn) { document.querySelectorAll('#categoryFilters .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
 function hideAllSubFilters() { document.querySelectorAll('.sub-filters-row').forEach(r=>r.classList.remove('show')); }
@@ -778,10 +867,15 @@ document.addEventListener('keydown',e=>{
     else if(e.key==='ArrowRight')pdmCarouselNav(1);
 });
 
+var _huConteo=null; /* var y no let: updateCartUI puede correr antes de llegar a esta linea */
 function updateCartUI() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty'),footer=document.getElementById('cartFooter'),count=document.getElementById('cartCount'),total=document.getElementById('cartTotal'),cta=document.getElementById('ctaCartCount'),ckBtn=document.getElementById('checkoutBtn');
     const ti=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+i.cantidad,0),tp=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+(i.precio*i.cantidad),0);
     if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
+    /* El contador del carrito "salta" cuando sube: confirma que se agrego sin abrir
+       nada. No en la primera pasada (carrito guardado de la visita anterior). */
+    if(_huConteo!==null&&ti>_huConteo){const cb=document.getElementById('cartToggle');if(cb){cb.classList.remove('hu-bump');void cb.offsetWidth;cb.classList.add('hu-bump');}}
+    _huConteo=ti;
     if(carrito.length===0){if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
     else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
     if(ckBtn){const min=negMinimo();ckBtn.disabled=carrito.length===0||tp<min;if(min>0&&tp>0&&tp<min){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $'+formatPrice(min);}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
@@ -839,6 +933,7 @@ function negAplicar(d){
     if(!cfg)return;
     NEGOCIO=cfg;
     aplicarModoEnviosTienda();
+    huCinta();
     try{updateCartUI();}catch(e){}
     if(document.getElementById('checkoutModal')?.classList.contains('show'))updateCheckoutResumen();
 }
@@ -1317,6 +1412,10 @@ function initScrollAnimations(){
    al responder Firestore), asi que el selector no enganchaba ninguna y esa parte de
    la animacion nunca se ejecuto. Ahora se enganchan despues de cada dibujado. */
 function scrollAnimProductos(){
+    /* Donde el navegador sabe animar por scroll (animation-timeline), la aparicion de
+       las tarjetas la hace huerta.css sin JavaScript y sin estilos en linea, que ademas
+       pisaban con !important el levantado al pasar el mouse. */
+    if(window.CSS&&CSS.supports&&CSS.supports('animation-timeline: view()'))return;
     if(!_scrollAnimObserver||window.innerWidth<768)return;
     scrollAnimObserve(document.querySelectorAll('.product-card'));
 }
@@ -1400,6 +1499,7 @@ function applySiteContent(d){
     if(d.logoIcon&&d.logoIcon.startsWith('http')){const li=document.querySelector('.logo-img');if(li)li.src=d.logoIcon;}
     if(d.logoText&&d.logoText.startsWith('http')){const lt=document.querySelector('.brand-text-img');if(lt)lt.src=d.logoText;}
     if(d.logoFooter&&d.logoFooter.startsWith('http')){const lf=document.querySelector('.footer-brand img');if(lf)lf.src=d.logoFooter;}
+    huCinta();
 }
 /* La imagen del hero no aparecia hasta que terminaban TRES esperas encadenadas:
    cargar el bundle de Firebase, la ida y vuelta a Firestore por config/siteContent,
