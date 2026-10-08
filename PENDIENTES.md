@@ -2,7 +2,7 @@
 
 ## ▶ LEER PRIMERO — estado al 08/10/2026 y pendientes en orden
 
-Árbol: `main`, todo commiteado y pusheado (último `4d0d2a2`), salvo `publicaciones/` (el reel,
+Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
 fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
 
 ### 1. PENDIENTE ACTIVO — "¿está todo bien en yerco, tanto en el ecommerce como en el admin?"
