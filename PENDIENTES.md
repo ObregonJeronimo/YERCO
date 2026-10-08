@@ -1,17 +1,202 @@
 # YERCO — Pendientes
 
-## PENDIENTE ACTIVO (04/10/2026) — Video motion graphics con Three.js
+## Sesión 08/10/2026 — diseño "Huerta" + factura térmica (HECHO, en producción)
 
-El dueno quiere un **video de motion graphics** que muestre **cómo se hace una compra**
-en YERCO. Requisitos que dio: usar **Three.js**, que sea **precioso y fluido**, y que
-**no hace falta usar las interfaces reales** de YERCO (puede ser una representación
-abstracta/estilizada del flujo de compra).
+| Commit | Qué |
+|---|---|
+| `a939edb` | diseño "Huerta" de la tienda (PC y celular), elegido entre 3 maquetas |
+| `9294558` | en el celular las tarjetas con muchas presentaciones desbordaban la pantalla |
+| `40100bc` | la factura Térmica salía 80 mm en vez de 100×150 cuando no se leía la config |
 
-**Cómo encararlo (pedido explícito del dueno):** NO empezar a construir de una. Primero
-**preguntarle qué quiere en el video** y proponerle un **listado de ideas/conceptos**
-(distintos enfoques de motion graphics para 'cómo se hace una compra'); él elige uno y
-recién ahí se construye. Entregar como artifact HTML (Three.js desde cdnjs) o como
-archivo, lo que convenga para que lo pueda ver y, si quiere, grabar.
+**Huerta:** capa visual en `huerta.css` (→ `huerta.min.css`, ya en `npm run build`), cargada
+DESPUÉS de styles/toolbar/footer-dev. Repunta los tokens viejos (`--color-primary`, etc.), así
+que carrito/checkout/ficha/modales cambian solos. En `app.js`: íconos de categoría por palabra del
+nombre (`huIconoCategoria`), subcategorías en `#subFiltersHost`, `huPlatos()` (2 populares con foto
+en la portada), `huCinta()` (cinta armada con textos del panel + envío gratis de la Configuración,
+para no meter datos a mano), contador del carrito que salta. Fuentes: Bricolage Grotesque + Figtree.
+- **OJO:** el control "velo blanco del hero" del Editor Web ya NO hace nada (la foto va en un plato,
+  sin velo). Falta decidir con el dueño si se saca del panel.
+- **OJO al poner overflow:visible en un item de grilla:** sin `min-width:0` el item no se achica por
+  debajo de su contenido. Con datos reales (6 presentaciones) desbordaba el celular; el banco no lo
+  mostraba porque sus productos tienen pocas. Probar SIEMPRE el layout también contra yerco.ar.
+- Banco de la tienda nueva: `_test-huerta.html` (lo regenera `gen-banco-huerta.py` del scratchpad:
+  index.html + el Firebase falso de `_test-tienda.html` + productos/fotos reales públicos).
+- Maquetas de las 3 propuestas: artifact "Propuestas visuales YERCO" (claude.ai). Quedó además un
+  lienzo de diseño vacío creado por error ("YERCO — Propuestas visuales"); el dueño puede borrarlo.
+- Playwright para renders está en el Python del SISTEMA (`python`), no en los venvs del reel.
+
+**Factura más chica (reporte del socio):** `loadFacturaConfig()` leía `config/factura` una sola vez
+al entrar y se tragaba el error; si App Check estaba caído en ese momento, toda la sesión usaba los
+valores de respaldo del código, que eran los de Brotes (80 mm, alto libre). Ahora el respaldo es
+100×150, reintenta 3 veces y `showFactura` vuelve a probar. Medido en el banco forzando el fallo.
+En Firestore, `config/factura` tiene termicaAncho=100 / termicaAlto=150 (sin cambios desde 05/2026).
+
+## PENDIENTE ACTIVO (05/10/2026) — Reel publicitario de YERCO (Three.js + voz)
+
+Anuncio para Instagram (9:16) que cuenta una compra en YERCO con un personaje. Hubo una
+primera versión ARMADA y entregada (`reel-yerco.mp4`, 38s, con voz), pero el dueño pidió
+**REHACER el video** con otro enfoque (ver abajo). **Todo vive en
+`C:\Users\Usuario\Documents\YERCO\publicaciones\reel-yerco\` (NO commiteado, a propósito).**
+
+### ⚠ NUEVA DIRECCIÓN (05/10) — REHACER con personaje 2D (lo que hay que hacer AHORA)
+El personaje en **2D** (más fácil de dibujar y de **controlar emociones y movimiento**, bien
+**frame por frame**), NO 3D. La **caja 3D voladora de la entrega le gustó** → mantenerla pero mejorarla.
+Historia (dictada por el dueño):
+- Personaje **sentado en el sillón con el celular en la mano**. **Toma cinematográfica de la mano
+  agarrando el celu y mirando la hora**. Habla solo (líneas 1-2): "no, qué tarde que es… encima tengo
+  que ir a la dietética, se me hizo tarde y encima hay mucho tráfico".
+- **Cambio a close-up cinematográfico de su cara** (como triste) al decir eso.
+- Aparece el **NARRADOR = una bola/círculo de luz voladora**, semi-transparente (opacidad alta, que NO
+  sea tan luminosa), que **mueve la boca al hablar**. El personaje y la bola **se miran** (eye contact).
+  La bola es pj2 (voz femenina ya hecha).
+- Conversación **vívida**: el personaje habla solo y después con el narrador; **emociones marcadas**,
+  cada movimiento/emoción pensado y **detallado frame por frame**.
+- Entrega: **mantener la caja 3D voladora** pero MEJORAR: (a) la **puerta se veía tosca** → prolijarla;
+  (b) la caja tenía una **"Y"** → ponerle el **logo de YERCO**; (c) **más margen/encuadre** para que se
+  vea bien cómo llega el pedido y cómo el personaje se **impresiona**; ahí dice (línea 7) "gracias,
+  gracias Yerco, me salvaste la vida".
+- **Subtítulos muy bien escritos y BIEN TIMEADOS**, con el guion exacto (el de más abajo, el que el dueño
+  reemplazó al original). Reusar la **voz ya hecha** (pj1 = su voz limpia; pj2 = Seed-VC femenina) y las
+  **capturas reales de la UI** (`img/`). Resultado **terminado, limpio y revisado**.
+- Técnica sugerida: 2D con canvas/SVG para personaje+narrador (fácil de controlar), + Three.js solo para la
+  caja/entrega; o todo en canvas 2D + un cacho 3D. Mantener el pipeline de render frame-por-frame (abajo).
+
+#### ✅ Rehecho el 05/10 (primera versión nueva, entregada para revisar) → `reel-yerco.mp4` (38s)
+`fuente/index.html` + `fuente/reel.js` **reescritos de cero** con el nuevo enfoque. Lo que hay:
+- **Personaje 2D** dibujado a mano en canvas (`persona()`), expresión 100% por parámetros (ceja, párpado,
+  pupila con mirada, boca por "viseme"): enojado→triste→escéptico→esperanzado→impresionado→feliz.
+  Lip-sync y subtítulos salen de la MISMA tabla `LINES` (mismos tiempos que la voz), así calzan solos.
+- **Escenas**: (1) living, plano general→**inserto cine de la mano con el celu "19:48 / se te hace tarde"**
+  →plano medio (línea 1); (2) **primer plano triste** (línea 2); (3) **dos-tomas con el narrador**
+  (línea 3); (4) **teléfono 2D con las capturas reales** adentro, scroll/agregar/confirmar (líneas 4-5);
+  (5) **cielo, la caja 3D vuela** (línea 6a); (6) **casa: la caja aterriza en el umbral y el pj se
+  impresiona + agradece** (línea 6b-7); (7) **cierre de marca** con el wordmark real (línea 8).
+- **Narrador = bola de luz** (`bola()`): orbe verde semi-transparente (opacidad alta, glow bajo), carita
+  con **boca que se abre al hablar**, ojos que miran al pj (eye-contact). Chispitas orbitando.
+- **Caja 3D mejorada** (Three.js en un 2º canvas `#gl` transparente ENCIMA del 2D): etiqueta con el
+  **logo real** (`img/logo-badge.png`, recortado de `img/logo-yerco-light.png` del repo), puerta
+  2D prolija (franja escorzada, no tosca), **encuadre amplio** para ver llegar el pedido y la reacción.
+  La caja se calza con el dibujo 2D vía `screenToWorld()` (unproject al plano z=0).
+- **Logos** copiados a `fuente/img/`: `logo-badge.png` (lima s/verde, para la caja) y
+  `wordmark-dark.png` (para el cierre). El cierre quedó sobre crema con el wordmark real.
+
+**OJO / gotchas medidos esta sesión:**
+- **Playwright NO está en los venvs**, está en el **Python del sistema** (`python` a secas = Python312).
+  Correr el render con `python render.py ...`, NO con `../.venv/Scripts/python`.
+- **`render.py` ya antepone el directorio padre a `--salida`.** Pasar `--salida reel-yerco-mudo.mp4`
+  (sin `../`) o nada. Si le pasás `../reel-yerco-mudo.mp4` el archivo cae en `publicaciones/` y el mux
+  toma el viejo (me pasó). Verificado con el timestamp del mp4.
+- La `voz_final.wav` final quedó en `reel-yerco/voz_final.wav` (raíz), es la que usa el mux.
+- El render completo (sub 6, grano 1.5) tarda ~5,5 min; una pasada rápida de chequeo es `--sub 1 --grano 0`.
+
+**Falta (para cuando el dueño revise):** su visto bueno al corte; posibles ajustes de actuación/tiempos
+(si cambian tiempos, reajustar `LINES` en `reel.js` **y** `TL` en `montar.py` para que la voz siga calzando);
+música/SFX de cama es opcional. La 1ª versión 3D vieja (reel.js/index.html + sus mp4) **quedó pisada** al
+reescribir; como `publicaciones/` no está en git, no se recupera — pero era la versión que el dueño pidió
+descartar, así que está bien.
+
+### El pipeline (copiado del reel de DEFT, ver sesión "Deft control" en redesDEFT)
+Render **frame por frame a MP4**, NO grabación de pantalla. En `reel-yerco/fuente/`:
+- `index.html` + `reel.js` — Three.js (módulos ESM desde cdn.jsdelivr `three@0.170`, addons:
+  RoundedBoxGeometry, RoomEnvironment, EffectComposer/UnrealBloomPass/OutputPass). ACES tone
+  mapping, bloom, sombras. Personaje **con cápsulas** (`makeChar`), cara por CanvasTexture
+  (ojos/cejas/boca + parpadeo). Teléfono 3D con **las pantallas REALES de YERCO** como textura
+  (anisotropía + mipmaps = sin "serruchos"). Expone `window.renderAt(t)`, `window.DUR`, `window.__listo`.
+- `render.py` — Chrome headless llama `renderAt(t)` por cuadro (subcuadros = **motion blur 180°**,
+  viñeta, grano) → ffmpeg H.264. **Necesita el server**: `python -m http.server 5270 --bind 127.0.0.1`
+  en `fuente/`. Correr: `../.venv/Scripts/python render.py --salida reel-yerco-mudo.mp4` (desde fuente/).
+- Salidas en `reel-yerco/`: `reel-yerco-mudo.mp4` (sin voz) y `reel-yerco.mp4` (final con voz).
+
+**Re-timeo por "time-warp"** (en `reel.js`): el visual se diseñó a ~29s y se estira a **38s** con
+`remap(nt)` (tablas `OLDB`/`NEWB`), así cada escena ocupa su nueva ventana sin reescribir las
+animaciones internas. Los overlays (subtítulos `LINES`, badge `#pop`, cierre `#fin`, `trans`) van en
+tiempo NUEVO. `DUR=38`. Si se tocan tiempos: cambiar `NEWB` + los tiempos de `LINES`/`popYerco`/`trans`/`final`.
+
+### Interfaces reales de YERCO (no rehacer, capturar)
+- `cap_yerco.py` / `cap_carrito.py` — Playwright con **Chrome headful + anti-detección**
+  (`--disable-blink-features=AutomationControlled`, borrar `navigator.webdriver`) porque **App Check
+  (reCAPTCHA) ENFORCED** rechaza a headless/automatizado y no cargan los productos. Guardan en
+  `fuente/img/`: `inicio.png`, `grid.png`, `tira.png`, `producto.png`, `carrito.png` (cajón real vacío;
+  los ítems + total + "Confirmar" se dibujan encima). El carrito CON items lleva a login de Google → NO ir ahí.
+
+### Voz (lo más laborioso; enfoque final = el del otro chat)
+- **2 voces**: **pj1 = cliente** (líneas 1,2,7, la voz propia del dueño) y **pj2 = narrador**
+  (líneas 3,4,5,6,8, convertida a **femenina**). Archivos `voz/grab/linea_N_{p,n}.wav` (grabados por el
+  dueño con `fuente/grabador.html`, un grabador guiado que exporta ZIP; su voz es **cordobesa/rioplatense**).
+- **Denoise**: `bin/deep-filter.exe` (DeepFilterNet standalone v0.5.6, el pip falla por Rust) → `voz/clean_df/`.
+  Mucho mejor que noisereduce.
+- **Femenina = Seed-VC** (conversión neuronal, NO cambio de tono): repo en `reel-yerco/seed-vc/`, venv
+  aislado `.venv-vc` (torch **2.6.0** CPU; 2.4.0 no carga en Windows por `fbgemm.dll`). Config elegida:
+  **v1, `--diffusion-steps 75 --inference-cfg-rate 1.0 --fp16 False`**, target `voz/target_fem.mp3`
+  (edge-tts es-AR Elena). Salidas en `voz/narr_fem/`. Comando: desde `seed-vc/`,
+  `../.venv-vc/Scripts/python inference.py --source ../voz/clean_df/linea_N_n.wav --target ../voz/target_fem.mp3 --output ../voz/narr_fem --diffusion-steps 75 --inference-cfg-rate 1.0 --fp16 False`.
+- `fuente/montar.py` — recorta/normaliza/ubica las 8 líneas en sus tiempos (`TL`) → `voz_final.wav` (48k, 38s).
+- Muxeo: `ffmpeg -i reel-yerco-mudo.mp4 -i voz_final.wav -c:v copy -c:a aac -b:a 192k -shortest reel-yerco.mp4`.
+
+**Lo que NO sirvió (no reintentar):** Piper (robótico), Chatterbox default (acento España + ruido),
+edge-tts/Azure (genérico + no open-source), pitch-shift PSOLA/WORLD/Praat (suena ELÉCTRICO).
+**Seed-VC v2 falla en CPU** (`mat1 and mat2 ... Half and Float`, fp16; habría que parchear el código).
+
+### Guion (texto hablado, cordobés) y tiempos (segundos)
+pj1=1,2,7 · pj2(fem)=3,4,5,6,8. Inicios `TL`: 1→0.6, 2→5.9, 3→10.7, 4→16.3, 5→18.9, 6→22.6, 7→28.9, 8→32.0.
+1. "Nooo! mirá qué hora es! encima tengo que ir a la dietética todavía"
+2. "nooo y encima con el tráfico que hay... qué vagancia boludo"
+3. "vos tranquiloo! si total con yerco, no hace falta ni salir de tu casa"
+4. "entrás, elegís tus productos"
+5. "los agregas al carrito y confirmas! así de fácil!"
+6. "y adivina que! apenas pedís, el pedido, sale volando hasta tu casa"
+7. "gracias yerco! me salvaste la vida!"
+8. "compra en la mejor dietética de Córdoba! rápido, barato y cómodo"
+
+### PENDIENTE del reel
+- El dueño notó que en la línea 3 se escucha "**ierco**" en vez de "Yerco" (artefacto de Seed-VC con la Y).
+  Opciones: regrabar la línea 3 más clara/marcando "Yerco", o patchear Seed-VC v2 para fp16→fp32 en CPU.
+- Opcional: cama de **música/SFX** suave (hoy va solo voz). Revisar mezcla/volúmenes.
+- Confirmar con el dueño el corte final; si ok, decidir si se commitea o queda fuera del repo.
+
+### Entornos Python (en `reel-yerco/`)
+- `.venv` (principal): edge-tts, piper-tts, chatterbox-tts, coqui-tts, pyworld, praat-parselmouth,
+  noisereduce, soundfile, scipy, librosa, datasets. (numpy terminó en 2.x; funciona igual.)
+- `.venv-vc` (aislado, solo Seed-VC): torch 2.6.0 CPU + deps de seed-vc instaladas a mano
+  (dac/audiotools con `--no-deps`, matplotlib, tensorboard, etc.; se esquivó `webrtcvad`/funasr por falta de compilador).
+
+### 📼 Idea de video 2 — "El adolescente y la mamá" (PENDIENTE — va DESPUÉS de la Idea 1)
+Segundo spot (9:16, objetivo ~40s). **Mismo estilo que la Idea 1**: personajes **2D** fáciles de
+animar, emociones vívidas **frame por frame**, + la **caja/entrega 3D con logo YERCO**. Reusar el
+pipeline de render frame-por-frame y las **capturas reales de la UI** (`fuente/img/`).
+
+**Logline:** un adolescente vago, al que la mamá manda a la dietética, descubre que un asistente IA
+de YERCO le hace la compra desde el celular y se la entregan en minutos; queda como el héroe de la casa.
+
+**Personajes:** (1) **ADOLESCENTE** (protagonista: vago/cansado → curioso → sorprendido → feliz).
+(2) **MAMÁ** (solo se la ve de espaldas cocinando; habla en off). (3) **ASISTENTE IA de YERCO** = un
+**círculo con carita** dentro del celular (bot simpático) que "toma el control" del celu y muestra la app.
+
+**Escaleta (toma / emoción / VO / SFX):**
+1. Living. La cámara **se acerca** al adolescente tirado en el sillón, **mirada cansada**, mirando la
+   tele. Al fondo la **mamá cocinando (de espaldas)**. SFX: tele de fondo + cocina.
+2. **Insert cinematográfico ~2s: POV de la TELE** (lo que está viendo). Vuelve al pibe.
+3. Desde atrás se escucha a la **MAMÁ** (de espaldas): «Hijo, andá a comprar a la dietética que
+   necesito harina de almendras.»
+4. **Primer plano de la cabeza** del pibe mirando para arriba, **fastidiado**. Pensando (VO pibe):
+   «Uf… tengo que ir de nuevo a la dietética. ¡Qué vagancia! No tengo ni ganas de ir.»
+5. Le **VIBRA el celular**. En la pantalla aparece el **ASISTENTE IA (círculo con carita)**. VO bot:
+   «¡Ey! Yo te puedo ayudar: YERCO tiene envíos, y productos baratos y de calidad.»
+6. **Toma del celular**: el bot "toma el control" y **abre la app de YERCO** (UI real, `img/`).
+7. **Cara del pibe**, se ilumina (curioso/contento). VO pibe: «¡Ah, buenísimo! Le pido a esta
+   dietética y ni me muevo.»
+8. **Toma del celular**: agrega rápido la **harina de almendras** (lo que pidió la mamá), **confirma**. Listo.
+9. Sigue en el pibe/celu; pasan unos segundos → **SFX TIMBRE**.
+10. **Corte a la PUERTA.** El pibe se levanta del sillón, abre, y hay una **CAJA 3D en el piso con el
+    LOGO de YERCO** (puerta prolija, buen encuadre, que se vea la **impresión** del pibe). Dentro, la
+    harina de almendras en bolsa cerrada.
+11. VO pibe: «¡Mamá, ya hice las compras!» VO mamá (off): «¡Qué rápido, hijo! Sos el mejor del mundo.»
+12. **Cierre**: toma del pibe sonriendo. VO pibe: «Gracias, YERCO. Esta te la debo.» → logo/cierre YERCO.
+
+**Voces (3):** pibe = voz masculina joven (tipo pj1). mamá = voz femenina (en off). bot IA = voz
+femenina/juguetona (puede ser la narradora Seed-VC u otra). Grabar con `fuente/grabador.html` y procesar
+igual (DeepFilterNet + Seed-VC si hay que convertir género). **Subtítulos bien escritos y bien timeados.**
+Resultado **terminado, limpio y revisado.**
 
 ---
 
