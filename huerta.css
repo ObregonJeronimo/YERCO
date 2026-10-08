@@ -351,3 +351,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
    cuadro y en un telefono flojo se nota. Con transform lo mueve la placa de video. */
 .cart-sidebar { right: 0; transform: translateX(105%); transition: transform .32s cubic-bezier(.2, .8, .2, 1); }
 .cart-sidebar.show { right: 0; transform: none; }
+/* Las tarjetas ya no recortan sus bordes (overflow:visible, para que se vea la
+   sombra), y en una grilla eso hace que la tarjeta no pueda achicarse por debajo de
+   su contenido: un producto con 6 presentaciones en fila la estiraba mas ancha que
+   el celular y empujaba la barra de arriba fuera de la pantalla (el carrito quedaba
+   afuera). min-width:0 la deja medir lo que mide su columna; el selector de
+   presentaciones se desliza adentro como antes. */
+.product-card { min-width: 0; }
+.products-grid { grid-template-columns: repeat(auto-fill, minmax(min(214px, 100%), 1fr)); }
+@media (max-width: 768px) { .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
