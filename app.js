@@ -124,10 +124,29 @@ function huCinta(){
     const lista=[...new Set(items.filter(Boolean))];
     if(!lista.length)return;
     const uno=lista.map(x=>'<span>'+esc(x)+'</span>').join('');
-    /* Dos copias seguidas: la animacion corre media cinta y vuelve a empezar sin salto.
-       La segunda copia no la lee el lector de pantalla. */
-    el.innerHTML='<div class="hu-cinta-track">'+uno+'<span class="hu-cinta-copia" aria-hidden="true">'+uno+'</span></div>';
+    /* Dos mitades iguales: la animacion corre media cinta y vuelve a empezar sin salto.
+       Cada mitad tiene que ser al menos tan ancha como la pantalla; si no, en monitores
+       anchos se veia el final de la cinta y un hueco vacio. Por eso se repite el texto
+       las veces necesarias. Solo la primera copia la lee el lector de pantalla. */
+    el.innerHTML='<div class="hu-cinta-track">'+uno+'</div>';
+    const ancho=el.firstElementChild.getBoundingClientRect().width;
+    const veces=ancho>0?Math.min(12,Math.ceil((el.clientWidth+1)/ancho)):1;
+    const oculto=s=>s?'<span class="hu-cinta-copia" aria-hidden="true">'+s+'</span>':'';
+    el.innerHTML='<div class="hu-cinta-track">'+uno+oculto(uno.repeat(veces-1))+oculto(uno.repeat(veces))+'</div>';
+    /* Misma velocidad que con una sola copia: 34 s por cada vuelta del texto */
+    el.firstElementChild.style.animationDuration=(34*veces)+'s';
     el.classList.add('anim');
+    el.dataset.veces=veces;
+    if(!huCinta.escucha){
+        huCinta.escucha=true;
+        let tm;
+        window.addEventListener('resize',()=>{clearTimeout(tm);tm=setTimeout(()=>{
+            const w=el.firstElementChild.getBoundingClientRect().width/2/(+el.dataset.veces||1);
+            if(w>0&&Math.min(12,Math.ceil((el.clientWidth+1)/w))!==+el.dataset.veces)huCinta();
+        },250);});
+        /* La fuente definitiva puede llegar despues y cambiar el ancho del texto */
+        document.fonts?.ready.then(()=>huCinta());
+    }
 }
 function initContactForm() {
     const form = document.getElementById('contactForm'); if (!form) return;
