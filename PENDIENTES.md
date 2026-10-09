@@ -25,30 +25,43 @@ funciona; se encontraron y arreglaron 4 cosas (en producción y verificadas en y
 - **Panel (admin):** las 15 secciones cargan sin errores de JS. Ventas oct = 7 / $323.417 y
   Estadísticas coincide (local $154.144 + web $169.273). Factura abre bien; `_fcCargada===true`,
   `termicaAncho=100`, `termicaAlto=150`. El botón de la Térmica en el modal se llama **"Pedido web"**.
-- **Observaciones para el dueño (no son errores, no se tocó nada):**
-  - Sección **Clientes** muestra 0: la colección `clientes` está vacía de verdad; los clientes
-    reales están en **Clientes Auth** (40). ¿Ocultar "Clientes" del menú?
-  - En el Editor Web, el texto de Nosotros dice **"Una diétetica distinta"** (debería ser
-    "dietética"). Lo corrige el dueño desde el panel.
-- **Queda:** probar en un celular REAL (todo lo de 360 px fue con viewport emulado).
+- **Queda:** probar en un celular REAL — el dueño dijo (08/10) que ya probó y está todo bien.
 - **OJO para próximas verificaciones:** con el panel del navegador integrado oculto, las
   transiciones/animaciones de CSS quedan congeladas en el tiempo 0 (medir con
   `getAnimations().forEach(a=>a.finish())` antes de leer alturas, si no dan valores falsos).
   Y `localhost:5173/` (sin `_test-`) es la tienda con el Firebase REAL y comparte localStorage
   (carrito) con el banco.
 
-### 2. Decisiones que esperan al dueño
-- El control **"velo blanco del hero"** del Editor Web ya no hace nada con Huerta. ¿Sacarlo del panel?
-  (admin.html tiene DOS `</body>`: editar con cuidado.)
-- **Lienzo de diseño vacío** creado por error en su galería de claude.ai ("YERCO — Propuestas
-  visuales", tipo Design). Solo se borra si el dueño lo pide.
-- **Factura**: confirmar con el socio que usó el botón **Térmica** (y si salió con otro logo o con
-  @yerco.diet en vez de @yerco.va: eso prueba que fue la config no leída). Que recargue el panel.
+### 2. HECHO (08/10) — decisiones del dueño
+| Commit | Qué |
+|---|---|
+| `ef0e17b` | sacado el control "velo blanco del hero" (panel: campo, vista previa y default; tienda: ya no lo aplica). El `heroVelo` viejo queda en `config/siteContent` sin uso (guardar usa merge) |
+| `e11d042` | el Instagram escrito en el código era `@yerco.diet`; la cuenta es **@yerco.va** (link del pie, respaldo de factura y del Editor Web) |
+| `0ca86c6` | respaldos de textos (`SC_DEFAULTS` del panel e `index.html`) iguales al contenido real: tildes y "800 productos" |
 
-### 3. Reel publicitario (en `publicaciones/reel-yerco/`, ver sección más abajo)
-- Idea 1 (personaje 2D) **rehecha y entregada el 05/10**; el dueño todavía no dio devolución.
-  Abiertos: subtítulo de la línea 2 dice "boludo" (fiel al audio; ¿sacarlo?) y el "ierco" de la
-  línea 3 en la voz. Después: Idea 2 (adolescente y mamá), ya detallada abajo.
+- **Textos del Editor Web corregidos y GUARDADOS desde el panel** (Firestore `config/siteContent`):
+  dietética, ¿Quiénes somos?, más, Selección, Amplio (sin tilde), Más, Mejorá, Comenzá, más,
+  Córdoba, Sáb. Verificado en yerco.ar.
+- Sección **Clientes**: el dueño pidió DEJARLA (por las dudas), aunque hoy esté vacía.
+- **Lienzo vacío** "YERCO — Propuestas visuales" (claude.ai): BORRADO a pedido del dueño. Queda
+  el de las maquetas, "Propuestas visuales YERCO".
+- **Factura**: no hay datos escritos a mano que pisen la config (solo el respaldo, ya alineado).
+
+### 3. Reel publicitario — NUEVA DIRECCIÓN (08/10): v3 motion graphics, esperando elección de sonidos
+La versión con personaje 2D **no le gustó**. Pidió: **solo Three.js + interfaces, motion graphics,
+SIN personajes**; objetos 3D sí, todo **minimalista, estilo caricatura, natural**. Y para los SFX:
+**más de 5 opciones por sonido**, en un **HTML local** para elegir y mandar un mensaje con lo elegido.
+- **Hecho:** `publicaciones/reel-yerco/fuente3/` (index.html + reel.js, nuevo de cero; `fuente/` = la
+  versión del personaje, intacta). Render → `reel-v3-mudo.mp4`, con voz → `reel-v3-voz.mp4` (38 s).
+  Se mantienen la voz (`voz_final.wav`) y los tiempos/subtítulos del guion.
+- **Sonidos:** `sfx/generar.py` sintetiza (numpy/scipy, sin bancos externos) 21 sonidos × 6
+  variantes + 5 músicas → `sfx/<cue>/`, `sfx/musica/`, `sfx/catalogo.js(.json)` (con los tiempos de
+  cada sonido en el video). **`elegir-sonidos.html`** (abrir con doble clic): pasa el video y suena
+  lo elegido en su tiempo, música sincronizada, volúmenes, notas, subtítulo con/sin "boludo", y
+  arma el mensaje para pegar. **Esperando ese mensaje del dueño.**
+- **Siguiente:** con el mensaje, mezclar (voz + SFX elegidos en sus tiempos + música con
+  ducking bajo la voz) → `reel-v3.mp4`; aplicar comentarios del video si los hay. El "ierco" de la
+  línea 3 sigue en la voz (no se tocó).
 
 ## Sesión 08/10/2026 — diseño "Huerta" + factura térmica (HECHO, en producción)
 
@@ -64,8 +77,7 @@ que carrito/checkout/ficha/modales cambian solos. En `app.js`: íconos de catego
 nombre (`huIconoCategoria`), subcategorías en `#subFiltersHost`, `huPlatos()` (2 populares con foto
 en la portada), `huCinta()` (cinta armada con textos del panel + envío gratis de la Configuración,
 para no meter datos a mano), contador del carrito que salta. Fuentes: Bricolage Grotesque + Figtree.
-- **OJO:** el control "velo blanco del hero" del Editor Web ya NO hace nada (la foto va en un plato,
-  sin velo). Falta decidir con el dueño si se saca del panel.
+- El control "velo blanco del hero" del Editor Web no hacía nada con Huerta: sacado el 08/10 (`ef0e17b`).
 - **OJO al poner overflow:visible en un item de grilla:** sin `min-width:0` el item no se achica por
   debajo de su contenido. Con datos reales (6 presentaciones) desbordaba el celular; el banco no lo
   mostraba porque sus productos tienen pocas. Probar SIEMPRE el layout también contra yerco.ar.
@@ -81,7 +93,7 @@ valores de respaldo del código, que eran los de Brotes (80 mm, alto libre). Aho
 100×150, reintenta 3 veces y `showFactura` vuelve a probar. Medido en el banco forzando el fallo.
 En Firestore, `config/factura` tiene termicaAncho=100 / termicaAlto=150 (sin cambios desde 05/2026).
 
-## Reel publicitario de YERCO (05/10/2026) — estado actual en "LEER PRIMERO", punto 3
+## Reel publicitario de YERCO (05/10/2026) — HISTORIA; el estado actual (v3, 08/10) está en "LEER PRIMERO", punto 3
 
 Anuncio para Instagram (9:16) que cuenta una compra en YERCO con un personaje. Hubo una
 primera versión ARMADA y entregada (`reel-yerco.mp4`, 38s, con voz), pero el dueño pidió
