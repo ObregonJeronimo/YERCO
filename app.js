@@ -682,7 +682,6 @@ function updateProductCard(id) {
     _setAtcButton(card, id, qty, noStock, maxOut);
 }
 function updateCartItemQuantity(id,ch){const p=productos.find(x=>x.id===id),idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;const stock=p?p.stock:carrito[idx].cantidad;const nq=carrito[idx].cantidad+ch;if(nq<=0)removeFromCart(id);else if(nq<=stock){carrito[idx].cantidad=nq;saveCart();updateCartUI();updateProductCard(id);}else showToast('Stock máximo: '+stock,'error');}
-function removeFromCart(id){const idx=carrito.findIndex(i=>i.id===id);if(idx!==-1){const nm=carrito[idx].nombre;carrito.splice(idx,1);showToast(nm+' eliminado','info');saveCart();updateCartUI();updateProductCard(id);}}
 function saveCart(){try{localStorage.setItem('yercoCart',JSON.stringify(carrito));}catch(e){console.warn('No se pudo guardar el carrito:',e);}}
 
 /* Sincroniza el carrito guardado con los productos actuales:
@@ -909,41 +908,119 @@ document.addEventListener('keydown',e=>{
 });
 
 var _huConteo=null; /* var y no let: updateCartUI puede correr antes de llegar a esta linea */
+/* ===== CARRITO =====
+   Pensado como los carritos de las tiendas que mas venden: cuanto falta para cada meta
+   (minimo y envio gratis), cada linea con su presentacion, precio por unidad, descuento y
+   subtotal, quitar con "Deshacer", sugerencias para sumar con un toque y un resumen con
+   envio y ahorro antes de confirmar. */
+function cartLineaOk(i){return !(i._noDisponible||i._sinStock);}
+function cartTotales(){
+    const ok=carrito.filter(cartLineaOk);
+    const unidades=ok.reduce((s,i)=>s+i.cantidad,0);
+    const subtotal=ok.reduce((s,i)=>s+i.precio*i.cantidad,0);
+    const lista=ok.reduce((s,i)=>s+Math.max(i.precio,i.precioOriginal||i.precio)*i.cantidad,0);
+    const envioGratis=negEnvioGratisDesde();
+    const envio=!NEGOCIO.haceEnvios?0:(subtotal>=envioGratis?0:negEnvioPrecio());
+    return {unidades,subtotal,ahorro:Math.max(0,lista-subtotal),envio,total:subtotal+envio};
+}
 function updateCartUI() {
     const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty'),footer=document.getElementById('cartFooter'),count=document.getElementById('cartCount'),total=document.getElementById('cartTotal'),cta=document.getElementById('ctaCartCount'),ckBtn=document.getElementById('checkoutBtn');
-    const ti=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+i.cantidad,0),tp=carrito.reduce((s,i)=>(i._noDisponible||i._sinStock)?s:s+(i.precio*i.cantidad),0);
-    if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(tp);
+    const T=cartTotales(),ti=T.unidades,tp=T.subtotal;
+    if(count)count.textContent=ti;if(cta)cta.textContent=ti;if(total)total.textContent='$'+formatPrice(T.total);
     /* El contador del carrito "salta" cuando sube: confirma que se agrego sin abrir
        nada. No en la primera pasada (carrito guardado de la visita anterior). */
     if(_huConteo!==null&&ti>_huConteo){const cb=document.getElementById('cartToggle');if(cb){cb.classList.remove('hu-bump');void cb.offsetWidth;cb.classList.add('hu-bump');}}
     _huConteo=ti;
+    const cuenta=document.getElementById('hcCuenta');
+    if(cuenta){const n=carrito.length;cuenta.textContent=n?n+(n===1?' producto':' productos')+(ti!==n?' · '+ti+' unidades':''):'';}
     /* Sin productos no hay nada que vaciar: el boton no aparece */
     document.getElementById('clearCartBtn')?.classList.toggle('d-none',carrito.length===0);
-    if(carrito.length===0){cancelClearCart();if(empty)empty.style.display='block';if(footer)footer.style.display='none';body?.querySelectorAll('.cart-item').forEach(i=>i.remove());}
-    else{if(empty)empty.style.display='none';if(footer){footer.style.display='';footer.style.removeProperty('display');}renderCartItems();}
-    if(ckBtn){const min=negMinimo();ckBtn.disabled=carrito.length===0||tp<min;if(min>0&&tp>0&&tp<min){ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Mínimo $'+formatPrice(min);}else{ckBtn.innerHTML='<i class="bi bi-bag-check"></i> Confirmar';}}
+    if(carrito.length===0){cancelClearCart();if(empty)empty.style.display='';if(footer)footer.style.display='none';const it=document.getElementById('hcItems');if(it)it.innerHTML='';}
+    else{if(empty)empty.style.display='none';if(footer){footer.style.removeProperty('display');}renderCartItems();}
+    if(ckBtn){const min=negMinimo();ckBtn.disabled=carrito.length===0||tp<min;if(min>0&&tp>0&&tp<min){ckBtn.innerHTML='<i class="bi bi-lock"></i> Mínimo $'+formatPrice(min);}else{ckBtn.innerHTML='<i class="bi bi-whatsapp"></i> Confirmar pedido <i class="bi bi-arrow-right hc-flecha"></i>';}}
+    cartResumen(T);
     updateShippingBar(tp);
+    cartSugerencias();
 }
+let _hcToque=null; /* ultima linea tocada: su subtotal hace un saltito */
+function cartPresentacion(p){if(!p)return '';if(p.grupoId&&p.grupoMascara)return p.grupoMascara;if(p.gramajePadreId||productos.some(h=>h.gramajePadreId===p.id))return gramajeLabel(p)==='Otra presentación'?'':gramajeLabel(p);return '';}
 function renderCartItems() {
-    const body=document.getElementById('cartBody'),empty=document.getElementById('cartEmpty');if(!body)return;
-    body.querySelectorAll('.cart-item').forEach(i=>i.remove());
-    carrito.forEach(item=>{
+    const cont=document.getElementById('hcItems');if(!cont)return;
+    cont.innerHTML=carrito.map((item,idx)=>{
         const p=productos.find(x=>x.id===item.id);
         const ms=p?p.stock:0;
         const noDisp=item._noDisponible||!p;
         const sinStock=item._sinStock||(p&&p.stock<=0);
-        const problema=noDisp||sinStock;
-        const avisoHtml=noDisp?'<span class="cart-item-warning">No disponible temporalmente</span>':(sinStock?'<span class="cart-item-warning">Sin stock</span>':'');
-        const el=document.createElement('div');
-        el.className='cart-item'+(problema?' cart-item-problema':'');
-        if(problema){
-            el.innerHTML='<img src="'+esc(optImg(item.imagen,200)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image" style="opacity:0.5"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4>'+avisoHtml+'<div class="cart-item-controls"><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')" style="margin-left:0"><i class="bi bi-trash"></i> Quitar</button></div></div>';
-        }else{
-            el.innerHTML='<img src="'+esc(optImg(item.imagen,200)||'img/default-product.jpg')+'" alt="'+esc(item.nombre)+'" class="cart-item-image"><div class="cart-item-info"><h4 class="cart-item-name">'+esc(item.nombre)+'</h4><span class="cart-item-price">$'+formatPrice(item.precio)+'</span><div class="cart-item-controls"><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',-1)"><i class="bi bi-dash"></i></button><span class="qty-value">'+item.cantidad+'</span><button class="qty-btn" onclick="updateCartItemQuantity(\''+item.id+'\',1)"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus"></i></button><button class="cart-item-remove" onclick="removeFromCart(\''+item.id+'\')"><i class="bi bi-trash"></i></button></div></div>';
+        const img=esc(optImg(item.imagen,200)||'img/default-product.jpg');
+        const nom=esc(item.nombre);
+        const quitar='<button type="button" class="hc-quitar" onclick="removeFromCart(\''+item.id+'\')" aria-label="Quitar '+nom+'"><i class="bi bi-x-lg"></i></button>';
+        if(noDisp||sinStock){
+            return '<article class="cart-item hc-item cart-item-problema" style="--i:'+idx+'"><span class="hc-thumb"><img src="'+img+'" alt="" style="opacity:.45"></span><div class="hc-info"><div class="hc-top"><h4 class="cart-item-name">'+nom+'</h4>'+quitar+'</div><span class="cart-item-warning">'+(noDisp?'No disponible temporalmente':'Sin stock')+'</span><p class="hc-nota">No se suma al total. Quitalo para seguir.</p></div></article>';
         }
-        body.insertBefore(el,empty);
-    });
+        const pres=cartPresentacion(p);
+        const dsc=Math.min(100,Math.max(0,item.descuento||0));
+        const bump=_hcToque&&_hcToque.id===item.id&&Date.now()-_hcToque.t<600?' hc-bump':'';
+        const menos=item.cantidad<=1
+            ?'<button type="button" class="hc-paso" onclick="removeFromCart(\''+item.id+'\')" aria-label="Quitar '+nom+'"><i class="bi bi-trash3"></i></button>'
+            :'<button type="button" class="hc-paso" onclick="cartPaso(\''+item.id+'\',-1)" aria-label="Uno menos"><i class="bi bi-dash-lg"></i></button>';
+        const mas='<button type="button" class="hc-paso" onclick="cartPaso(\''+item.id+'\',1)" aria-label="Uno más"'+(item.cantidad>=ms?' disabled':'')+'><i class="bi bi-plus-lg"></i></button>';
+        const quedan=ms>0&&ms<=5?'<span class="hc-quedan">'+(item.cantidad>=ms?'No hay más stock':'Quedan '+ms)+'</span>':'';
+        return '<article class="cart-item hc-item" data-id="'+item.id+'" style="--i:'+idx+'">'+
+            '<button type="button" class="hc-thumb" onclick="closeCart();openProductDetailModal(\''+item.id+'\')" aria-label="Ver '+nom+'"><img src="'+img+'" alt="" onerror="this.src=\'img/default-product.jpg\'"></button>'+
+            '<div class="hc-info"><div class="hc-top"><h4 class="cart-item-name">'+nom+'</h4>'+quitar+'</div>'+
+            '<div class="hc-meta">'+(pres?'<span class="hc-chip">'+esc(pres)+'</span>':'')+(dsc>0?'<span class="hc-chip hc-off">-'+dsc+'%</span>':'')+
+            '<span class="hc-unit">$'+formatPrice(item.precio)+' c/u</span>'+(dsc>0&&item.precioOriginal>item.precio?'<s>$'+formatPrice(item.precioOriginal)+'</s>':'')+'</div>'+
+            '<div class="hc-bottom"><div class="hc-step">'+menos+'<span class="hc-cant" aria-live="polite">'+item.cantidad+'</span>'+mas+'</div>'+quedan+
+            '<span class="hc-sub'+bump+'">$'+formatPrice(item.precio*item.cantidad)+'</span></div></div></article>';
+    }).join('');
 }
+function cartPaso(id,ch){_hcToque={id,t:Date.now()};updateCartItemQuantity(id,ch);}
+/* Quitar con "Deshacer" (6 s), en vez de un aviso que no se puede revertir */
+let _hcQuitado=null,_hcUndoTO=null;
+function removeFromCart(id){
+    const idx=carrito.findIndex(i=>i.id===id);if(idx===-1)return;
+    _hcQuitado={item:carrito[idx],idx};carrito.splice(idx,1);saveCart();updateCartUI();updateProductCard(id);
+    const u=document.getElementById('hcUndo');
+    if(u){u.innerHTML='<span>Quitaste <b>'+esc(_hcQuitado.item.nombre)+'</b></span><button type="button" onclick="deshacerQuitar()">Deshacer</button>';u.hidden=false;u.classList.remove('hc-undo-in');void u.offsetWidth;u.classList.add('hc-undo-in');clearTimeout(_hcUndoTO);_hcUndoTO=setTimeout(()=>{u.hidden=true;_hcQuitado=null;},6000);}
+    else showToast(_hcQuitado.item.nombre+' eliminado','info');
+}
+function deshacerQuitar(){
+    if(!_hcQuitado)return;const {item,idx}=_hcQuitado;_hcQuitado=null;clearTimeout(_hcUndoTO);
+    if(!carrito.some(i=>i.id===item.id))carrito.splice(Math.min(idx,carrito.length),0,item);
+    const u=document.getElementById('hcUndo');if(u)u.hidden=true;
+    _hcToque={id:item.id,t:Date.now()};saveCart();updateCartUI();updateProductCard(item.id);
+}
+function cartResumen(T){
+    const r=document.getElementById('hcResumen');if(!r)return;
+    const free=negEnvioGratisDesde();
+    let envio;
+    if(!NEGOCIO.haceEnvios)envio='<dd>Retiro en el local</dd>';
+    else if(T.envio===0)envio='<dd class="hc-gratis">Gratis</dd>';
+    else envio='<dd>$'+formatPrice(T.envio)+'<small>o retirás sin cargo</small></dd>';
+    r.innerHTML='<div><dt>Productos</dt><dd>$'+formatPrice(T.subtotal+T.ahorro)+'</dd></div>'+
+        (T.ahorro>0?'<div class="hc-ahorro"><dt><i class="bi bi-tag-fill"></i> Ahorrás</dt><dd>-$'+formatPrice(T.ahorro)+'</dd></div>':'')+
+        '<div><dt>Envío'+(NEGOCIO.haceEnvios&&isFinite(free)&&T.envio>0?' <small>gratis desde $'+formatPrice(free)+'</small>':'')+'</dt>'+envio+'</div>';
+}
+/* Sugerencias: primero lo de las mismas categorias que ya tiene el carrito, despues los
+   populares y las ofertas. Una sola cara por grupo de presentaciones, solo con stock. */
+function cartSugerencias(){
+    const sec=document.getElementById('hcSug'),row=document.getElementById('hcSugRow');if(!sec||!row)return;
+    const enCarrito=new Set(carrito.map(i=>i.id));
+    const grupoEn=new Set(carrito.map(i=>productos.find(p=>p.id===i.id)?.grupoId).filter(Boolean));
+    const cats=new Set(carrito.map(i=>productos.find(p=>p.id===i.id)?.categoria).filter(Boolean));
+    const cand=productos.filter(p=>!enCarrito.has(p.id)&&p.stock>0&&!p.gramajePadreId&&(!p.grupoId||(p.grupoPrincipal&&!grupoEn.has(p.grupoId))));
+    const puntaje=p=>(cats.has(p.categoria)?3:0)+(p.popular?2:0)+((p.descuento||0)>0?1:0)+(p.imagen?1:0);
+    const lista=cand.map(p=>({p,s:puntaje(p)})).filter(x=>x.s>=2).sort((a,b)=>b.s-a.s||String(a.p.id).localeCompare(String(b.p.id))).slice(0,8).map(x=>x.p);
+    if(!lista.length){sec.hidden=true;return;}
+    sec.hidden=false;
+    document.getElementById('hcSugTit').textContent=carrito.length?'Te puede interesar':'Los más pedidos';
+    row.innerHTML=lista.map(p=>{
+        const nom=esc(p.nombreMostrado||p.nombre),dsc=Math.min(100,Math.max(0,p.descuento||0));
+        return '<div class="hc-sug-card"><button type="button" class="hc-sug-img" onclick="closeCart();openProductDetailModal(\''+p.id+'\')" aria-label="Ver '+nom+'"><img src="'+esc(optImg(p.imagen,200)||'img/default-product.jpg')+'" alt="" loading="lazy" onerror="this.src=\'img/default-product.jpg\'">'+(dsc>0?'<span>-'+dsc+'%</span>':'')+'</button>'+
+            '<p>'+nom+'</p><div class="hc-sug-pie"><b>$'+formatPrice(precioFinal(p))+'</b><button type="button" class="hc-sug-add" onclick="cartSumarSug(\''+p.id+'\')" aria-label="Agregar '+nom+'"><i class="bi bi-plus-lg"></i></button></div></div>';
+    }).join('');
+}
+function cartSumarSug(id){_hcToque={id,t:Date.now()};addToCart(id);}
 
 /* ===== CONFIGURACION DEL NEGOCIO (config/pedidos) =====
    El panel guarda ahi haceEnvios / minimoPedido / envioPrecio / envioGratisActivo /
@@ -1000,22 +1077,24 @@ async function loadNegocioCfg(){
 loadNegocioCfg();
 
 function updateShippingBar(total) {
-    const prog=document.getElementById('shippingProgress'),msg=document.getElementById('shippingMsg'),fill=document.getElementById('shippingBarFill');
-    if(!msg||!fill)return;
+    const prog=document.getElementById('shippingProgress');if(!prog)return;
     const min=negMinimo(),free=negEnvioGratisDesde();
-    /* Sin minimo y sin envio gratis no queda ninguna meta que mostrar */
-    if(!min&&!isFinite(free)){if(prog)prog.style.display='none';return;}
-    if(prog)prog.style.display='';
-    /* La barra se escala contra la meta mas lejana, no contra un 100000 fijo */
+    /* Sin minimo y sin envio gratis no queda ninguna meta que mostrar; con el carrito vacio tampoco */
+    if((!min&&!isFinite(free))||!carrito.length){prog.hidden=true;return;}
+    prog.hidden=false;
+    /* La barra se escala contra la meta mas lejana */
     const escala=Math.max(min,isFinite(free)?free:0)||1;
     const pct=v=>Math.max(0,Math.min(100,v/escala*100));
-    const mMin=document.getElementById('shippingMarkMin'),mFree=document.getElementById('shippingMarkFree');
-    if(mMin){if(min>0){mMin.style.display='';mMin.style.left=pct(min)+'%';mMin.textContent=negMontoCorto(min);}else mMin.style.display='none';}
-    if(mFree){if(isFinite(free)&&free!==min){mFree.style.display='';mFree.style.left=pct(free)+'%';mFree.textContent=negMontoCorto(free);}else mFree.style.display='none';}
-    if(min>0&&total<min){msg.textContent='Faltan $'+formatPrice(min-total)+' para el pedido mínimo ($'+formatPrice(min)+')';msg.className='shipping-msg under-min';fill.style.width=pct(total)+'%';fill.style.background='#c0392b';}
-    else if(isFinite(free)&&total<free){msg.textContent='¡Faltan $'+formatPrice(free-total)+' para envío gratis!';msg.className='shipping-msg near-free';fill.style.width=pct(total)+'%';fill.style.background='#e67e22';}
-    else if(isFinite(free)){msg.textContent='¡Tenés envío gratis!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
-    else{msg.textContent='¡Listo para confirmar!';msg.className='shipping-msg free-shipping';fill.style.width='100%';fill.style.background='var(--color-primary)';}
+    let icono,txt,estado;
+    if(min>0&&total<min){icono='bi-bag';estado='min';txt='Te faltan <b>$'+formatPrice(min-total)+'</b> para el pedido mínimo';}
+    else if(isFinite(free)&&total<free){icono='bi-truck';estado='envio';txt='Te faltan <b>$'+formatPrice(free-total)+'</b> para el <b>envío gratis</b>';}
+    else if(isFinite(free)){icono='bi-truck';estado='ok';txt='<b>¡Tenés envío gratis!</b>';}
+    else{icono='bi-check2-circle';estado='ok';txt='<b>¡Listo para confirmar!</b>';}
+    const marca=(v,lbl,hecho)=>'<span class="hc-hito'+(hecho?' hecho':'')+(pct(v)>80?' fin':'')+'" style="left:'+pct(v)+'%"><i class="bi '+(hecho?'bi-check-lg':'bi-circle')+'"></i><small>'+lbl+'</small></span>';
+    prog.className='hc-metas hc-'+estado;
+    prog.innerHTML='<p><i class="bi '+icono+'"></i><span>'+txt+'</span></p><div class="hc-barra"><div class="hc-relleno" style="width:'+pct(total)+'%"></div>'+
+        (min>0&&min<escala?marca(min,'Mínimo $'+negMontoCorto(min),total>=min):'')+
+        (isFinite(free)?marca(free,'Envío gratis',total>=free):(min>0?marca(min,'Mínimo $'+negMontoCorto(min),total>=min):''))+'</div>';
 }
 
 function checkout() {
