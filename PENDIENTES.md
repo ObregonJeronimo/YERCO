@@ -1,9 +1,29 @@
 # YERCO — Pendientes
 
-## ▶ LEER PRIMERO — estado al 08/10/2026 y pendientes en orden
+## ▶ LEER PRIMERO — estado al 14/10/2026 y pendientes en orden
 
 Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
 fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
+
+### 0. HECHO (13-14/10) — pedidos del socio (WhatsApp)
+| Commit | Qué |
+|---|---|
+| `8483c5a` | **bug**: abrir o guardar un producto le sacaba el redondeo al precio (openModal y saveProduct recalculaban costo×% sin redondear). Ahora se respeta el guardado; si se toca costo o %, recalcula y redondea con `roundPrice` |
+| `c250f47` | Agrupar: **sugerencias automáticas** (nombre igual salvo cantidad y envase PET/VIDR/BIDO…; familias de "Asociar gramajes" primero), texto del botón hasta **14** caracteres (antes 6), y el botón de fila "Asociar gramajes" pasa a ser **Agrupar** (`openAgruparDesde`). Crear grupo borra `gramajePadreId` |
+| `c0ec977` | tienda: precio/cantidad alineados en todas las tarjetas (nombre con alto fijo de 3 renglones); "Base" → cantidad del nombre |
+| `9499c56` | "Costo %" → **Cambiar %**: muestra el % de hoy, opción "Fijar en", % editable por producto en la vista previa |
+| `393aa05` | barra de Productos: lo ocasional (Importar/Exportar Costos, PDF M, huérfanos) en un menú **Más** |
+| `785be32` | **carrito rediseñado**: metas mínimo/envío gratis, línea con presentación, c/u, descuento y subtotal, Deshacer al quitar, "Te puede interesar", resumen con ahorro/envío/total (igual al checkout) |
+
+- **Falta (necesita sesión de admin):** mirar las sugerencias de Agrupar con los ~894
+  productos reales (cuántas salen, si hay alguna mal) y, si el dueño quiere, saber qué
+  botones de "Más" no se usan nunca (el Historial lo dice; no hay credencial de servidor).
+- **Banco del panel:** `gen-banco-admin.py` (scratchpad de la sesión del 13/10) = `admin.html`
+  actual + el Firebase falso de las líneas 778-1108 del `_test-admin.html` viejo + productos de
+  prueba (Del Olivo, Seis Marías, familia de gramajes del coco, precio redondeado). El falso
+  ANOTA las escrituras en `window.__writes` pero no las aplica (al recargar vuelve todo).
+- **Banco de la tienda:** el carrito vive en UNA línea de `index.html` (`id="cartSidebar"`);
+  si se cambia, copiar esa línea igual a `_test-huerta.html`.
 
 ### 1. HECHO (08/10) — verificación integral "¿está todo bien en yerco, ecommerce y admin?"
 Medido en producción (yerco.ar) con sesión de admin y de cliente, PC y 360 px. Resultado: todo
