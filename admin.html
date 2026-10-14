@@ -202,7 +202,8 @@
         .price-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}.price-action-btn{display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;color:var(--text);transition:all 0.2s}.price-action-btn i{font-size:1.8rem;color:var(--accent-light)}.price-action-btn:hover{border-color:var(--accent);background:var(--accent-bg)}
         .radio-group{display:flex;gap:1rem;margin-bottom:1rem}.radio-opt{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text)}.radio-opt input{accent-color:var(--accent)}
         .pct-row{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
-        .price-preview-list{max-height:350px;overflow-y:auto}.pp-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.82rem;gap:8px}.pp-item:hover{background:var(--bg-input)}.pp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-old{color:var(--text-dim);text-decoration:line-through;min-width:70px;text-align:right}.pp-arrow{color:var(--text-dim);font-size:0.7rem}.pp-new-input{width:80px;padding:4px 6px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--accent-light);font-family:var(--mono);font-size:0.82rem;text-align:right}.pp-new-input:focus{outline:none;border-color:var(--accent)}
+        .price-preview-list{max-height:350px;overflow-y:auto}.agr-sug-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:.85rem;margin-bottom:8px}.agr-sug-head i{color:#c6e57a}.agr-sug-head span{color:var(--text-dim);font-size:.78rem}.agr-sug{border:1px solid var(--border);background:var(--bg-input);border-radius:10px;padding:10px 12px;margin-bottom:8px}.agr-sug-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}.agr-sug-nom{font-size:.84rem;font-weight:600;flex:1;min-width:0}.agr-sug-tag{font-size:.68rem;font-weight:700;color:#e6a23c;background:rgba(230,162,60,.12);border-radius:999px;padding:2px 8px;white-space:nowrap}.agr-sug-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}.agr-sug-chips span{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:700}.agr-sug-btns{display:flex;gap:6px}.agr-sug-btns .btn{width:auto;padding:6px 12px;font-size:.78rem}.agr-sug-mas{background:none;border:0;color:#7fc5e0;font-size:.8rem;cursor:pointer;padding:4px 0}
+.pp-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.82rem;gap:8px}.pp-item:hover{background:var(--bg-input)}.pp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-old{color:var(--text-dim);text-decoration:line-through;min-width:70px;text-align:right}.pp-arrow{color:var(--text-dim);font-size:0.7rem}.pp-new-input{width:80px;padding:4px 6px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--accent-light);font-family:var(--mono);font-size:0.82rem;text-align:right}.pp-new-input:focus{outline:none;border-color:var(--accent)}
         .price-pager{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:8px;font-size:0.78rem;color:var(--text-dim)}.price-pager button{background:var(--bg-card);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.78rem}.price-pager button:hover:not(:disabled){border-color:var(--accent)}.price-pager button:disabled{opacity:0.3;cursor:not-allowed}
         .price-page-info{font-size:0.75rem;color:var(--text-dim)}
         .sel-list{max-height:400px;overflow-y:auto}.sel-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.82rem;cursor:pointer;transition:background 0.15s}.sel-item:hover{background:var(--bg-input)}.sel-item.checked{background:var(--accent-bg)}.sel-item input{accent-color:var(--accent)}.sel-price{color:var(--text-dim);margin-left:auto;font-family:var(--mono)}
@@ -1407,7 +1408,7 @@ function deltasDeItems(items,signo){
             return (l.pdfSemanal===undefined||l.pdfSemanal===null)?true:!!l.pdfSemanal;
         }
         async function loadProducts(){try{await loadCategorias();const snap=await db.collection('productos').get();allProducts=snap.docs.map(d=>{const r=d.data();return{id:d.id,...r,porcentajeMayorista:r.porcentajeMayorista||0,precioMayorista:r.precioMayorista||0};});filterTable();updateStats();updateCategoryFilter();renderStockList();renderListaFilterSelect();}catch(e){console.error(e);showAdminToast('Error al cargar','error');}}
-        function renderTable(prods){const tb=document.getElementById('productsTableBody');const thr=getLowStockThreshold();if(!prods.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="bi bi-box-seam"></i><p>Sin productos</p></div></td></tr>';return;}tb.innerHTML=prods.map(p=>{let sc='stock-ok',sv=p.stock||0;if(sv===0)sc='stock-out';else if(sv<thr)sc='stock-low';const img=p.imagen||'img/default-product.jpg';const sub=p.subcategoria?' / '+esc(p.subcategoria):'';const sn=(p.nombre||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');const costo=p.costo||0;const pct=p.porcentaje||0;const precio=p.precio||0;const star=p.popular?'bi-star-fill':'bi-star';const starColor=p.popular?'color:#e6a23c':'';const oculto=p.oculto===true;const eyeIcon=oculto?'bi-eye-slash-fill':'bi-eye';const eyeColor=oculto?'color:#f56c6c':'';const eyeTitle=oculto?'Oculto del catalogo (click para mostrar)':'Visible en catalogo (click para ocultar)';const rowStyle=oculto?' style="opacity:0.55"':'';const hiddenTag=oculto?' <span style="font-size:0.68rem;background:#5a2d2d;color:#f56c6c;padding:1px 6px;border-radius:3px;margin-left:4px;vertical-align:middle">OCULTO</span>':'';return'<tr'+rowStyle+'><td><img src="'+esc(img)+'" class="product-img-cell product-img-zoom" onclick="verImagen(\''+esc(img)+'\',\''+esc((p.nombreMostrado||p.nombre||'').replace(/'/g,"")) +'\')" title="Ver la imagen en grande" onerror="this.src=\'img/default-product.jpg\'"></td><td><strong>'+esc(p.nombre||'\u2014')+'</strong>'+hiddenTag+'</td><td><span class="cat-badge">'+esc(p.categoria||'\u2014')+sub+'</span></td><td class="price-cell" style="color:var(--text-dim);font-size:0.82rem">$'+costo.toLocaleString('es-AR')+'</td><td style="text-align:left;font-size:0.82rem;color:var(--text-dim);font-family:var(--mono)">'+pct+'%</td><td class="price-cell">$'+precio.toLocaleString('es-AR')+'</td><td style="text-align:center">'+((p.descuento||0)>0?'<span style="background:linear-gradient(135deg,#e6a23c,#d97706);color:#fff;font-weight:700;font-size:0.72rem;padding:2px 7px;border-radius:5px">'+(p.descuento||0)+'%</span>':'<span style="color:var(--text-dim);font-size:0.8rem">0%</span>')+'</td><td><span class="stock-badge '+sc+'">'+sv+'</span></td><td><div class="actions-cell"><button class="btn-icon" onclick="togglePopular(\''+p.id+'\')" title="Popular" style="'+starColor+'"><i class="bi '+star+'"></i></button><button class="btn-icon" onclick="toggleOculto(\''+p.id+'\')" title="'+eyeTitle+'" style="'+eyeColor+'"><i class="bi '+eyeIcon+'"></i></button>'+(p.envasadoPropio?'<button class="btn-icon" onclick="toggleEnvasadoPropio(\''+p.id+'\')" title="Envasado propio (click para desmarcar)" style="color:#a78bfa"><i class="bi bi-bag-check-fill"></i></button>':'<button class="btn-icon" onclick="toggleEnvasadoPropio(\''+p.id+'\')" title="Marcar como envasado propio"><i class="bi bi-bag-check"></i></button>')+(p.gramajePadreId?'<button class="btn-icon" onclick="openGramajeModal(\''+p.id+'\')" title="Gramaje asociado (click para gestionar)" style="color:#4a9eff"><i class="bi bi-stack"></i></button>':'<button class="btn-icon" onclick="openGramajeModal(\''+p.id+'\')" title="Asociar gramajes"><i class="bi bi-stack"></i></button>')+'<button class="btn-icon" onclick="editProduct(\''+p.id+'\')"><i class="bi bi-pencil"></i></button><button class="btn-icon delete" onclick="deleteProduct(\''+p.id+'\',\''+sn+'\')"><i class="bi bi-trash"></i></button></div></td></tr>';}).join('');}
+        function renderTable(prods){const tb=document.getElementById('productsTableBody');const thr=getLowStockThreshold();if(!prods.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="bi bi-box-seam"></i><p>Sin productos</p></div></td></tr>';return;}tb.innerHTML=prods.map(p=>{let sc='stock-ok',sv=p.stock||0;if(sv===0)sc='stock-out';else if(sv<thr)sc='stock-low';const img=p.imagen||'img/default-product.jpg';const sub=p.subcategoria?' / '+esc(p.subcategoria):'';const sn=(p.nombre||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');const costo=p.costo||0;const pct=p.porcentaje||0;const precio=p.precio||0;const star=p.popular?'bi-star-fill':'bi-star';const starColor=p.popular?'color:#e6a23c':'';const oculto=p.oculto===true;const eyeIcon=oculto?'bi-eye-slash-fill':'bi-eye';const eyeColor=oculto?'color:#f56c6c':'';const eyeTitle=oculto?'Oculto del catalogo (click para mostrar)':'Visible en catalogo (click para ocultar)';const rowStyle=oculto?' style="opacity:0.55"':'';const hiddenTag=oculto?' <span style="font-size:0.68rem;background:#5a2d2d;color:#f56c6c;padding:1px 6px;border-radius:3px;margin-left:4px;vertical-align:middle">OCULTO</span>':'';return'<tr'+rowStyle+'><td><img src="'+esc(img)+'" class="product-img-cell product-img-zoom" onclick="verImagen(\''+esc(img)+'\',\''+esc((p.nombreMostrado||p.nombre||'').replace(/'/g,"")) +'\')" title="Ver la imagen en grande" onerror="this.src=\'img/default-product.jpg\'"></td><td><strong>'+esc(p.nombre||'\u2014')+'</strong>'+hiddenTag+'</td><td><span class="cat-badge">'+esc(p.categoria||'\u2014')+sub+'</span></td><td class="price-cell" style="color:var(--text-dim);font-size:0.82rem">$'+costo.toLocaleString('es-AR')+'</td><td style="text-align:left;font-size:0.82rem;color:var(--text-dim);font-family:var(--mono)">'+pct+'%</td><td class="price-cell">$'+precio.toLocaleString('es-AR')+'</td><td style="text-align:center">'+((p.descuento||0)>0?'<span style="background:linear-gradient(135deg,#e6a23c,#d97706);color:#fff;font-weight:700;font-size:0.72rem;padding:2px 7px;border-radius:5px">'+(p.descuento||0)+'%</span>':'<span style="color:var(--text-dim);font-size:0.8rem">0%</span>')+'</td><td><span class="stock-badge '+sc+'">'+sv+'</span></td><td><div class="actions-cell"><button class="btn-icon" onclick="togglePopular(\''+p.id+'\')" title="Popular" style="'+starColor+'"><i class="bi '+star+'"></i></button><button class="btn-icon" onclick="toggleOculto(\''+p.id+'\')" title="'+eyeTitle+'" style="'+eyeColor+'"><i class="bi '+eyeIcon+'"></i></button>'+(p.envasadoPropio?'<button class="btn-icon" onclick="toggleEnvasadoPropio(\''+p.id+'\')" title="Envasado propio (click para desmarcar)" style="color:#a78bfa"><i class="bi bi-bag-check-fill"></i></button>':'<button class="btn-icon" onclick="toggleEnvasadoPropio(\''+p.id+'\')" title="Marcar como envasado propio"><i class="bi bi-bag-check"></i></button>')+(p.grupoId?'<button class="btn-icon" onclick="openAgruparDesde(\''+p.id+'\')" title="Está en un grupo de presentaciones (click para verlo)" style="color:#4a9eff"><i class="bi bi-collection-fill"></i></button>':'<button class="btn-icon" onclick="openAgruparDesde(\''+p.id+'\')" title="Agrupar presentaciones"><i class="bi bi-collection"></i></button>')+'<button class="btn-icon" onclick="editProduct(\''+p.id+'\')"><i class="bi bi-pencil"></i></button><button class="btn-icon delete" onclick="deleteProduct(\''+p.id+'\',\''+sn+'\')"><i class="bi bi-trash"></i></button></div></td></tr>';}).join('');}
         function getLowStockThreshold(){return parseInt(localStorage.getItem('yercoLowStockThr'))||10;}
         function saveLowStockThreshold(){const v=parseInt(document.getElementById('lowStockThreshold').value)||10;localStorage.setItem('yercoLowStockThr',v);updateStats();renderTable(allProducts);}
         function updateStats(){const thr=getLowStockThreshold();const cats=new Set(allProducts.map(p=>p.categoria).filter(Boolean));document.getElementById('statTotal').textContent=allProducts.length;document.getElementById('statCats').textContent=cats.size;document.getElementById('statOutStock').textContent=allProducts.filter(p=>(p.stock||0)<=0).length;document.getElementById('statLowStock').textContent=allProducts.filter(p=>(p.stock||0)>0&&(p.stock||0)<thr).length;document.getElementById('statNoCat').textContent=allProducts.filter(p=>!p.categoria).length;const ti=document.getElementById('lowStockThreshold');if(ti)ti.value=thr;}
@@ -1754,6 +1755,100 @@ function deltasDeItems(items,signo){
         let _agruparSel=new Set();
         /* TEMPORAL: diagnostica grupos de presentación sin producto principal */
         async function sanearHuerfanos(){/* TEMPORAL: saneamiento de huerfanos historicos. Un huerfano es un hijo de envasado propio (tiene padreId) cuyo padre esta oculto pero el hijo quedo visible. El invariante de toggleOculto y del PDF Semanal ya evita crear nuevos, pero pueden existir de antes. Este boton los oculta a todos de una. Borrar boton+funcion cuando se confirme la limpieza. */const byId={};allProducts.forEach(function(p){byId[p.id]=p;});const huerfanos=allProducts.filter(function(h){if(!h.padreId||h.oculto===true)return false;const padre=byId[h.padreId];return padre&&padre.oculto===true;});if(!huerfanos.length){showAdminToast('No hay huerfanos: ningun hijo visible con padre oculto','success');return;}let msg='Se encontraron '+huerfanos.length+' producto(s) de envasado propio VISIBLES cuyo padre esta OCULTO.\n\nSe van a ocultar (no se borran):\n'+huerfanos.map(function(h){var padre=byId[h.padreId];return '\u2022 '+h.nombre+'  (padre oculto: '+(padre?padre.nombre:'?')+')';}).join('\n');if(!confirm(msg))return;try{const ids=huerfanos.map(function(h){return h.id;});for(let i=0;i<ids.length;i+=450){const batch=db.batch();ids.slice(i,i+450).forEach(function(id){batch.update(db.collection('productos').doc(id),{oculto:true});});await batch.commit();}huerfanos.forEach(function(h){h.oculto=true;});logAction('editar','Saneamiento: '+huerfanos.length+' hijos de envasado propio ocultados (padre oculto)','Hijos: '+huerfanos.map(function(h){return h.nombre;}).join(', '));showAdminToast(huerfanos.length+' huerfano(s) ocultado(s)','success');await loadProducts();filterTable();}catch(e){showAdminToast('Error: '+e.message,'error');}}
+        /* ===== SUGERENCIAS DE AGRUPACIÓN =====
+           Junta productos cuyo nombre es IGUAL salvo la cantidad (500 g, 1 kg, 5 L) y el envase
+           (PET, VIDR, BIDO...). Muy poca variación a propósito: dos sabores o dos marcas distintas
+           no se sugieren nunca. Las familias armadas con "Asociar gramajes" (sistema viejo, que
+           en la tienda mostraba un botón "Base") salen primero, para pasarlas a grupo. */
+        const _AGR_ENVASES=new Set(['pet','vidr','vidrio','bido','bidon','doypack','bolsa','frasco','lata','sachet','caja','pote','botella']);
+        const _AGR_UNIDAD=/^(kg|kgs|k|gr|grs|gramo|gramos|g|cc|ml|cm3|lt|lts|litro|litros|l|u|un|unid|unidades)$/;
+        const _agrNum=x=>String(parseFloat(x)).replace('.',',');
+        function _agrTokens(nombre){
+            return String(nombre||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+                .replace(/(\d)\s*[.,]\s*(\d)/g,'$1.$2').replace(/(\d)([a-z])/g,'$1 $2').replace(/([a-z])(\d)/g,'$1 $2')
+                .replace(/[^a-z0-9.]+/g,' ').trim().split(/\s+/).filter(Boolean);
+        }
+        function _agrClave(nombre){
+            const tk=_agrTokens(nombre),base=[],env=[];
+            tk.forEach((w,i)=>{
+                if(w==='x'||/^\d+(\.\d+)?$/.test(w))return;
+                if(_AGR_UNIDAD.test(w)&&i>0&&/^\d/.test(tk[i-1]))return;
+                if(_AGR_ENVASES.has(w)){env.push(w);return;}
+                base.push(w.replace(/\.+$/,''));
+            });
+            return {clave:base.filter(Boolean).join(' '),envase:env.join(' ')};
+        }
+        function _agrCantidad(nombre){
+            const s=String(nombre||'').toLowerCase().replace(/(\d)\s*,\s*(\d)/g,'$1.$2');let m;
+            if((m=s.match(/(\d+(?:\.\d+)?)\s*(kg|kgs|k)\b/)))return{v:parseFloat(m[1])*1000,t:_agrNum(m[1])+' kg'};
+            if((m=s.match(/(\d+(?:\.\d+)?)\s*(gr|grs|gramos?|g)\b/)))return{v:parseFloat(m[1]),t:_agrNum(m[1])+' g'};
+            if((m=s.match(/(\d+(?:\.\d+)?)\s*(lts?|litros?|l)\b/)))return{v:parseFloat(m[1])*1000,t:_agrNum(m[1])+' L'};
+            if((m=s.match(/(\d+(?:\.\d+)?)\s*(cc|ml|cm3)\b/)))return{v:parseFloat(m[1]),t:_agrNum(m[1])+' '+(m[2]==='ml'?'ml':'cc')};
+            if((m=s.match(/(\d+(?:\.\d+)?)\s*(u|un|unid|unidades)\b/)))return{v:parseFloat(m[1]),t:_agrNum(m[1])+' u'};
+            if((m=s.match(/\bx\s*(\d+(?:\.\d+)?)\b/)))return{v:parseFloat(m[1]),t:_agrNum(m[1])};
+            return null;
+        }
+        /* texto propuesto para el botón de la presentación: cantidad + envase ("500 PET", "1 L PET") */
+        function _agrMascaraDe(p){const c=_agrCantidad(p.nombre),e=_agrClave(p.nombre).envase;return ((c?c.t:'')+(e?' '+e.toUpperCase():'')).trim().slice(0,14);}
+        function _agrDescartadas(){try{return new Set(JSON.parse(localStorage.getItem('yercoAgrDescartadas')||'[]'));}catch(e){return new Set();}}
+        function agruparSugerencias(){
+            const desc=_agrDescartadas(),usados=new Set(),out=[];
+            const item=p=>{const c=_agrCantidad(p.nombre);return{p,v:c?c.v:1e12,mascara:_agrMascaraDe(p)||'?'};};
+            const orden=a=>a.sort((x,y)=>x.v-y.v);
+            /* 1) familias del sistema viejo de gramajes */
+            allProducts.filter(p=>!p.grupoId&&!p.gramajePadreId&&allProducts.some(h=>h.gramajePadreId===p.id)).forEach(padre=>{
+                const fam=[padre,...allProducts.filter(h=>h.gramajePadreId===padre.id&&!h.grupoId)];
+                const clave='gramajes:'+padre.id;fam.forEach(p=>usados.add(p.id));
+                if(fam.length>=2&&!desc.has(clave))out.push({clave,legacy:true,items:orden(fam.map(item))});
+            });
+            /* 2) nombres iguales salvo cantidad y envase */
+            const mapa={};
+            allProducts.forEach(p=>{if(!p.nombre||p.grupoId||usados.has(p.id))return;const k=_agrClave(p.nombre).clave;if(k.split(' ').length<2)return;(mapa[k]=mapa[k]||[]).push(p);});
+            Object.entries(mapa).forEach(([k,arr])=>{
+                if(arr.length<2||desc.has(k))return;
+                const items=orden(arr.map(item));
+                if(new Set(items.map(i=>i.mascara)).size<items.length)return; /* misma cantidad repetida: no son presentaciones */
+                out.push({clave:k,legacy:false,items});
+            });
+            return out.sort((a,b)=>(b.legacy-a.legacy)||a.items[0].p.nombre.localeCompare(b.items[0].p.nombre));
+        }
+        let _agrSugTodas=false,_agrSug=[];
+        function renderAgruparSugerencias(){
+            const cont=document.getElementById('agruparSugerencias');if(!cont)return;
+            _agrSug=agruparSugerencias();
+            if(!_agrSug.length){cont.innerHTML='';return;}
+            const vis=_agrSugTodas?_agrSug:_agrSug.slice(0,3);
+            cont.innerHTML='<div class="agr-sug-head"><i class="bi bi-magic"></i> <b>Sugerencias</b> <span>'+_agrSug.length+(_agrSug.length===1?' grupo posible':' grupos posibles')+' con nombres casi iguales</span></div>'+
+                vis.map((s,i)=>'<div class="agr-sug"><div class="agr-sug-top"><span class="agr-sug-nom">'+esc(s.items[0].p.nombre)+'</span>'+(s.legacy?'<span class="agr-sug-tag" title="Hoy está armado con Asociar gramajes. Al agruparlo deja de mostrar el botón Base.">hoy con gramajes</span>':'')+'</div>'+
+                    '<div class="agr-sug-chips">'+s.items.map(it=>'<span title="'+esc(it.p.nombre)+'">'+esc(it.mascara)+'</span>').join('')+'</div>'+
+                    '<div class="agr-sug-btns"><button type="button" class="btn btn-primary" onclick="usarSugerencia('+i+')"><i class="bi bi-check2"></i> Revisar y agrupar</button><button type="button" class="btn btn-secondary" onclick="descartarSugerencia('+i+')">Descartar</button></div></div>').join('')+
+                (_agrSug.length>3?'<button type="button" class="agr-sug-mas" onclick="_agrSugTodas=!_agrSugTodas;renderAgruparSugerencias()">'+(_agrSugTodas?'Ver menos':'Ver las '+_agrSug.length+' sugerencias')+'</button>':'');
+        }
+        /* carga la sugerencia en los pasos 1 y 2: hay que revisar y tocar "Crear grupo" */
+        function usarSugerencia(i){
+            const s=_agrSug[i];if(!s)return;
+            _agruparSel.clear();_agruparOrden=[];_agruparMascaras={};
+            s.items.forEach(it=>{_agruparSel.add(it.p.id);_agruparOrden.push(it.p.id);_agruparMascaras[it.p.id]=it.mascara;});
+            _agruparPrincipalId=s.items[0].p.id;
+            document.getElementById('agruparSelCount').textContent=_agruparSel.size;
+            renderAgruparLista();
+            const area=document.getElementById('agruparPrincipalArea');area.style.display='block';renderAgruparPrincipal();
+            area.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        function descartarSugerencia(i){
+            const s=_agrSug[i];if(!s)return;const d=_agrDescartadas();d.add(s.clave);
+            try{localStorage.setItem('yercoAgrDescartadas',JSON.stringify([...d]));}catch(e){}
+            renderAgruparSugerencias();
+        }
+        /* botón de cada fila de la tabla (reemplaza a "Asociar gramajes") */
+        function openAgruparDesde(id){
+            const p=allProducts.find(x=>x.id===id);openAgruparModal();if(!p)return;
+            if(p.grupoId){_gruposExpandidos.add(p.grupoId);renderGruposExistentes();const f=document.getElementById('agruparGruposFiltro');if(f){f.value=p.nombre;renderGruposExistentes();}document.getElementById('agruparGruposExistentes').scrollIntoView({block:'start'});return;}
+            const i=_agrSug.findIndex(s=>s.items.some(it=>it.p.id===id));
+            if(i>=0){usarSugerencia(i);return;}
+            document.getElementById('agruparSearch').value=_agrTokens(p.nombre).filter(w=>!/^\d/.test(w)&&w!=='x').slice(0,3).join(' ');
+            toggleAgruparItem(id,true);renderAgruparLista();
+        }
         function openAgruparModal(){
             _agruparSel.clear();_agruparOrden=[];_agruparMascaras={};_agruparPrincipalId=null;
             document.getElementById('agruparSearch').value='';
@@ -1761,6 +1856,7 @@ function deltasDeItems(items,signo){
             document.getElementById('agruparPrincipalArea').style.display='none';
             renderAgruparLista();
             renderGruposExistentes();
+            renderAgruparSugerencias();
             document.getElementById('agruparModal').classList.add('show');
         }
         function closeAgruparModal(){document.getElementById('agruparModal').classList.remove('show');}
@@ -1770,6 +1866,8 @@ function deltasDeItems(items,signo){
             let f=allProducts.filter(p=>p.nombre);
             if(q)f=f.filter(p=>(p.nombre||'').toLowerCase().includes(q));
             else f=f.slice(0,30);
+            /* los ya elegidos siempre arriba (si no, al cargar una sugerencia no se veian) */
+            f=[...allProducts.filter(p=>_agruparSel.has(p.id)),...f.filter(p=>!_agruparSel.has(p.id))];
             if(!f.length){cont.innerHTML='<div style="padding:1rem;text-align:center;color:var(--text-dim)">Sin resultados</div>';return;}
             cont.innerHTML=f.slice(0,60).map(p=>{
                 const checked=_agruparSel.has(p.id)?'checked':'';
@@ -1792,7 +1890,7 @@ function deltasDeItems(items,signo){
         let _agruparOrden=[]; /* orden de IDs */
         let _agruparMascaras={}; /* id -> mascara corta */
         function toggleAgruparItem(id,checked){
-            if(checked){_agruparSel.add(id);if(!_agruparOrden.includes(id))_agruparOrden.push(id);}
+            if(checked){_agruparSel.add(id);if(!_agruparOrden.includes(id))_agruparOrden.push(id);if(!_agruparMascaras[id]){const pr=allProducts.find(x=>x.id===id);if(pr)_agruparMascaras[id]=_agrMascaraDe(pr);}}
             else{_agruparSel.delete(id);_agruparOrden=_agruparOrden.filter(x=>x!==id);delete _agruparMascaras[id];}
             document.getElementById('agruparSelCount').textContent=_agruparSel.size;
             const area=document.getElementById('agruparPrincipalArea');
@@ -1816,7 +1914,7 @@ function deltasDeItems(items,signo){
                     '<input type="radio" name="agruparPrincipal" value="'+p.id+'" '+(isP?'checked':'')+' onchange="_agruparPrincipalId=\''+p.id+'\';renderAgruparPrincipal()" title="Marcar como principal">'+
                     '<img src="'+esc(p.imagen||'img/default-product.jpg')+'" style="width:30px;height:30px;border-radius:5px;object-fit:cover" onerror="this.src=\'img/default-product.jpg\'">'+
                     '<span style="font-size:0.82rem;flex:1;line-height:1.2">'+esc(p.nombre)+(isP?' <span style="font-size:0.65rem;color:#2d6b8a;font-weight:700">PRINCIPAL</span>':'')+'</span>'+
-                    '<input type="text" maxlength="6" placeholder="Ej: 1kg" value="'+esc(mascara)+'" oninput="_agruparMascaras[\''+p.id+'\']=this.value" style="width:70px;padding:4px 6px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:0.8rem;text-align:center;font-weight:600" title="Máscara corta (máx 6) - así se ve el botón">'+
+                    '<input type="text" maxlength="14" placeholder="Ej: 1 kg" value="'+esc(mascara)+'" oninput="_agruparMascaras[\''+p.id+'\']=this.value" style="width:118px;padding:4px 6px;background:var(--bg-card);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:0.8rem;text-align:center;font-weight:600" title="Texto del botón de esta presentación en la tienda (máx. 14)">'+
                     '</div>';
             }).join('');
         }
@@ -1846,17 +1944,20 @@ function deltasDeItems(items,signo){
             for(const id of ordenSel){
                 const m=(_agruparMascaras[id]||'').trim();
                 if(!m){const pr=allProducts.find(x=>x.id===id);showAdminToast('Falta la máscara de cantidad en: '+(pr?pr.nombre:id),'error');return;}
-                if(m.length>6){showAdminToast('La máscara no puede superar 6 caracteres','error');return;}
+                if(m.length>14){showAdminToast('El texto del botón no puede superar 14 caracteres','error');return;}
             }
             const grupoId='grp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
             const btn=document.getElementById('agruparGuardarBtn');btn.disabled=true;btn.innerHTML='<i class="bi bi-arrow-repeat spin"></i> Creando...';
             try{
-                const batch=db.batch();
+                const batch=db.batch(),_fv=firebase.firestore.FieldValue;
+                /* Se sale del sistema viejo de gramajes: un miembro con gramajePadreId queda fuera de la grilla de la tienda */
                 ordenSel.forEach((id,idx)=>{
-                    batch.update(db.collection('productos').doc(id),{grupoId:grupoId,grupoPrincipal:(id===_agruparPrincipalId),grupoMascara:(_agruparMascaras[id]||'').trim(),grupoOrden:idx});
+                    batch.update(db.collection('productos').doc(id),{grupoId:grupoId,grupoPrincipal:(id===_agruparPrincipalId),grupoMascara:(_agruparMascaras[id]||'').trim(),grupoOrden:idx,gramajePadreId:_fv.delete()});
                 });
+                /* gramajes de un miembro que no entraron al grupo vuelven a ser tarjetas sueltas (si no, desaparecian) */
+                allProducts.filter(h=>h.gramajePadreId&&ordenSel.includes(h.gramajePadreId)&&!ordenSel.includes(h.id)).forEach(h=>batch.update(db.collection('productos').doc(h.id),{gramajePadreId:_fv.delete()}));
                 await batch.commit();
-                ordenSel.forEach((id,idx)=>{const pr=allProducts.find(x=>x.id===id);if(pr){pr.grupoId=grupoId;pr.grupoPrincipal=(id===_agruparPrincipalId);pr.grupoMascara=(_agruparMascaras[id]||'').trim();pr.grupoOrden=idx;}});
+                ordenSel.forEach((id,idx)=>{const pr=allProducts.find(x=>x.id===id);if(pr){delete pr.gramajePadreId;pr.grupoId=grupoId;pr.grupoPrincipal=(id===_agruparPrincipalId);pr.grupoMascara=(_agruparMascaras[id]||'').trim();pr.grupoOrden=idx;}});
                 const nombres=ordenSel.map(id=>allProducts.find(x=>x.id===id)?.nombre).filter(Boolean);
                 logAction('editar','Grupo de presentaciones creado','Productos: '+nombres.join(', '));
                 showAdminToast(ordenSel.length+' productos agrupados. Podés crear otro grupo.','success');
@@ -1866,7 +1967,7 @@ function deltasDeItems(items,signo){
                 document.getElementById('agruparSelCount').textContent='0';
                 document.getElementById('agruparPrincipalArea').style.display='none';
                 document.getElementById('agruparPrincipalList').innerHTML='';
-                renderAgruparLista();renderGruposExistentes();
+                renderAgruparLista();renderGruposExistentes();renderAgruparSugerencias();
                 const modalBody=document.querySelector('#agruparModal .modal-box > div[style*="overflow-y"]');
                 if(modalBody)modalBody.scrollTop=0;
             }catch(e){showAdminToast('Error: '+e.message,'error');}finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-check-lg"></i> Crear grupo';}
@@ -1905,7 +2006,7 @@ function deltasDeItems(items,signo){
                 prods.forEach(p=>{delete p.grupoId;delete p.grupoPrincipal;});
                 logAction('editar','Grupo deshecho','Productos: '+prods.map(p=>p.nombre).join(', '));
                 showAdminToast('Grupo deshecho','info');
-                await loadProducts();renderAgruparLista();renderGruposExistentes();
+                await loadProducts();renderAgruparLista();renderGruposExistentes();renderAgruparSugerencias();
             }catch(e){showAdminToast('Error: '+e.message,'error');}
         }
         function openGramajeModal(prodId){const prod=allProducts.find(x=>x.id===prodId);if(!prod){showAdminToast('Producto no encontrado','error');return;}window._gramajeModalProd=prod;document.getElementById('gramajeModalInfo').innerHTML='<div style="font-weight:600;margin-bottom:3px">Card principal:</div><div style="font-size:0.95rem">'+esc(prod.nombre)+'</div><div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px">Cat: '+esc(prod.categoria||'-')+'</div>';document.getElementById('gramajePrincipalLabel').value=prod.gramaje||'';document.getElementById('gramajeModalSearch').value='';renderGramajeAsociados();renderGramajeSugerencias('');/* Aviso: si el producto ya esta en un grupo de mas de un miembro, la tienda dibuja el selector del grupo e IGNORA los gramajes de aca (antes salian los dos y la presentacion aparecia duplicada). Sin este cartel, asociar gramajes desde este modal parece funcionar y no se ve nada en el sitio. */const _grpN=prod.grupoId?allProducts.filter(x=>x.grupoId===prod.grupoId).length:0;const _av=document.getElementById('gramajeModalAvisoGrupo');if(_av){if(_grpN>1){_av.innerHTML='<i class="bi bi-exclamation-triangle-fill"></i> Este producto ya usa el <strong>sistema de grupos</strong> ('+_grpN+' presentaciones). La tienda muestra el selector del grupo e <strong>ignora</strong> los gramajes que asocies ac&aacute;, para no mostrar la presentaci&oacute;n dos veces. Para cambiar sus presentaciones us&aacute; <strong>Agrupar</strong>.';_av.style.display='block';}else{_av.style.display='none';}}document.getElementById('gramajeModal').classList.add('show');}
@@ -6172,7 +6273,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
     <div class="modal-overlay" id="agruparModal"><div class="modal-box" style="max-width:640px;width:96vw;max-height:92vh;display:flex;flex-direction:column"><div class="modal-header"><h3><i class="bi bi-collection"></i> Agrupar productos por presentación</h3><button class="modal-close" onclick="closeAgruparModal()"><i class="bi bi-x-lg"></i></button></div>
     <div style="padding:1rem;overflow-y:auto;flex:1">
       <div style="background:#152a35;border:1px solid #2d5a6a;padding:0.75rem;border-radius:var(--radius);margin-bottom:1rem;font-size:0.8rem;color:#7fc5e0;line-height:1.5"><i class="bi bi-info-circle"></i> Seleccioná los productos que son el mismo artículo en distintas cantidades (ej: Aceite 1L, 5L, 500ml). Aparecerán como <strong>una sola card</strong> con botones para elegir la presentación. Cada uno mantiene su propio precio, imagen y nombre.</div>
-      <div id="agruparGruposExistentes" style="margin-bottom:1rem"></div>
+      <div id="agruparSugerencias" style="margin-bottom:1rem"></div><div id="agruparGruposExistentes" style="margin-bottom:1rem"></div>
       <div class="form-group" style="margin-bottom:0.6rem"><label style="font-size:0.85rem;margin-bottom:5px;display:block">1. Buscá y seleccioná los productos del grupo</label><div class="search-box"><i class="bi bi-search"></i><input type="text" id="agruparSearch" placeholder="Buscar producto..." oninput="renderAgruparLista()"></div></div>
       <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center"><span style="font-size:0.8rem;color:var(--text-dim)">Seleccionados: <strong id="agruparSelCount">0</strong></span></div>
       <div id="agruparLista" class="sel-list" style="max-height:240px;overflow-y:auto;margin-bottom:1rem"></div>
