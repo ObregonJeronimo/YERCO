@@ -214,6 +214,9 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 .product-stock.out { top: auto; bottom: 10px; right: 10px; background: var(--h-ink); border-radius: 999px; }
 .product-info { padding: .75rem .35rem .2rem !important; }
 .product-name { font-family: var(--font-body) !important; font-size: .95rem !important; font-weight: 600; line-height: 1.3; color: var(--h-ink); letter-spacing: 0; margin-bottom: .45rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* El nombre ocupa siempre el alto de 3 renglones: si no, un nombre corto subia el precio y la
+   cantidad y las tarjetas de una misma fila no quedaban alineadas. */
+.product-name { min-height: 3.9em; }
 .product-footer { margin-bottom: .6rem; }
 .product-price { font-family: var(--font-display) !important; font-size: 1.32rem !important; font-weight: 800; color: var(--h-ink); letter-spacing: -.025em; }
 .product-price-off { color: var(--h-off) !important; }

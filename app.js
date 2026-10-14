@@ -41,6 +41,9 @@ function gramajeLabel(h){
     if(m)return m[1]+' '+m[2].toLowerCase();
     return 'Otra presentación';
 }
+/* Boton del producto base en el sistema viejo de gramajes: decia "Base" cuando no tenia
+   `gramaje` cargado. Se usa la cantidad del nombre ("200 cc") y "Base" solo si no hay. */
+function gramajeBase(p){const l=gramajeLabel(p);return l==='Otra presentación'?'Base':l;}
 /* El año del copyright estaba escrito a mano en index.html y habia quedado en 2024.
    No merece un campo en el panel: se saca del reloj y no vuelve a envejecer. */
 function initFooterAnio(){const el=document.getElementById('footerAnio');if(el)el.textContent=new Date().getFullYear();}
@@ -438,7 +441,7 @@ function renderProducts(list) {
            una etiqueta corta; el viejo no tiene con qué y por eso caía al nombre. */
         const hijos=usaSelectorGrupo?[]:productos.filter(h=>h.gramajePadreId===p.id);
         const gramajeHTML=hijos.length>0?'<div class="gramaje-btns">'+
-            '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(p.gramaje||'Base')+'</button>'+
+            '<button class="gramaje-btn active" onclick="event.stopPropagation();addToCart(\''+p.id+'\')" data-id="'+p.id+'">'+esc(gramajeBase(p))+'</button>'+
             hijos.map(h=>'<button class="gramaje-btn" onclick="event.stopPropagation();addToCart(\''+h.id+'\')" data-id="'+h.id+'">'+esc(gramajeLabel(h))+'</button>').join('')+
             '</div>':'';
         let grupoHTML='';
@@ -834,7 +837,7 @@ function openProductDetailModal(id){
     /* Gramajes asociados (sistema viejo): solo si el grupo no se hizo cargo */
     const pdmHijos=pdmUsaGrupo?[]:productos.filter(h=>h.gramajePadreId===p.id);
     const pdmGramajeHtml=pdmHijos.length>0?'<div class="pdm-section"><h4>Presentaciones</h4><div class="gramaje-btns">'+
-        '<button class="gramaje-btn active" onclick="addToCart(\''+p.id+'\');showToast(\''+esc((p.nombreMostrado||p.nombre)).replace(/'/g,"")+'\'+\' agregado\',\'success\')">'+esc(p.gramaje||'Base')+'</button>'+
+        '<button class="gramaje-btn active" onclick="addToCart(\''+p.id+'\');showToast(\''+esc((p.nombreMostrado||p.nombre)).replace(/'/g,"")+'\'+\' agregado\',\'success\')">'+esc(gramajeBase(p))+'</button>'+
         pdmHijos.map(h=>'<button class="gramaje-btn" onclick="addToCart(\''+h.id+'\');showToast(\'Agregado\',\'success\')">'+esc(gramajeLabel(h))+'</button>').join('')+
         '</div></div>':'';
     document.getElementById('productDetailBody').innerHTML=
