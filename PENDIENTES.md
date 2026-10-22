@@ -5,6 +5,26 @@
 Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
 fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
 
+### 00. EN CURSO (21/10) — SEO básico (como la landing de Deft)
+Reglas del dueño: **avisar antes de cada push**; Search Console, GA4 y Google Business **a nombre
+del dueño** (Deft como administrador). La dirección personal del dueño es PRIVADA: no va en
+ningún archivo, commit ni memoria.
+- **Bloqueante:** Vercel no despliega desde el 21/10 (`b54328d` está en GitHub pero no hay
+  despliegue; el último es `a1e9e38` del 14/10). Revisar Deployments / integración con GitHub.
+- **Commit local SIN push** `5e9dc5c`: robots.txt, `/sitemap.xml` dinámico (`api/sitemap.js` +
+  rewrite), canonical + JSON-LD GroceryStore en la portada, canonical y descripción propios en
+  `/producto/<slug>`, clave IndexNow `9cc5edb2986bf2a105f8c1b671da84bc.txt`, `analytics.js` (GA4
+  inactivo hasta poner el ID). La CSP ya permite Google (default-src https:).
+- **Google Maps:** NO existe ficha de Yerco (buscado "Yerco dietética Villa Allende", "Yerco Villa
+  Allende" y la dirección del local): hay que crearla, no reclamarla.
+- **A confirmar por el dueño:** la web dice local Tablada 16 y tel. 351 531 4675; el dueño pasó el
+  teléfono de Joaco (+54 351 233-3009). Nombre, dirección y teléfono tienen que ser iguales en la
+  web, el JSON-LD y Google Business: definir cuál va y cambiar los tres juntos.
+- **Falta (con el dueño):** elegir título/descripción (opciones en el chat del 21/10), push,
+  IndexNow (POST a api.indexnow.org con la portada y el sitemap, después del deploy), Search
+  Console (prefijo `https://www.yerco.ar/`, meta tag, sitemap, indexación de la portada), GA4
+  (aceptar condiciones, poner el ID en `analytics.js`), Google Business (crear, verificación).
+
 ### 0. HECHO (13-14/10) — pedidos del socio (WhatsApp)
 | Commit | Qué |
 |---|---|
