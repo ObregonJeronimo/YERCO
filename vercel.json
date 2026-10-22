@@ -21,6 +21,10 @@
       "destination": "/api/producto/:slug"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },

@@ -91,6 +91,7 @@ module.exports = async function handler(req, res) {
     <meta property="og:image" content="${imagen}">
     <meta property="og:url" content="${url}">
     <meta property="og:type" content="product">
+    <link rel="canonical" href="${url}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${titulo}">
     <meta name="twitter:description" content="${desc}">
@@ -99,6 +100,8 @@ module.exports = async function handler(req, res) {
 
     html = html.replace(/<!--OG_START-->[\s\S]*?<!--OG_END-->/, ogTags);
     html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${titulo}</title>`);
+    /* la descripcion de la portada no sirve para la ficha: cada producto la suya */
+    html = html.replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${escapeHtml((producto.nombre||'')+' en Yerco Dietética, Villa Allende. Productos naturales con envío a Villa Allende y Mendiolaza.')}">`);
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

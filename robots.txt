@@ -1,0 +1,8 @@
+# Todos los buscadores pueden rastrear la tienda. El panel y los bancos de prueba no.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /seed
+
+Sitemap: https://www.yerco.ar/sitemap.xml
