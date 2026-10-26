@@ -26,6 +26,8 @@ const ALERTAS_MAX_ITEMS = 8;       /* cuántos nombres se listan por alerta */
 let _alertas = [];
 let _alertasPanel = null;
 let _insumosAlertaCache = null;    /* se pide una vez por sesión */
+const ALERTAS_DIAS_SIN_COBRAR = 7; /* venta sin cobrar hace más de esto = aviso */
+let _ventasImpagasCache = null;
 
 /* ============================ CÁLCULO ============================ */
 
@@ -45,6 +47,32 @@ async function _insumosParaAlertas(forzar) {
     _insumosAlertaCache = [];
   }
   return _insumosAlertaCache;
+}
+
+/* Ventas impagas de las dos colecciones. No hay un campo que traiga todas con una sola
+   consulta: las nuevas tienen pagado=false, y las fiadas de antes no tienen `pagado` y se
+   reconocen por el medio de pago. Son consultas por un solo campo (no piden índice) y
+   se hacen una vez por sesión salvo que algo cambie (forzar). */
+async function _ventasImpagasParaAlertas(forzar) {
+  if (!forzar && _ventasImpagasCache) return _ventasImpagasCache;
+  const porId = new Map();
+  for (const col of ['ventas', 'ventasMayoristas']) {
+    const consultas = [
+      db.collection(col).where('pagado', '==', false).get(),
+      db.collection(col).where('medioPagoKey', '==', 'cuenta_corriente').get(),
+      db.collection(col).where('medioPago', '==', 'Cuenta Corriente').get()
+    ];
+    for (const r of await Promise.allSettled(consultas)) {
+      if (r.status !== 'fulfilled') { console.warn('alertas/ventas ' + col + ':', r.reason); continue; }
+      r.value.docs.forEach(d => {
+        const x = d.data();
+        const f = x.fecha ? (x.fecha.toDate ? x.fecha.toDate() : new Date(x.fecha)) : new Date();
+        porId.set(col + '/' + d.id, Object.assign({}, x, { fecha: f, may: col === 'ventasMayoristas' }));
+      });
+    }
+  }
+  _ventasImpagasCache = [...porId.values()].filter(v => typeof ventaPagada === 'function' ? !ventaPagada(v) : v.pagado === false);
+  return _ventasImpagasCache;
 }
 
 async function calcularAlertas(forzar) {
@@ -148,6 +176,28 @@ async function calcularAlertas(forzar) {
       });
     }
   } catch (e) { console.warn('alertas/insumos:', e); }
+
+  /* --- Ventas sin cobrar hace más de una semana --------------------------
+     Joaco pidió que el sistema avise si alguien no pagó desde hace rato.
+     "Hace rato" = ALERTAS_DIAS_SIN_COBRAR días, lo eligió el dueño. */
+  try {
+    const impagas = (await _ventasImpagasParaAlertas(forzar))
+      .filter(v => (Date.now() - v.fecha.getTime()) / 86400000 > ALERTAS_DIAS_SIN_COBRAR)
+      .sort((a, b) => a.fecha - b.fecha);
+    if (impagas.length) {
+      const total = impagas.reduce((s, v) => s + Number(v.total || 0), 0);
+      out.push({
+        id: 'ventas-sin-cobrar', nivel: 'critico', icono: 'bi-cash-coin',
+        titulo: impagas.length + (impagas.length === 1 ? ' venta sin cobrar' : ' ventas sin cobrar') +
+          ' hace más de ' + ALERTAS_DIAS_SIN_COBRAR + ' días',
+        detalle: 'Suman $' + total.toLocaleString('es-AR') + '. Cuando paguen, tocá "No pagó" en la venta.',
+        items: impagas.map(v => (v.cliente || 'Sin cliente') + (v.may ? ' (mayorista)' : '') +
+          ' · $' + Number(v.total || 0).toLocaleString('es-AR') +
+          ' · hace ' + Math.floor((Date.now() - v.fecha.getTime()) / 86400000) + ' días'),
+        seccion: impagas.every(v => v.may) ? 'ventasMay' : 'ventas'
+      });
+    }
+  } catch (e) { console.warn('alertas/ventas:', e); }
 
   _alertas = out;
   return out;
