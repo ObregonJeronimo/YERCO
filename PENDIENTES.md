@@ -24,6 +24,10 @@ personal del dueño es PRIVADA: no va en ningún archivo, commit ni memoria.
   portada), GA4 (aceptar condiciones = OK del dueño; poner el ID en `analytics.js`), Google Business
   (crear ficha: Yerco Dietética, Tablada 16 Villa Allende, 351 531 4675, yerco.ar; verificación del
   dueño), y en los tres agregar deftinternal@gmail.com como administrador.
+- **PRÓXIMO PASO (26/10, antes del clear):** el dueño inicia sesión con SU cuenta de Google en el
+  navegador integrado (Ctrl+Shift+B; quedó abierta la pantalla de Search Console). No hace falta
+  la cuenta deftinternal (su autenticador lo tiene el socio): se la agrega como administradora
+  desde adentro. Orden: Search Console → GA4 → Google Business. No hay tareas en segundo plano.
 
 ### 0. HECHO (13-14/10) — pedidos del socio (WhatsApp)
 | Commit | Qué |
