@@ -1031,11 +1031,49 @@ function cartSumarSug(id){_hcToque={id,t:Date.now()};addToCart(id);}
    domicilio con los envios apagados.
    Se lee sin bloquear el render: se pinta con lo cacheado de la visita anterior (o
    con los defaults) y se repinta cuando responde Firestore, igual que siteContent. */
-const NEG_DEFAULTS={haceEnvios:true,minimoPedido:30000,envioPrecio:2000,envioGratisActivo:true,envioGratisDesde:100000};
+const NEG_DEFAULTS={haceEnvios:true,minimoPedido:30000,envioPrecio:2000,envioGratisActivo:true,envioGratisDesde:100000,envioDistanciaActivo:true};
 const NEG_CACHE_KEY='yerco_negocio_v1';
 let NEGOCIO=Object.assign({},NEG_DEFAULTS);
 function negMinimo(){return Math.max(0,Number(NEGOCIO.minimoPedido)||0);}
-function negEnvioPrecio(){return NEGOCIO.haceEnvios?Math.max(0,Number(NEGOCIO.envioPrecio)||0):0;}
+function negEnvioPrecio(){if(!NEGOCIO.haceEnvios)return 0;const d=_envioDistVigente();return d?d.precio:Math.max(0,Number(NEGOCIO.envioPrecio)||0);}
+/* ===== ENVIO SEGUN LA DISTANCIA =====
+   Joaco cobra el envio segun lo lejos que quede la direccion (api/envio.js). La API
+   devuelve solo el precio; aca se guarda para la direccion escrita en el checkout. Si la
+   persona cambia la direccion, el precio calculado deja de valer hasta recalcular. Si no
+   se puede calcular, se cobra el precio fijo de siempre: nunca se frena un pedido. */
+let _envioDist={dir:'',estado:'nada',precio:null};   /* estado: nada|calculando|ok|noEncontrada|sinCalculo|error */
+let _envioDistTimer=null;
+/* mismo limpiado que sanitizeText, para que la direccion que se calcula y la que se guarda sean la misma */
+function _normDir(d){return String(d||'').replace(/[<>"'`\x00-\x1F\x7F]/g,'').replace(/\s+/g,' ').trim().toLowerCase();}
+function _dirCheckout(){const el=document.getElementById('chkDireccion');return el?el.value:'';}
+function _envioDistVigente(){return (_envioDist.estado==='ok'&&_envioDist.dir===_normDir(_dirCheckout()))?_envioDist:null;}
+function _checkoutAbierto(){const m=document.getElementById('checkoutModal');return !!(m&&m.classList.contains('show'));}
+function calcularEnvioDistancia(dirRaw){
+    const dir=_normDir(dirRaw);
+    if(!NEGOCIO.haceEnvios||NEGOCIO.envioDistanciaActivo===false||dir.length<4){_envioDist={dir:dir,estado:'nada',precio:null};return Promise.resolve(_envioDist);}
+    if(_envioDist.dir===dir&&_envioDist.estado!=='error')return _envioDist.promesa||Promise.resolve(_envioDist);
+    const st={dir:dir,estado:'calculando',precio:null};
+    _envioDist=st;
+    st.promesa=(async()=>{
+        try{
+            const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),8000);
+            const r=await fetch('/api/envio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dir:dir}),signal:ctl.signal});
+            clearTimeout(t);
+            const j=await r.json().catch(()=>({}));
+            if(!r.ok)st.estado='error';
+            else if(!j.calculo)st.estado='sinCalculo';
+            else if(j.encontrado){st.estado='ok';st.precio=Math.max(0,Number(j.precio)||0);}
+            else st.estado='noEncontrada';
+        }catch(e){st.estado='error';}
+        if(_envioDist===st&&_checkoutAbierto())updateCheckoutResumen();
+        return st;
+    })();
+    if(_checkoutAbierto())updateCheckoutResumen();
+    return st.promesa;
+}
+/* Mientras se escribe se espera a que la persona pare; al salir del campo, ya. */
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='chkDireccion'){clearTimeout(_envioDistTimer);_envioDistTimer=setTimeout(()=>{_envioDistTimer=null;calcularEnvioDistancia(e.target.value);},900);updateCheckoutResumen();}});
+document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='chkDireccion'){clearTimeout(_envioDistTimer);_envioDistTimer=null;calcularEnvioDistancia(e.target.value);}});
 /* Infinity = no hay meta de envio gratis que perseguir (envios apagados o promo apagada) */
 function negEnvioGratisDesde(){return (NEGOCIO.haceEnvios&&NEGOCIO.envioGratisActivo)?Math.max(0,Number(NEGOCIO.envioGratisDesde)||0):Infinity;}
 function negTipoEntrega(){return NEGOCIO.haceEnvios?(window._chkTipoEntrega==='retiro'?'retiro':'envio'):'retiro';}
@@ -1046,7 +1084,7 @@ function negNormalizar(d){
     if(!d||typeof d!=='object')return null;
     const b=k=>typeof d[k]==='boolean'?d[k]:NEG_DEFAULTS[k];
     const n=k=>{const v=Number(d[k]);return isFinite(v)&&v>=0?v:NEG_DEFAULTS[k];};
-    return {haceEnvios:b('haceEnvios'),minimoPedido:n('minimoPedido'),envioPrecio:n('envioPrecio'),envioGratisActivo:b('envioGratisActivo'),envioGratisDesde:n('envioGratisDesde')};
+    return {haceEnvios:b('haceEnvios'),minimoPedido:n('minimoPedido'),envioPrecio:n('envioPrecio'),envioGratisActivo:b('envioGratisActivo'),envioGratisDesde:n('envioGratisDesde'),envioDistanciaActivo:b('envioDistanciaActivo')};
 }
 function negAplicar(d){
     const cfg=negNormalizar(d);
@@ -1207,6 +1245,13 @@ function updateCheckoutResumen(){
     const total=subtotalConDesc+envio;
     const el=document.getElementById('chkResumen');
     if(!el)return;
+    /* Direccion ya escrita (o precargada de la vez anterior) sin precio calculado: se pide. */
+    const _dirAct=_normDir(_dirCheckout());
+    if(tipoEntrega==='envio'&&_dirAct.length>=4&&_envioDist.dir!==_dirAct&&!_envioDistTimer)calcularEnvioDistancia(_dirAct);
+    const _ed=(tipoEntrega==='envio'&&envio>0&&_envioDist.dir===_dirAct)?_envioDist.estado:'';
+    const envioNota=_ed==='calculando'?'<div class="chk-resumen-row" style="font-size:0.78rem;color:#777"><span><i class="bi bi-geo-alt"></i> Calculando el envío según tu dirección…</span></div>'
+        :(_ed==='noEncontrada'||_ed==='error')?'<div class="chk-resumen-row" style="font-size:0.78rem;color:#8a5a00"><span><i class="bi bi-info-circle"></i> No pudimos ubicar la dirección en el mapa: el envío puede variar según la distancia y te lo confirmamos por WhatsApp.</span></div>'
+        :_ed==='ok'?'<div class="chk-resumen-row" style="font-size:0.78rem;color:#777"><span><i class="bi bi-geo-alt"></i> Envío según la distancia a tu dirección</span></div>':'';
     const envioRow=tipoEntrega==='retiro'
         ?'<div class="chk-resumen-row"><span><i class="bi bi-shop"></i> Retiro en local</span><span style="color:#2d4a22">sin cargo</span></div>'
         :('<div class="chk-resumen-row"><span><i class="bi bi-truck"></i> Envío</span><span'+(envio===0?' style="color:#2d4a22;font-weight:600"':'')+'>'+(envio===0?'GRATIS':'$'+formatPrice(envio))+'</span></div>');
@@ -1219,7 +1264,7 @@ function updateCheckoutResumen(){
     el.innerHTML=
         '<div style="margin-bottom:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid #eee">'+itemsList+'</div>'+
         '<div class="chk-resumen-row"><span>Subtotal ('+carrito.length+' '+(carrito.length===1?'producto':'productos')+')</span><span>$'+formatPrice(subtotal)+'</span></div>'+
-        envioRow+cuponRow+
+        envioRow+envioNota+cuponRow+
         '<div class="chk-resumen-total"><span>TOTAL</span><span>$'+formatPrice(total)+'</span></div>';
 }
 
@@ -1333,8 +1378,14 @@ async function confirmCheckout(){
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
         const dcMonto=cuponParaRegistrar?Math.min(cuponParaRegistrar.monto||0,subtotal):0;
         const subtotalConDesc=subtotal-dcMonto;
+        /* El precio del envio tiene que ser el de ESTA direccion: si todavia se estaba
+           calculando (o no se llego a pedir), se espera aca, como mucho 8 s. */
+        const _ed=tipoEntrega==='envio'?await calcularEnvioDistancia(direccion):{estado:'nada'};
         const envio=negCostoEnvio(subtotalConDesc);
         const total=subtotalConDesc+envio;
+        /* No se pudo ubicar la direccion (o la API fallo): se cobra el precio fijo y el
+           pedido queda marcado para que el panel avise que hay que confirmar el envio. */
+        const envioAConfirmar=tipoEntrega==='envio'&&envio>0&&(_ed.estado==='noEncontrada'||_ed.estado==='error');
         const clienteNombreCompleto=nombre+' '+apellido;
         /* Obtener numero de pedido secuencial con transaction atomica */
         let pedidoNum=1;
@@ -1363,6 +1414,11 @@ async function confirmCheckout(){
             subtotalProductos:subtotal,
             envio:envio,
             envioGratis:tipoEntrega==='envio'&&envio===0,
+            /* precio del envio a esa direccion ANTES del envio gratis: el panel lo usa si
+               el pedido se edita o se pasa a venta, para no volver al precio fijo */
+            envioBase:tipoEntrega==='envio'?negEnvioPrecio():0,
+            envioCalculo:tipoEntrega==='envio'?_ed.estado:null,
+            envioAConfirmar:envioAConfirmar,
             total:total,
             cupon:cuponParaRegistrar?{codigo:cuponParaRegistrar.codigo,monto:dcMonto}:null,
             origen:'web',
@@ -1390,6 +1446,7 @@ async function confirmCheckout(){
         msg+='*Tel:* '+telefonoLimpio+'\n';
         msg+='*Entrega:* '+(tipoEntrega==='retiro'?'Retiro en local':'Envío a domicilio')+'\n';
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
+        if(envioAConfirmar)msg+='*Envío:* a confirmar (no se pudo calcular por distancia)\n';
         if(cuponParaRegistrar)msg+='*Cupón:* '+cuponParaRegistrar.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
         if(!_pedidoGuardado)msg+='\n*(Este pedido no se registro automaticamente en el sistema: hay que cargarlo a mano)*\n';

@@ -611,6 +611,22 @@
       <div class="form-group" style="max-width:260px"><label>Costo de env&iacute;o</label>
         <input type="text" inputmode="numeric" class="form-input" id="pc_envioPrecio" placeholder="2000" oninput="limpiarMonto(this)"></div>
     </div>
+    <label style="display:flex;align-items:center;gap:0.7rem;cursor:pointer;margin-bottom:0.6rem">
+      <input type="checkbox" id="pc_envioDistanciaActivo" style="width:18px;height:18px;margin:0;accent-color:var(--accent)">
+      <span style="font-size:0.92rem;font-weight:600">Cobrar el env&iacute;o seg&uacute;n la distancia</span>
+    </label>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 0.8rem;line-height:1.5">
+      Se mide en l&iacute;nea recta desde donde salen los env&iacute;os (ese punto no se muestra en ning&uacute;n lado).
+      Hasta los km de abajo se cobra el costo de env&iacute;o; despu&eacute;s se suma el monto por cada tramo.
+      Si la direcci&oacute;n no aparece en el mapa se cobra el costo de env&iacute;o y el pedido queda <b>env&iacute;o a confirmar</b>.</p>
+    <div class="form-row" style="margin-bottom:1.1rem;grid-template-columns:repeat(3,minmax(0,170px))">
+      <div class="form-group"><label>Hasta (km)</label>
+        <input type="number" min="0" step="0.5" class="form-input" id="pc_envioKmBase" placeholder="5"></div>
+      <div class="form-group"><label>Despu&eacute;s, sumar $</label>
+        <input type="text" inputmode="numeric" class="form-input" id="pc_envioIncremento" placeholder="500" oninput="limpiarMonto(this)"></div>
+      <div class="form-group"><label>Por cada (km)</label>
+        <input type="number" min="0.1" step="0.5" class="form-input" id="pc_envioPasoKm" placeholder="1"></div>
+    </div>
     <label style="display:flex;align-items:center;gap:0.7rem;cursor:pointer;margin-bottom:0.9rem">
       <input type="checkbox" id="pc_envioGratisActivo" style="width:18px;height:18px;margin:0;accent-color:var(--accent)">
       <span style="font-size:0.92rem;font-weight:600">Ofrecer env&iacute;o gratis a partir de cierto monto</span>
@@ -701,6 +717,11 @@
               <button type="button" class="entrega-btn active" data-entrega="envio" onclick="setVentaEntrega('envio')"><i class="bi bi-truck"></i> Con env&iacute;o</button>
               <button type="button" class="entrega-btn" data-entrega="retiro" onclick="setVentaEntrega('retiro')"><i class="bi bi-shop"></i> Retiro</button>
             </div>
+            <div id="ventaEnvioCalc" style="display:flex;gap:6px;margin-top:6px">
+              <input type="text" class="form-input" id="ventaEnvioDir" placeholder="Direcci&oacute;n para calcular el env&iacute;o (opcional)" style="flex:1;font-size:0.8rem">
+              <button type="button" class="btn btn-secondary btn-sm" style="width:auto;white-space:nowrap" onclick="calcEnvioVenta()"><i class="bi bi-geo-alt"></i> Calcular</button>
+            </div>
+            <div id="ventaEnvioRes" style="font-size:0.75rem;color:var(--text-dim);margin-top:3px"></div>
           </div>
           <div class="venta-bloque">
             <h4 class="venta-sub"><i class="bi bi-tools"></i> Insumos utilizados (opcional)</h4>
@@ -2373,10 +2394,37 @@ function deltasDeItems(items,signo){
            panel y la web nunca coticen distinto el mismo carrito. */
         let ENVIO_PRECIO=2000;
         let ENVIO_GRATIS_DESDE=100000;
+        /* Precio del envio a la direccion de ESTA venta/pedido cuando se calculo por
+           distancia (pedido web o boton "Calcular"). null = el costo fijo de la config. */
+        let _ventaEnvioBase=null, _pedEnvioBase=null;
+        function _envioBaseDe(x){return (x&&x.envioBase!=null&&isFinite(Number(x.envioBase)))?Number(x.envioBase):null;}
+        /* Pregunta a /api/envio cuanto sale el envio a una direccion (la misma cuenta que la tienda). */
+        async function consultarEnvioDistancia(dir){
+            dir=String(dir||'').trim();
+            if(dir.length<4)return {estado:'corta'};
+            try{
+                const r=await fetch('/api/envio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dir:dir})});
+                const j=await r.json().catch(()=>({}));
+                if(!r.ok)return {estado:'error'};
+                if(!j.calculo)return {estado:'sinCalculo'};
+                return {estado:j.encontrado?'ok':'noEncontrada',precio:Number(j.precio)||0};
+            }catch(e){return {estado:'error'};}
+        }
+        async function calcEnvioVenta(){
+            const dir=(document.getElementById('ventaEnvioDir')||{}).value||'';
+            const out=document.getElementById('ventaEnvioRes');
+            if(out)out.textContent='Calculando...';
+            const r=await consultarEnvioDistancia(dir);
+            const msj={corta:'Escrib\u00ed la direcci\u00f3n (calle y n\u00famero).',error:'No se pudo calcular ahora: queda el costo fijo.',sinCalculo:'El c\u00e1lculo por distancia no est\u00e1 activo: queda el costo fijo.',noEncontrada:'No se encontr\u00f3 la direcci\u00f3n en el mapa: queda el costo fijo.'};
+            if(r.estado==='ok'){_ventaEnvioBase=r.precio;if(out)out.textContent='Env\u00edo seg\u00fan distancia: $'+r.precio.toLocaleString('es-AR')+' (si corresponde env\u00edo gratis, se aplica igual)';}
+            else{_ventaEnvioBase=null;if(out)out.textContent=msj[r.estado]||'';}
+            renderVentaItems();
+        }
 
         function setVentaEntrega(tipo){
             if(!HACE_ENVIOS)tipo='retiro';
             ventaTipoEntrega=tipo==='retiro'?'retiro':'envio';
+            {const _c=document.getElementById('ventaEnvioCalc');if(_c)_c.style.display=ventaTipoEntrega==='envio'?'flex':'none';}
             document.querySelectorAll('.entrega-btn').forEach(b=>{
                 b.classList.toggle('active',b.getAttribute('data-entrega')===ventaTipoEntrega);
             });
@@ -2399,7 +2447,7 @@ function deltasDeItems(items,signo){
                 ? Math.min(Math.max(0,Number(window._pedidoCuponVenta.monto||0)),Math.max(0,subtotal-descuentoMonto))
                 : 0;
             const subtotalConDesc=Math.max(0,subtotal-descuentoMonto-cuponMonto);
-            let envio=ventaTipoEntrega==='envio'?(subtotalConDesc>=ENVIO_GRATIS_DESDE?0:ENVIO_PRECIO):0;
+            let envio=ventaTipoEntrega==='envio'?(subtotalConDesc>=ENVIO_GRATIS_DESDE?0:(_ventaEnvioBase!=null?_ventaEnvioBase:ENVIO_PRECIO)):0;
             /* Al EDITAR una venta ya registrada se respeta el envio que se cobro ese dia.
                ENVIO_PRECIO y ENVIO_GRATIS_DESDE son los de HOY: entrar a una venta de marzo
                solo para corregir el nombre mal escrito del cliente y guardar le subia el envio
@@ -2413,8 +2461,8 @@ function deltasDeItems(items,signo){
             }
             return {subtotal,descuentoPct,descuentoMonto,subtotalConDesc,envio,total:subtotalConDesc+envio};
         }
-        function openVentaModal(){editingVentaId=null;editingVentaOriginal=null;ventaItems=[];ventaClienteSelected=true;ventaInsumosUsados=[];ventaTipoEntrega='envio';window._pedidoCuponVenta=null;const cuponRowOld=document.getElementById('ventaCuponRow');if(cuponRowOld)cuponRowOld.remove();const acOld=document.getElementById('ventaAuthCard');if(acOld)acOld.style.display='none';const cwOld=document.querySelector('#ventaModal .cliente-select-wrap');if(cwOld)cwOld.style.display='';document.getElementById('ventaFecha').value=hoyAR();document.getElementById('ventaCliente').value='';document.getElementById('ventaClienteId').value='';document.getElementById('ventaMedio').value='Efectivo';_pagoSegunMedio('ventaMedio','ventaPagado');document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')==='envio'));/* Update titulo y boton */const tituloEl=document.querySelector('#ventaModal .modal-header h3');if(tituloEl)tituloEl.innerHTML='<i class="bi bi-cart-plus"></i> Nueva Venta';const btnSave=document.getElementById('saveVentaBtn');if(btnSave)btnSave.innerHTML='<i class="bi bi-check-lg"></i> Registrar Venta';const dcInput=document.getElementById('ventaDescuentoPct');if(dcInput)dcInput.value='0';const dcMon=document.getElementById('ventaDescuentoMonto');if(dcMon)dcMon.value='0';_ventaDescMonto=null;renderVentaItems();renderVentaInsumosUsados();filterVentaProducts();if(!allClientes.length)loadClientes();if(!clientesAuthData.length){db.collection('clientesAuth').orderBy('nombre').get().then(snap=>{clientesAuthData=snap.docs.map(d=>({uid:d.id,...d.data()}));}).catch(()=>{});}if(!insumosData.length){db.collection('insumos').orderBy('nombre').get().then(snap=>{insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));refreshVentaInsumosSelect();}).catch(()=>{});}else{refreshVentaInsumosSelect();}document.getElementById('ventaModal').classList.add('show');}
-        async function openEditVentaModal(docId){const v=ventasData.find(x=>x.docId===docId);if(!v){showAdminToast('Venta no encontrada','error');return;}editingVentaId=docId;editingVentaOriginal=JSON.parse(JSON.stringify({items:v.items||[],insumosUsados:v.insumosUsados||[],tipoEntrega:v.tipoEntrega||'envio',stockDescontado:!!v.stockDescontado}));/* Cargar productos e insumos si faltan */if(!allProducts.length)await loadProducts();if(!insumosData.length){try{const snap=await db.collection('insumos').orderBy('nombre').get();insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));}catch(e){}}if(!allClientes.length)loadClientes();/* Precargar campos */ventaItems=(v.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0}));ventaInsumosUsados=(v.insumosUsados||[]).map(u=>{const i=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:i?Number(i.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});/* nota: para validar el stock al editar, sumamos lo que ya estaba descontado para esta venta a lo que hay actualmente */ventaTipoEntrega=v.tipoEntrega||'envio';ventaClienteSelected=true;document.getElementById('ventaCliente').value=v.cliente||'Consumidor Final';/* El uid del cliente registrado vive en clienteAuthUid, no en clienteId: precargando solo clienteId el input oculto quedaba VACIO, y al guardar cualquier cambio (por ejemplo pasar de Efectivo a Transferencia) saveVenta lee ese mismo input y escribe clienteId:null Y clienteAuthUid:null, con lo que la venta se desengancha del cliente para siempre y deja de aparecer en su ficha (admin.html:1265). El formato 'auth:<uid>' es el que ya usa el flujo de pedido a venta. */document.getElementById('ventaClienteId').value=v.clienteAuthUid?('auth:'+v.clienteAuthUid):(v.clienteId||'');document.getElementById('ventaMedio').value=v.medioPago||'Efectivo';document.getElementById('ventaPagado').checked=ventaPagada(v);/* Fecha en formato YYYY-MM-DD */const fechaObj=v.fecha instanceof Date?v.fecha:new Date(v.fecha);const yyyy=fechaObj.getFullYear(),mm=String(fechaObj.getMonth()+1).padStart(2,'0'),dd=String(fechaObj.getDate()).padStart(2,'0');document.getElementById('ventaFecha').value=yyyy+'-'+mm+'-'+dd;document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')===ventaTipoEntrega));/* Cambiar titulo y texto del boton */const tituloEl=document.querySelector('#ventaModal .modal-header h3');if(tituloEl)tituloEl.innerHTML='<i class="bi bi-pencil"></i> Editar Venta #'+nroVta(v.numero||0);const btnSave=document.getElementById('saveVentaBtn');if(btnSave)btnSave.innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';const dcInput=document.getElementById('ventaDescuentoPct');if(dcInput)dcInput.value=v.descuentoPct||0;const dcMon=document.getElementById('ventaDescuentoMonto');if(dcMon)dcMon.value=v.descuentoMonto||0;_ventaDescMonto=v.descuentoFijo?(Number(v.descuentoMonto)||0):null;
+        function openVentaModal(){editingVentaId=null;editingVentaOriginal=null;ventaItems=[];_ventaEnvioBase=null;(function(){const d=document.getElementById('ventaEnvioDir'),r=document.getElementById('ventaEnvioRes');if(d)d.value='';if(r)r.textContent='';const c=document.getElementById('ventaEnvioCalc');if(c)c.style.display='flex';})();ventaClienteSelected=true;ventaInsumosUsados=[];ventaTipoEntrega='envio';window._pedidoCuponVenta=null;const cuponRowOld=document.getElementById('ventaCuponRow');if(cuponRowOld)cuponRowOld.remove();const acOld=document.getElementById('ventaAuthCard');if(acOld)acOld.style.display='none';const cwOld=document.querySelector('#ventaModal .cliente-select-wrap');if(cwOld)cwOld.style.display='';document.getElementById('ventaFecha').value=hoyAR();document.getElementById('ventaCliente').value='';document.getElementById('ventaClienteId').value='';document.getElementById('ventaMedio').value='Efectivo';_pagoSegunMedio('ventaMedio','ventaPagado');document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')==='envio'));/* Update titulo y boton */const tituloEl=document.querySelector('#ventaModal .modal-header h3');if(tituloEl)tituloEl.innerHTML='<i class="bi bi-cart-plus"></i> Nueva Venta';const btnSave=document.getElementById('saveVentaBtn');if(btnSave)btnSave.innerHTML='<i class="bi bi-check-lg"></i> Registrar Venta';const dcInput=document.getElementById('ventaDescuentoPct');if(dcInput)dcInput.value='0';const dcMon=document.getElementById('ventaDescuentoMonto');if(dcMon)dcMon.value='0';_ventaDescMonto=null;renderVentaItems();renderVentaInsumosUsados();filterVentaProducts();if(!allClientes.length)loadClientes();if(!clientesAuthData.length){db.collection('clientesAuth').orderBy('nombre').get().then(snap=>{clientesAuthData=snap.docs.map(d=>({uid:d.id,...d.data()}));}).catch(()=>{});}if(!insumosData.length){db.collection('insumos').orderBy('nombre').get().then(snap=>{insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));refreshVentaInsumosSelect();}).catch(()=>{});}else{refreshVentaInsumosSelect();}document.getElementById('ventaModal').classList.add('show');}
+        async function openEditVentaModal(docId){const v=ventasData.find(x=>x.docId===docId);if(!v){showAdminToast('Venta no encontrada','error');return;}editingVentaId=docId;_ventaEnvioBase=_envioBaseDe(v);(function(){const d=document.getElementById('ventaEnvioDir'),r=document.getElementById('ventaEnvioRes');if(d)d.value='';if(r)r.textContent='';const c=document.getElementById('ventaEnvioCalc');if(c)c.style.display='flex';})();editingVentaOriginal=JSON.parse(JSON.stringify({items:v.items||[],insumosUsados:v.insumosUsados||[],tipoEntrega:v.tipoEntrega||'envio',stockDescontado:!!v.stockDescontado}));/* Cargar productos e insumos si faltan */if(!allProducts.length)await loadProducts();if(!insumosData.length){try{const snap=await db.collection('insumos').orderBy('nombre').get();insumosData=snap.docs.map(d=>({id:d.id,...d.data()}));}catch(e){}}if(!allClientes.length)loadClientes();/* Precargar campos */ventaItems=(v.items||[]).map(i=>({id:i.id,nombre:i.nombre,precio:i.precio||0,costo:i.costo||0,cantidad:i.cantidad||1,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0}));ventaInsumosUsados=(v.insumosUsados||[]).map(u=>{const i=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:i?Number(i.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});/* nota: para validar el stock al editar, sumamos lo que ya estaba descontado para esta venta a lo que hay actualmente */ventaTipoEntrega=v.tipoEntrega||'envio';ventaClienteSelected=true;document.getElementById('ventaCliente').value=v.cliente||'Consumidor Final';/* El uid del cliente registrado vive en clienteAuthUid, no en clienteId: precargando solo clienteId el input oculto quedaba VACIO, y al guardar cualquier cambio (por ejemplo pasar de Efectivo a Transferencia) saveVenta lee ese mismo input y escribe clienteId:null Y clienteAuthUid:null, con lo que la venta se desengancha del cliente para siempre y deja de aparecer en su ficha (admin.html:1265). El formato 'auth:<uid>' es el que ya usa el flujo de pedido a venta. */document.getElementById('ventaClienteId').value=v.clienteAuthUid?('auth:'+v.clienteAuthUid):(v.clienteId||'');document.getElementById('ventaMedio').value=v.medioPago||'Efectivo';document.getElementById('ventaPagado').checked=ventaPagada(v);/* Fecha en formato YYYY-MM-DD */const fechaObj=v.fecha instanceof Date?v.fecha:new Date(v.fecha);const yyyy=fechaObj.getFullYear(),mm=String(fechaObj.getMonth()+1).padStart(2,'0'),dd=String(fechaObj.getDate()).padStart(2,'0');document.getElementById('ventaFecha').value=yyyy+'-'+mm+'-'+dd;document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-entrega')===ventaTipoEntrega));/* Cambiar titulo y texto del boton */const tituloEl=document.querySelector('#ventaModal .modal-header h3');if(tituloEl)tituloEl.innerHTML='<i class="bi bi-pencil"></i> Editar Venta #'+nroVta(v.numero||0);const btnSave=document.getElementById('saveVentaBtn');if(btnSave)btnSave.innerHTML='<i class="bi bi-check-lg"></i> Guardar cambios';const dcInput=document.getElementById('ventaDescuentoPct');if(dcInput)dcInput.value=v.descuentoPct||0;const dcMon=document.getElementById('ventaDescuentoMonto');if(dcMon)dcMon.value=v.descuentoMonto||0;_ventaDescMonto=v.descuentoFijo?(Number(v.descuentoMonto)||0):null;
             /* Restaurar cupón si la venta lo tiene */
             window._pedidoCuponVenta=v.cupon||null;
             const cuponRowOld=document.getElementById('ventaCuponRow');if(cuponRowOld)cuponRowOld.remove();
@@ -2668,7 +2716,7 @@ const dProd=(editingVentaOriginal.stockDescontado?deltasDeItems(editingVentaOrig
 const dNuevo=deltasDeItems(ventaItems,-1);
 Object.keys(dNuevo).forEach(k=>{dProd[k]=(dProd[k]||0)+dNuevo[k];});
 await aplicarStockProductos(dProd);
-/* 4. Actualizar la venta */const ventaUpdate={fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,pagado:document.getElementById('ventaPagado').checked,ccPagado:document.getElementById('ventaPagado').checked,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,descuentoFijo:_ventaDescMonto!=null,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,medioPagoKey:keyDeMedio(document.getElementById('ventaMedio').value),stockDescontado:!!DESCONTAR_STOCK,editadoEn:new Date(),editadoPor:auth.currentUser?auth.currentUser.email:''};await db.collection('ventas').doc(editingVentaId).update(ventaUpdate);/* Log con detalles */const origTotal=ventaPrevia?(ventaPrevia.total||0):0;const origItems=editingVentaOriginal.items.length;const newItems=ventaItems.length;let detalle='Total: $'+origTotal.toLocaleString('es-AR')+' -> $'+total.toLocaleString('es-AR');if(origItems!==newItems)detalle+=' | items: '+origItems+' -> '+newItems;if((editingVentaOriginal.tipoEntrega||'envio')!==ventaTipoEntrega)detalle+=' | entrega: '+(editingVentaOriginal.tipoEntrega||'envio')+' -> '+ventaTipoEntrega;logAction('editar','Venta #'+numActual+' editada',detalle);showAdminToast('Venta #'+numActual+' actualizada','success');}else{/* === MODO CREAR === *//* En transaccion, como ya lo hacia saveVentaMay. Con get()+set() sueltos, los dos
+/* 4. Actualizar la venta */const ventaUpdate={fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,pagado:document.getElementById('ventaPagado').checked,ccPagado:document.getElementById('ventaPagado').checked,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,descuentoFijo:_ventaDescMonto!=null,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,envioBase:_ventaEnvioBase,total:total,medioPagoKey:keyDeMedio(document.getElementById('ventaMedio').value),stockDescontado:!!DESCONTAR_STOCK,editadoEn:new Date(),editadoPor:auth.currentUser?auth.currentUser.email:''};await db.collection('ventas').doc(editingVentaId).update(ventaUpdate);/* Log con detalles */const origTotal=ventaPrevia?(ventaPrevia.total||0):0;const origItems=editingVentaOriginal.items.length;const newItems=ventaItems.length;let detalle='Total: $'+origTotal.toLocaleString('es-AR')+' -> $'+total.toLocaleString('es-AR');if(origItems!==newItems)detalle+=' | items: '+origItems+' -> '+newItems;if((editingVentaOriginal.tipoEntrega||'envio')!==ventaTipoEntrega)detalle+=' | entrega: '+(editingVentaOriginal.tipoEntrega||'envio')+' -> '+ventaTipoEntrega;logAction('editar','Venta #'+numActual+' editada',detalle);showAdminToast('Venta #'+numActual+' actualizada','success');}else{/* === MODO CREAR === *//* En transaccion, como ya lo hacia saveVentaMay. Con get()+set() sueltos, los dos
    admins registrando a la vez leian el mismo contador y las dos ventas salian con
    el mismo numero: dos tickets distintos con el mismo #, y una pisando a la otra
    en cualquier listado que busque por numero. */
@@ -2684,7 +2732,7 @@ const _pedOrigen=window._pedidoOrigenVentaId?pedidosData.find(x=>x.docId===windo
    Confundirlas hacia que una venta de mostrador comun dejara de descontar. */
 const _yaDescontado=!!(_pedOrigen&&_pedOrigen.stockDescontado);
 const _ventaPoseeStock=_yaDescontado||!!DESCONTAR_STOCK;
-const venta={numero:num,resenaId:resenaOk?resenaId:null,fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,pagado:document.getElementById('ventaPagado').checked,ccPagado:document.getElementById('ventaPagado').checked,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,descuentoFijo:_ventaDescMonto!=null,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,total:total,cupon:window._pedidoCuponVenta||null,usuario:auth.currentUser?auth.currentUser.email:'',medioPagoKey:(typeof keyDeMedio==='function'?keyDeMedio(document.getElementById('ventaMedio').value):null),origen:window._pedidoOrigenVentaId?'web':'mostrador',pedidoId:window._pedidoOrigenVentaId||null,stockDescontado:_ventaPoseeStock,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};const ventaRefNueva=await db.collection('ventas').add(venta);/* el contador ya quedo escrito dentro de la transaccion de arriba *//* Descontar stock de productos (gondola). Si la venta viene de un pedido web el
+const venta={numero:num,resenaId:resenaOk?resenaId:null,fecha:fechaVenta,cliente:document.getElementById('ventaCliente').value.trim()||'Consumidor Final',clienteId:document.getElementById('ventaClienteId').value&&!document.getElementById('ventaClienteId').value.startsWith('auth:')?document.getElementById('ventaClienteId').value:null,clienteAuthUid:document.getElementById('ventaClienteId').value?.startsWith('auth:')?document.getElementById('ventaClienteId').value.replace('auth:',''):null,medioPago:document.getElementById('ventaMedio').value,pagado:document.getElementById('ventaPagado').checked,ccPagado:document.getElementById('ventaPagado').checked,tipoEntrega:ventaTipoEntrega,items:ventaItems.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,costo:i.costo,cantidad:i.cantidad,descuento:i.descuento||0,descuentoMonto:i.descuentoMonto||0,subtotal:Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad})),insumosUsados:ventaInsumosUsados.map(u=>({id:u.id,nombre:u.nombre,cantidad:u.cantidad})),subtotalProductos:subtotalProductos,descuentoPct:totales.descuentoPct||0,descuentoMonto:totales.descuentoMonto||0,descuentoFijo:_ventaDescMonto!=null,envio:envio,envioGratis:ventaTipoEntrega==='envio'&&envio===0,envioBase:_ventaEnvioBase,total:total,cupon:window._pedidoCuponVenta||null,usuario:auth.currentUser?auth.currentUser.email:'',medioPagoKey:(typeof keyDeMedio==='function'?keyDeMedio(document.getElementById('ventaMedio').value):null),origen:window._pedidoOrigenVentaId?'web':'mostrador',pedidoId:window._pedidoOrigenVentaId||null,stockDescontado:_ventaPoseeStock,creadoEn:firebase.firestore.FieldValue.serverTimestamp()};const ventaRefNueva=await db.collection('ventas').add(venta);/* el contador ya quedo escrito dentro de la transaccion de arriba *//* Descontar stock de productos (gondola). Si la venta viene de un pedido web el
    stock YA lo descontó la tienda al confirmar, asi que no se resta dos veces. */
 /* Se mira la bandera del pedido, no de donde viene la venta. Antes alcanzaba con
    que la venta naciera de un pedido web para NO descontar, dando por hecho que la
@@ -3179,6 +3227,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                        sin saber. `stockFaltante` es que no habia unidades suficientes al
                        descontar; `revisarPrecio` es un precio sospechoso; `stockError` es que
                        la funcion no pudo descontar nada. */
+                    if(p.envioAConfirmar){
+                        cards+='<span style="background:#3a2a1a;color:#e6a23c;border:1px solid #6a4a2a;border-radius:4px;font-size:0.65rem;padding:1px 5px;font-weight:700" title="La direcci\u00f3n no apareci\u00f3 en el mapa: se cobr\u00f3 el costo fijo"><i class="bi bi-geo-alt"></i> Env\u00edo a confirmar</span>';
+                    }
                     if(p.stockFaltante&&p.stockFaltante.length){
                         var _f=p.stockFaltante.map(function(x){return esc(x.nombre)+' (pidio '+x.pedido+', habia '+x.disponible+')';}).join(', ');
                         cards+='<span style="background:#3a2a1a;color:#e6a23c;border:1px solid #6a4a2a;border-radius:4px;font-size:0.65rem;padding:1px 5px;font-weight:700" title="'+_f+'"><i class="bi bi-exclamation-triangle"></i> Falto stock</span>';
@@ -3436,6 +3487,9 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
             if(_itemsRaros.length)showAdminToast('Ojo: '+_itemsRaros.length+' item(s) tienen un precio distinto al del catálogo ('+_itemsRaros.slice(0,3).map(function(i){return i.nombre;}).join(', ')+'). Revisalos antes de registrar.','error');
             ventaInsumosUsados=(p.insumosUsados||[]).map(u=>{const ins=insumosData.find(x=>x.id===u.id);return{id:u.id,nombre:u.nombre,cantidad:u.cantidad||1,stockActual:ins?Number(ins.stockActual||0)+Number(u.cantidad||0):Number(u.cantidad||0)};});
             ventaTipoEntrega=HACE_ENVIOS?(p.tipoEntrega||'envio'):'retiro';
+            /* el envio que calculo la tienda para esa direccion, no el costo fijo */
+            _ventaEnvioBase=_envioBaseDe(p);
+            {const _d=document.getElementById('ventaEnvioDir');if(_d)_d.value=p.direccion||'';}
             ventaClienteSelected=true;
             /* Cliente: usar Auth si existe, sino el nombre del pedido */
             const nombreCliente=(p.clienteWeb||p.cliente||'');
@@ -3494,9 +3548,29 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
         }
 
         // Modal pedido
+        /* Pedido web cuya direccion no se pudo ubicar en el mapa: se cobro el costo fijo y hay
+           que confirmarle al cliente cuanto sale el envio. El aviso se va al tocar "Listo". */
+        function _pintarAvisoEnvioPedido(p){
+            const el=document.getElementById('pedEnvioAviso');if(!el)return;
+            if(!p||!p.envioAConfirmar){el.style.display='none';el.innerHTML='';return;}
+            el.style.display='block';
+            el.innerHTML='<div style="background:rgba(237,184,51,0.12);border:1px solid rgba(237,184,51,0.35);border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:0.9rem;font-size:0.82rem;line-height:1.5;display:flex;gap:0.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
+                '<span><i class="bi bi-geo-alt"></i> <b>Env&iacute;o a confirmar:</b> la direcci&oacute;n'+(p.direccion?' "'+esc(p.direccion)+'"':'')+' no apareci&oacute; en el mapa y se cobr&oacute; el costo fijo ($'+Number(p.envio||0).toLocaleString('es-AR')+'). Confirmale el env&iacute;o al cliente.</span>'+
+                '<button type="button" class="btn btn-secondary btn-sm" style="width:auto" onclick="confirmarEnvioPedido(\''+p.docId+'\')"><i class="bi bi-check-lg"></i> Listo, confirmado</button></div>';
+        }
+        async function confirmarEnvioPedido(docId){
+            try{
+                await db.collection('pedidos').doc(docId).update({envioAConfirmar:false});
+                const p=pedidosData.find(x=>x.docId===docId);if(p)p.envioAConfirmar=false;
+                _pintarAvisoEnvioPedido(p);
+                if(typeof renderPedidos==='function')renderPedidos();
+                if(typeof actualizarBadgeAlertas==='function')actualizarBadgeAlertas(true);
+                showAdminToast('Env\u00edo confirmado','success');
+            }catch(e){showAdminToast('No se pudo guardar: '+e.message,'error');}
+        }
         function openPedidoModal(docId){
             editingPedidoId=docId||null;
-            pedItems=[];pedInsumosUsados=[];pedTipoEntrega=HACE_ENVIOS?'envio':'retiro';pedClienteSelected=false;_pedClienteDatos={telefono:'',email:''};pedidoDirty=false;_pedidoCupon=null;
+            pedItems=[];pedInsumosUsados=[];_pedEnvioBase=null;_pintarAvisoEnvioPedido(null);pedTipoEntrega=HACE_ENVIOS?'envio':'retiro';pedClienteSelected=false;_pedClienteDatos={telefono:'',email:''};pedidoDirty=false;_pedidoCupon=null;
             document.getElementById('pedFecha').value=new Date().toISOString().split('T')[0];
             document.getElementById('pedCliente').value='';
             document.getElementById('pedClienteId').value='';
@@ -3505,6 +3579,8 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
             if(docId){
                 const p=pedidosData.find(x=>x.docId===docId);
                 if(p){
+                    _pedEnvioBase=_envioBaseDe(p);
+                    _pintarAvisoEnvioPedido(p);
                     document.getElementById('pedidoModalTitle').innerHTML='<i class="bi bi-bag-check"></i> Pedido #'+nroPed(p.numero||0);
                     /* Si vino de la web, mostrar nombre web readonly y limpiar búsqueda BDD */
                     const esWeb=p.origen==='web';
@@ -3598,7 +3674,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
             const sub=pedItems.reduce((s,i)=>s+Math.round(i.precio*(1-(i.descuento||0)/100))*i.cantidad,0);
             const dc=Math.min(Math.max(0,Number((_pedidoCupon&&_pedidoCupon.monto)||0)),sub);
             const subConDc=sub-dc;
-            const envio=pedTipoEntrega==='envio'?(subConDc>=ENVIO_GRATIS_DESDE?0:ENVIO_PRECIO):0;
+            const envio=pedTipoEntrega==='envio'?(subConDc>=ENVIO_GRATIS_DESDE?0:(_pedEnvioBase!=null?_pedEnvioBase:ENVIO_PRECIO)):0;
             return{subtotal:sub,cupon:dc,subtotalConDesc:subConDc,envio:envio,total:subConDc+envio};
         }
         function filterPedProducts(){
@@ -3705,7 +3781,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
                     subtotal:t.subtotal,subtotalProductos:t.subtotal,
                     cupon:_pedidoCupon?{codigo:_pedidoCupon.codigo,monto:t.cupon,
                         porcentaje:_pedidoCupon.porcentaje||null}:null,
-                    envio:t.envio,total:t.total,
+                    envio:t.envio,envioBase:_pedEnvioBase,total:t.total,
                     actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if(editingPedidoId){
@@ -4585,7 +4661,7 @@ await db.collection('ventas').doc(docId).delete();showAdminToast('Venta #'+num+'
            pisaba la portada publicada con esos defaults. Lo que no se pudo LEER no se puede
            editar: se avisa y se bloquea el guardado hasta que la carga funcione. */
         SC_FIELDS.forEach(f=>{const el=document.getElementById('sc_'+f);if(el){el.value='';el.disabled=true;}});if(_scBtn){_scBtn.disabled=true;_scBtn.title='No se pudo leer la portada publicada';}if(typeof showAdminToast==='function')showAdminToast('No se pudo leer la portada publicada ('+e.message+'). No la edites: recarga la pagina.','error');}}
-        const PC_DEFAULTS={haceEnvios:true,descontarStock:true,minimoPedido:30000,envioPrecio:2000,envioGratisActivo:true,envioGratisDesde:100000};
+        const PC_DEFAULTS={haceEnvios:true,descontarStock:true,minimoPedido:30000,envioPrecio:2000,envioGratisActivo:true,envioGratisDesde:100000,envioDistanciaActivo:true,envioKmBase:5,envioIncremento:500,envioPasoKm:1};
 /* HACE_ENVIOS manda en todo el panel: si es false, Ventas y Pedidos no ofrecen
    envio. Se carga al iniciar sesion, no solo al abrir la Configuracion. */
 let HACE_ENVIOS=true;
@@ -4600,6 +4676,8 @@ async function loadPedidosCfgEditor(){
   const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val;};
   const chk=(id,val)=>{const el=document.getElementById(id);if(el)el.checked=val;};
   set('pc_minimoPedido',v('minimoPedido'));set('pc_envioPrecio',v('envioPrecio'));set('pc_envioGratisDesde',v('envioGratisDesde'));
+  set('pc_envioKmBase',v('envioKmBase'));set('pc_envioIncremento',v('envioIncremento'));set('pc_envioPasoKm',v('envioPasoKm'));
+  chk('pc_envioDistanciaActivo',(typeof d.envioDistanciaActivo==='boolean')?d.envioDistanciaActivo:PC_DEFAULTS.envioDistanciaActivo);
   chk('pc_envioGratisActivo',(typeof d.envioGratisActivo==='boolean')?d.envioGratisActivo:PC_DEFAULTS.envioGratisActivo);
   HACE_ENVIOS=(typeof d.haceEnvios==='boolean')?d.haceEnvios:PC_DEFAULTS.haceEnvios;
   chk('pc_haceEnvios',HACE_ENVIOS);
@@ -4632,13 +4710,19 @@ async function savePedidosCfg(avisar){
      asi tambien tolera un valor viejo con puntos guardado antes de este cambio. */
   const num=(id,def)=>{const el=document.getElementById(id);if(!el)return def;const n=montoAR(el.value);return (el.value.trim()==='')?def:n;};
   const chk=(id,def)=>{const el=document.getElementById(id);return el?el.checked:def;};
+  /* km con decimales (2,5): montoAR los borraria */
+  const km=(id,def,min)=>{const el=document.getElementById(id);if(!el||el.value.trim()==='')return def;const n=parseFloat(String(el.value).replace(',','.'));return isFinite(n)&&n>=min?n:def;};
   const cfg={
     haceEnvios:chk('pc_haceEnvios',PC_DEFAULTS.haceEnvios),
     descontarStock:chk('pc_descontarStock',PC_DEFAULTS.descontarStock),
     minimoPedido:num('pc_minimoPedido',PC_DEFAULTS.minimoPedido),
     envioPrecio:num('pc_envioPrecio',PC_DEFAULTS.envioPrecio),
     envioGratisDesde:num('pc_envioGratisDesde',PC_DEFAULTS.envioGratisDesde),
-    envioGratisActivo:chk('pc_envioGratisActivo',PC_DEFAULTS.envioGratisActivo)
+    envioGratisActivo:chk('pc_envioGratisActivo',PC_DEFAULTS.envioGratisActivo),
+    envioDistanciaActivo:chk('pc_envioDistanciaActivo',PC_DEFAULTS.envioDistanciaActivo),
+    envioKmBase:km('pc_envioKmBase',PC_DEFAULTS.envioKmBase,0),
+    envioIncremento:num('pc_envioIncremento',PC_DEFAULTS.envioIncremento),
+    envioPasoKm:km('pc_envioPasoKm',PC_DEFAULTS.envioPasoKm,0.1)
   };
   try{
     /* merge:true a proposito: este .set() pisaba el documento entero, asi que
@@ -6389,6 +6473,7 @@ await db.collection('ventasMayoristas').doc(docId).delete();showAdminToast('Vent
           <button class="modal-close" onclick="closePedidoModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="venta-modal-body">
+          <div id="pedEnvioAviso" style="display:none"></div>
           <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr;margin-bottom:1rem">
             <div class="form-group">
               <label>Cliente *</label>

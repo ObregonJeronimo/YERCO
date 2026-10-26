@@ -28,6 +28,7 @@ let _alertasPanel = null;
 let _insumosAlertaCache = null;    /* se pide una vez por sesión */
 const ALERTAS_DIAS_SIN_COBRAR = 7; /* venta sin cobrar hace más de esto = aviso */
 let _ventasImpagasCache = null;
+let _pedidosEnvioCache = null;
 
 /* ============================ CÁLCULO ============================ */
 
@@ -198,6 +199,27 @@ async function calcularAlertas(forzar) {
       });
     }
   } catch (e) { console.warn('alertas/ventas:', e); }
+
+  /* --- Pedidos web con el envío a confirmar -----------------------------
+     La dirección no apareció en el mapa y se cobró el costo fijo: hay que
+     decirle al cliente cuánto sale. Se apaga con "Listo, confirmado". */
+  try {
+    if (forzar || !_pedidosEnvioCache) {
+      const snap = await db.collection('pedidos').where('envioAConfirmar', '==', true).get();
+      _pedidosEnvioCache = snap.docs.map(d => d.data()).filter(p => p.estado !== 'entregado');
+    }
+    if (_pedidosEnvioCache.length) {
+      const n = _pedidosEnvioCache.length;
+      out.push({
+        id: 'envio-a-confirmar', nivel: 'aviso', icono: 'bi-geo-alt',
+        titulo: n + (n === 1 ? ' pedido con el envío a confirmar' : ' pedidos con el envío a confirmar'),
+        detalle: 'La dirección no apareció en el mapa y se cobró el costo fijo. Confirmale el envío al cliente.',
+        items: _pedidosEnvioCache.map(p => '#' + String(p.numero || 0).padStart(5, '0') + ' · ' + (p.cliente || '') +
+          (p.direccion ? ' · ' + p.direccion : '')),
+        seccion: 'pedidos'
+      });
+    }
+  } catch (e) { console.warn('alertas/pedidos:', e); }
 
   _alertas = out;
   return out;
