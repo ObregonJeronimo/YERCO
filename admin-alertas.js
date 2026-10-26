@@ -50,19 +50,14 @@ async function _insumosParaAlertas(forzar) {
   return _insumosAlertaCache;
 }
 
-/* Ventas impagas de las dos colecciones. No hay un campo que traiga todas con una sola
-   consulta: las nuevas tienen pagado=false, y las fiadas de antes no tienen `pagado` y se
-   reconocen por el medio de pago. Son consultas por un solo campo (no piden índice) y
-   se hacen una vez por sesión salvo que algo cambie (forzar). */
+/* Ventas impagas de las dos colecciones: las que tienen pagado=false (las de antes del campo
+   cuentan como pagadas, ver ventaPagada en admin.html). Es una consulta por un solo campo
+   (no pide índice) y se hace una vez por sesión salvo que algo cambie (forzar). */
 async function _ventasImpagasParaAlertas(forzar) {
   if (!forzar && _ventasImpagasCache) return _ventasImpagasCache;
   const porId = new Map();
   for (const col of ['ventas', 'ventasMayoristas']) {
-    const consultas = [
-      db.collection(col).where('pagado', '==', false).get(),
-      db.collection(col).where('medioPagoKey', '==', 'cuenta_corriente').get(),
-      db.collection(col).where('medioPago', '==', 'Cuenta Corriente').get()
-    ];
+    const consultas = [db.collection(col).where('pagado', '==', false).get()];
     for (const r of await Promise.allSettled(consultas)) {
       if (r.status !== 'fulfilled') { console.warn('alertas/ventas ' + col + ':', r.reason); continue; }
       r.value.docs.forEach(d => {

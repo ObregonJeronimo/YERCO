@@ -832,9 +832,9 @@ function keyDeMedio(m){const t=(m||'').toLowerCase();
 function medioKeyDeVenta(v){return (v&&v.medioPagoKey)||keyDeMedio(v&&v.medioPago);}
 /* Si la venta ya se cobro. Joaco pidio marcar pago/no pago en TODAS las ventas, no solo en
    las fiadas, para saber a quien cobrarle. `pagado` es el campo nuevo; las ventas de antes
-   no lo tienen y se toman como pagadas, salvo las fiadas sin ccPagado, que es como la ficha
-   del cliente ya las daba por impagas. Al marcar se escriben los dos campos juntos. */
-function ventaPagada(v){if(v&&typeof v.pagado==='boolean')return v.pagado;return !(medioKeyDeVenta(v)==='cuenta_corriente'&&!(v&&v.ccPagado===true));}
+   no lo tienen y se toman TODAS como pagadas, fiadas incluidas (lo pidio Joaco: lo que no
+   se cobro se marca a mano). Al marcar se escriben `pagado` y ccPagado juntos. */
+function ventaPagada(v){return !(v&&v.pagado===false);}
 function _pagoSegunMedio(selId,chkId){const s=document.getElementById(selId),c=document.getElementById(chkId);if(s&&c)c.checked=keyDeMedio(s.value)!=='cuenta_corriente';}
 function netoVenta(v){return Number((v&&v.total)||0)-Number((v&&v.envio)||0);}
 
