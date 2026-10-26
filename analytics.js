@@ -3,7 +3,7 @@
    las previews de Vercel). Sin ID no hace nada: el ID sale de la propiedad GA4 del dueno.
    La CSP de vercel.json ya permite https: en scripts y conexiones, no hay que tocarla. */
 (function () {
-    var ID = ''; /* G-XXXXXXXXXX */
+    var ID = 'G-X7BBER2RD3'; /* propiedad "YERCO Web" (cuenta yerco-bb620) */
     if (!ID || !/(^|\.)yerco\.ar$/.test(location.hostname)) return;
     function cargar() {
         var s = document.createElement('script');
