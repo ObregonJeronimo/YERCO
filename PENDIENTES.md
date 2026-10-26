@@ -18,16 +18,25 @@ personal del dueño es PRIVADA: no va en ningún archivo, commit ni memoria.
   `9cc5edb2986bf2a105f8c1b671da84bc.txt`; aviso = POST api.indexnow.org/indexnow con las URLs del sitemap.
 - Vercel SÍ despliega (equipo Pro de Joaco): no avisa a GitHub, y `curl` puede leer copias viejas
   del CDN (`X-Vercel-Cache: HIT`, `Age` grande): verificar con `?v=<random>`.
-- **Google Maps:** NO existe ficha de Yerco: hay que crearla (no reclamar).
-- **Falta (con la cuenta de Google del dueño en el navegador integrado; no se guarda la sesión):**
-  Search Console (prefijo `https://www.yerco.ar/`, meta tag en `index.html`, sitemap, indexación de la
-  portada), GA4 (aceptar condiciones = OK del dueño; poner el ID en `analytics.js`), Google Business
-  (crear ficha: Yerco Dietética, Tablada 16 Villa Allende, 351 531 4675, yerco.ar; verificación del
-  dueño), y en los tres agregar deftinternal@gmail.com como administrador.
-- **PRÓXIMO PASO (26/10, antes del clear):** el dueño inicia sesión con SU cuenta de Google en el
-  navegador integrado (Ctrl+Shift+B; quedó abierta la pantalla de Search Console). No hace falta
-  la cuenta deftinternal (su autenticador lo tiene el socio): se la agrega como administradora
-  desde adentro. Orden: Search Console → GA4 → Google Business. No hay tareas en segundo plano.
+- **HECHO 26/10 (con la cuenta de Google de Joaco):** Search Console verificada por meta tag
+  (`b372f53`), sitemap enviado (al principio dice "No se ha podido obtener": normal en propiedad
+  nueva, el sitemap da 200 a Googlebot; mirar en unos días), indexación de la portada pedida,
+  deftinternal = Propietario. GA4: ya existía la propiedad "YERCO Web" (cuenta yerco-bb620, creada
+  por Firebase): `G-X7BBER2RD3` puesto en `analytics.js` (`58d66d0`), deftinternal = Administrador.
+  Google Business: ficha "Yerco Dietética" creada (Tienda de alimentos naturales, Tablada 16,
+  351 531 4675, yerco.ar, zona Villa Allende y Mendiolaza); deftinternal invitado como
+  Administrador (tiene que aceptar desde su correo).
+- **Falta:** Joaco verifica la ficha de Business (video del local: business.google.com → Verificar);
+  cargar horario y fotos en la ficha.
+
+### 00b. HECHO (26/10) — pedidos de Joaco (WhatsApp)
+`ccae78a` descuento por producto en $ o %; `f4d3e9c` pagó / no pagó en todas las ventas y la
+campana avisa de las impagas de más de 7 días; `bf4688c` envío por distancia (`api/envio.js`,
+OpenStreetMap, línea recta; hasta 5 km $2.000 y +$500 por km empezado; se configura en
+Configuración > Costo del envío; si no encuentra la dirección cobra el base y marca "Envío a
+confirmar").
+- El punto de salida de los envíos va SOLO en la variable `ENVIO_ORIGEN` ("lat,lng") de Vercel,
+  nunca en archivos. Sin la variable, todo sigue con el costo fijo.
 
 ### 0. HECHO (13-14/10) — pedidos del socio (WhatsApp)
 | Commit | Qué |
