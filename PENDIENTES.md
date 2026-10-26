@@ -26,8 +26,11 @@ personal del dueño es PRIVADA: no va en ningún archivo, commit ni memoria.
   Google Business: ficha "Yerco Dietética" creada (Tienda de alimentos naturales, Tablada 16,
   351 531 4675, yerco.ar, zona Villa Allende y Mendiolaza); deftinternal invitado como
   Administrador (tiene que aceptar desde su correo).
-- **Falta:** Joaco verifica la ficha de Business (video del local: business.google.com → Verificar);
-  cargar horario y fotos en la ficha.
+- **Yerco NO tiene local:** Tablada 16 es el kiosco del padre de Joaco, solo punto de retiro. La ficha
+  quedó como negocio de zona de servicio ("sin ubicación, solo envíos"); la dirección de verificación
+  la cargó el usuario y no es pública. La web (`a2420c3`) declara OnlineStore sin dirección ni horario
+  y el pie dice "Retiro: Tablada 16". No volver a poner Tablada 16 como dirección del negocio.
+- **Falta:** terminar la verificación de la ficha (video donde se arman los pedidos); fotos en la ficha.
 
 ### 00b. HECHO (26/10) — pedidos de Joaco (WhatsApp)
 `ccae78a` descuento por producto en $ o %; `f4d3e9c` pagó / no pagó en todas las ventas y la
