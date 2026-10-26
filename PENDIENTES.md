@@ -31,6 +31,16 @@ personal del dueño es PRIVADA: no va en ningún archivo, commit ni memoria.
   la cargó el usuario y no es pública. La web (`a2420c3`) declara OnlineStore sin dirección ni horario
   y el pie dice "Retiro: Tablada 16". No volver a poner Tablada 16 como dirección del negocio.
 - **Falta:** terminar la verificación de la ficha (video donde se arman los pedidos); fotos en la ficha.
+- **Posicionamiento (`5261745`, 26/10):** `/producto/:slug` ahora trae el contenido de la ficha en el
+  HTML (antes era la portada con otro título) + Product/BreadcrumbList, y 404 noindex si no existe;
+  `/categoria/:slug` nuevo (17 categorías, textos en `api/_lib/seo.js` → CATEGORIAS; si se crea una
+  categoría nueva tiene página sola con texto genérico); portada con texto + preguntas frecuentes
+  (entre `<!--HOME_ONLY_START/END-->`, las otras páginas lo sacan); sitemap con categorías.
+  El dominio de las previews de Vercel no carga el catálogo (App Check solo permite yerco.ar): ahí
+  solo se puede ver lo que arma el servidor.
+- **Siguiente en SEO:** con la ficha verificada, botón "Dejanos tu reseña en Google" en resena.html
+  (necesita el link de reseñas de la ficha); pedir reseñas a los clientes; misma info y link a
+  yerco.ar en Instagram/WhatsApp Business; mirar Search Console en 1-2 semanas.
 
 ### 00b. HECHO (26/10) — pedidos de Joaco (WhatsApp)
 `ccae78a` descuento por producto en $ o %; `f4d3e9c` pagó / no pagó en todas las ventas y la
