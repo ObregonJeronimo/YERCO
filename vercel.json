@@ -5,6 +5,9 @@
   "functions": {
     "api/producto/[slug].js": {
       "includeFiles": "index.html"
+    },
+    "api/categoria/[slug].js": {
+      "includeFiles": "index.html"
     }
   },
   "rewrites": [
@@ -19,6 +22,10 @@
     {
       "source": "/producto/:slug",
       "destination": "/api/producto/:slug"
+    },
+    {
+      "source": "/categoria/:slug",
+      "destination": "/api/categoria/:slug"
     },
     {
       "source": "/sitemap.xml",

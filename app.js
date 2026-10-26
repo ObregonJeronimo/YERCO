@@ -181,6 +181,7 @@ async function loadProductsFromFirebase(retries) {
         if(cambiosCarrito.length){avisarCambiosCarrito(cambiosCarrito);}
         /* Si la URL es /producto/{slug}, abrir ese producto */
         abrirProductoDesdeURL();
+        abrirCategoriaDesdeURL();
         /* Scroll automático a productos si la URL tiene #productos o si es la carga inicial */
         if(!window._autoScrollDone){
             window._autoScrollDone=true;
@@ -334,7 +335,7 @@ function renderCategoryFilters(mapa) {
     Object.keys(mapa).sort((a,b)=>{const yA=a.toUpperCase().startsWith('YERBA')?1:0;const yB=b.toUpperCase().startsWith('YERBA')?1:0;if(yA!==yB)return yA-yB;return a.localeCompare(b);}).forEach(cat => {
         const subs = [...mapa[cat]].sort();
         const wrapper = document.createElement('div'); wrapper.className = 'filter-group';
-        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; huBotonCategoria(catBtn,cat,huIconoCategoria(cat),nIc++);
+        const catBtn = document.createElement('button'); catBtn.className = 'filter-btn'; huBotonCategoria(catBtn,cat,huIconoCategoria(cat),nIc++); catBtn.dataset.cat = cat;
         const subRow = document.createElement('div'); subRow.className = 'sub-filters-row';
         if (subs.length > 0) {
             const allBtn = document.createElement('button'); allBtn.className = 'sub-btn active'; allBtn.textContent = 'Todo';
@@ -764,6 +765,18 @@ function confirmClearCart(){cancelClearCart();if(carrito.length===0)return;const
 
 let _pdmCurrentImgIdx=0;
 let _pdmImages=[];
+/* /categoria/xxx: el servidor escribe arriba la pagina de la categoria (para los buscadores)
+   con data-categoria = el nombre tal cual esta en los productos. Aca se filtra el catalogo por
+   esa categoria tocando su boton, asi queda igual que si el cliente la hubiera elegido. */
+function abrirCategoriaDesdeURL(){
+    const sec=document.getElementById('seoCategoria');
+    if(!sec||!window.location.pathname.startsWith('/categoria/'))return;
+    const btn=[...document.querySelectorAll('#categoryFilters .filter-btn')].find(b=>b.dataset.cat===sec.dataset.categoria);
+    if(!btn)return;
+    btn.click();
+    const s=document.getElementById('productos');
+    if(s)s.scrollIntoView({behavior:'instant',block:'start'});
+}
 /* Abre el producto correspondiente al slug de la URL (al entrar directo por /producto/xxx) */
 function abrirProductoDesdeURL(){
     const path=window.location.pathname;
