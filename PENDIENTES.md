@@ -1,9 +1,17 @@
 # YERCO — Pendientes
 
-## ▶ LEER PRIMERO — estado al 14/10/2026 y pendientes en orden
+## ▶ LEER PRIMERO — estado al 27/10/2026 y pendientes en orden
 
 Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
-fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
+fuera del repo a propósito) y este cambio de encabezado. Producción (yerco.ar) = lo último de `main`.
+
+**HECHO (27/10): mejora visual de descripción e info nutricional en la ficha.** Viñetas "• " →
+lista, "Conservar…" en recuadro, info nutricional → tabla (una columna por cada "POR …", así las
+40 con porción y 100 g quedan en una sola tabla), ingredientes y alérgenos en recuadros, nota
+chica. Lógica en `api/_lib/ficha-texto.js` (servidor) y su gemela `fichaDescHtml`/`fichaVnHtml`
+en `app.js` (ventana del producto): si se cambia una, cambiar la otra. Estilos `.ft-*` en
+`huerta.css`. Lo que no sigue el formato sale como antes, con saltos de línea.
+**Siguiente:** punto 00, "Siguiente en SEO" (reseñas en Google cuando la ficha esté verificada).
 
 ### 00. EN CURSO (26/10) — SEO básico (como la landing de Deft)
 Reglas del dueño: avisar antes de cada push; Search Console, GA4 y Google Business **a nombre del

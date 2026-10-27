@@ -542,5 +542,39 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 /* El catalogo llega despues (Firestore): mientras tanto la seccion medía poco y lo que estaba
    debajo ("Quienes somos") quedaba a la vista y saltaba al aparecer los productos. */
 .products-section { min-height: 100vh; min-height: 100svh; }
-.seo-vn { font-size: .88rem; color: var(--h-muted); line-height: 1.55; background: var(--h-card); border: 1px solid var(--h-line); border-radius: 14px; padding: .8rem 1rem; max-width: 62ch; }
-.pdm-vn-nota { display: block; margin-top: .4rem; opacity: .75; }
+/* Descripcion e info nutricional de la ficha, en la ventana del producto (.pdm-section) y en
+   /producto/:slug (.seo-desc / .seo-vn). El HTML lo arman fichaDescHtml/fichaVnHtml de app.js y
+   api/_lib/ficha-texto.js: parrafos, lista, tabla y recuadros de ingredientes y alergenos. */
+.ft-desc p, .pdm-section .ft-desc p { margin: 0 0 .8rem; line-height: 1.65; }
+.ft-lista { list-style: none; padding: 0; margin: 0 0 .9rem; display: grid; gap: .4rem; font-size: .92rem; line-height: 1.5; color: var(--h-ink); }
+.ft-lista li { position: relative; padding-left: 1.3rem; }
+.ft-lista li::before { content: ""; position: absolute; left: .25rem; top: .55em; width: .48rem; height: .48rem; border-radius: 50%; background: var(--h-lime2); box-shadow: 0 0 0 2px #E8F3CC; }
+.ft-desc .ft-conservar, .pdm-section .ft-desc .ft-conservar { margin: 0; font-size: .84rem; line-height: 1.5; color: var(--h-muted); background: var(--h-bg); border-radius: 10px; padding: .55rem .8rem; }
+.seo-pagina .seo-desc { max-width: 62ch; }
+.seo-pagina .seo-ficha-info h2 { margin-top: 1.4rem; }
+.seo-pagina .ft-vn { max-width: 62ch; }
+.ft-porcion, .pdm-section .ft-porcion { margin: 0 0 .5rem; font-size: .88rem; color: var(--h-muted); }
+.ft-porcion strong { color: var(--h-ink); font-weight: 600; }
+.ft-tabla { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--h-card); border: 1px solid var(--h-line); border-radius: 12px; overflow: hidden; font-size: .88rem; line-height: 1.35; color: var(--h-ink); }
+.ft-tabla th, .ft-tabla td { padding: .45rem .75rem; border-bottom: 1px solid var(--h-line); text-align: left; vertical-align: top; }
+.ft-tabla thead th, .ft-tabla thead td { background: var(--h-bg2); }
+.ft-tabla thead th { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--h-muted); text-align: right; white-space: nowrap; }
+.ft-tabla tbody th { font-weight: 500; }
+.ft-tabla tbody td { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ft-tabla tbody tr:last-child > * { border-bottom: 0; }
+.ft-tabla tbody tr:first-child th { font-weight: 700; }
+.ft-tabla .ft-sub th { padding-left: 1.55rem; font-size: .84rem; color: var(--h-muted); }
+.ft-tabla .ft-sub td { font-weight: 500; color: var(--h-muted); }
+.ft-tabla td small { display: block; font-size: .72rem; font-weight: 400; color: var(--h-muted); }
+.ft-nd { font-size: .78rem; font-weight: 400; color: var(--h-muted); }
+.ft-extra, .pdm-section .ft-extra { margin: .6rem 0 0; font-size: .86rem; }
+.ft-caja { margin-top: .7rem; padding: .65rem .85rem; background: var(--h-bg); border: 1px solid var(--h-line); border-radius: 12px; }
+.ft-caja p, .pdm-section .ft-caja p { margin: 0; font-size: .86rem; line-height: 1.5; color: var(--h-ink); }
+.ft-caja-tit { display: block; margin-bottom: .2rem; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--h-green); }
+.ft-alergenos { background: #FDF1EA; border-color: #F1CDBA; }
+.ft-alergenos .ft-caja-tit { color: #A93F19; }
+.ft-nota { display: block; margin-top: .6rem; font-size: .74rem; line-height: 1.4; color: var(--h-muted); }
+@media (max-width: 400px) {
+    .ft-tabla th, .ft-tabla td { padding: .4rem .5rem; }
+    .ft-tabla .ft-sub th { padding-left: 1.1rem; }
+}

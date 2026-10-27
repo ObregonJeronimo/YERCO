@@ -278,8 +278,7 @@ img { max-width: 100%; height: auto; }
 .pdm-stock-tag { background: #f56c6c; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 500; }
 .pdm-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; }
 .pdm-section h4 { font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; color: var(--color-text); margin: 0 0 0.5rem; }
-.pdm-section p, .pdm-nutritional { font-size: 0.92rem; color: #555; line-height: 1.6; margin: 0; }
-.pdm-nutritional { background: #f9f6f0; padding: 0.85rem 1rem; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 0.85rem; }
+.pdm-section p { font-size: 0.92rem; color: #555; line-height: 1.6; margin: 0; }
 .pdm-no-info { color: var(--color-text-light); font-style: italic; font-size: 0.88rem; }
 .pdm-no-info i { margin-right: 6px; }
 .pdm-add-btn { width: 100%; box-sizing: border-box; margin-top: 1.25rem; background: var(--color-primary); color: white; border: none; padding: 0.9rem 1rem; border-radius: 12px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: background 0.15s; overflow: visible; }
