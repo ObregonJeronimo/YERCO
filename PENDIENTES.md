@@ -46,18 +46,20 @@ personal del dueño es PRIVADA: no va en ningún archivo, commit ni memoria.
   [ALÉRGENOS]"; la tienda agrega sola "Valores aproximados de referencia". Se sacaron sellos sin
   respaldo (sin TACC, vegano, sin azúcar), promesas de salud y datos de infusión preparada en tés.
   Trabajo y fuentes en el scratchpad de la sesión (desc/rev/rres*.json, campo `fuentes`).
-  **Para que Joaco mire el envase / decida:**
-  - ANMAT Disp. 2011/2020 prohibió las mermeladas La Tranquilina con RNPA 16006087 (rótulo falso,
-    "sin TACC" sin respaldo): revisar el RNPA de los frascos que se venden.
-  - ANMAT 2016 prohibió la maca marca Kallpa: revisar el registro del producto actual.
+  **Decisiones del dueño (27/10):**
+  - NO sacar los sellos "sin TACC" que trae el proveedor: se repusieron ("• Sin TACC." primera
+    viñeta) en 14 productos (Kony, Quinoa Pop arándano, bombones Pizarro, fideos de arroz morrón,
+    galletas de arroz bañadas, Silk chocolate, Mula equilli, Trever, Reishi, Melena de león, yerba
+    Kalena tradicional). Papas en tubo no: el texto decía que CONTIENE gluten.
+  - Mermeladas La Tranquilina (14) y maca Kallpa (2): SIN descripción ni info nutricional (ANMAT
+    prohibió en 2020 las La Tranquilina con RNPA 16006087 y en 2016 la maca Kallpa); se siguen
+    vendiendo. Copia de lo que tenían: scratchpad de la sesión, desc/rev/copia-tranquilina-kallpa.json.
   - Sin descripción (no se encontró qué son): Suplemento nutritivo 0.44, Calcio cubano, Galletas
     Molinos del Bosque integrales.
-  - "Sin TACC" que se sacó y se puede reponer si el envase trae el logo: chocolatinas Colonial,
-    dulce de leche y stevia Kony, mermeladas La Tranquilina, Quinoa Pop arándano, bombones Pizarro,
-    fideos de arroz con morrón, galleta de arroz bañada.
   - Stevia líquida Trever (el rótulo publicado no tiene sucralosa), Edulkony (sí tiene sucralosa),
     té rojo (pu-erh o rooibos), psyllium (semilla o cáscara), suplementos Incaico/Salutaris
     (cápsulas o comprimidos).
+- **▶ PRÓXIMO PASO (27/10, después del clear):** la mejora visual de abajo.
 - **PENDIENTE (pedido 26/10, después de la revisión de descripciones):** mejorar visualmente cómo se
   ven la descripción y la información nutricional en la ficha del cliente (modal de app.js
   `pdm-section`/`pdm-nutritional` y la ficha del servidor `.seo-desc`/`.seo-vn`). Sin emojis: las
