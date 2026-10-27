@@ -532,3 +532,15 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 .seo-faq details p { margin: .55rem 0 0; color: var(--h-muted); line-height: 1.55; }
 .seo-faq a { color: var(--h-green); }
 @media (max-width: 900px) { .seo-home-grid { grid-template-columns: 1fr; gap: 1.5rem; } }
+
+/* Velocidad (octubre 2026). El titulo y el subtitulo del hero entraban desde opacidad 0:
+   para Chrome/Google el texto "no estaba" hasta terminar la animacion, y es lo que mide como
+   la carga principal de la portada (LCP). Ahora solo suben un poco: se leen desde el primer
+   cuadro y el efecto casi no cambia. */
+@keyframes huSube { from { transform: translateY(16px); } to { transform: none; } }
+.title-line, .title-highlight, .hero-subtitle { animation-name: huSube; }
+/* El catalogo llega despues (Firestore): mientras tanto la seccion medía poco y lo que estaba
+   debajo ("Quienes somos") quedaba a la vista y saltaba al aparecer los productos. */
+.products-section { min-height: 100vh; min-height: 100svh; }
+.seo-vn { font-size: .88rem; color: var(--h-muted); line-height: 1.55; background: var(--h-card); border: 1px solid var(--h-line); border-radius: 14px; padding: .8rem 1rem; max-width: 62ch; }
+.pdm-vn-nota { display: block; margin-top: .4rem; opacity: .75; }

@@ -15,6 +15,9 @@ async function buscarProductoPorSlug(slug) {
   return Object.assign({ id: snap.docs[0].id }, snap.docs[0].data());
 }
 
+/* Descripcion e informacion nutricional se cargan con saltos de linea en el panel. */
+const conSaltos = s => S.esc(s).replace(/\r?\n/g, '<br>');
+
 function cuerpoFicha(p, cat, hermanos, url) {
   const nombre = S.nombreDe(p);
   const final = S.precioFinal(p);
@@ -22,6 +25,7 @@ function cuerpoFicha(p, cat, hermanos, url) {
   const sinStock = Number(p.stock) === 0;
   const desc = (p.descripcion && p.descripcion.trim() && p.descripcion.trim() !== (p.nombre || '').trim()) ? p.descripcion.trim() : '';
   const img = S.imagenAbs(p.imagen);
+  const vn = String(p.valoresNutricionales || '').trim();
   const catUrl = S.SITE_URL + '/categoria/' + cat.slug;
 
   const datos = [{
@@ -56,7 +60,8 @@ function cuerpoFicha(p, cat, hermanos, url) {
           <h1>${S.esc(nombre)}</h1>
           <p class="seo-precio">${S.pesos(final)}${dsc > 0 ? ' <s>' + S.pesos(p.precio) + '</s> <span class="seo-dsc">-' + Math.round(dsc) + '%</span>' : ''}</p>
           <p class="seo-stock${sinStock ? ' sin' : ''}">${sinStock ? 'Sin stock por ahora' : 'Disponible'}</p>
-          ${desc ? '<p class="seo-desc">' + S.esc(desc) + '</p>' : ''}
+          ${desc ? '<div class="seo-desc">' + conSaltos(desc) + '</div>' : ''}
+          ${vn ? '<h2>Información nutricional</h2><div class="seo-vn">' + conSaltos(vn) + (/aproximad|orientativ/i.test(vn) ? '' : '<br><small>Valores aproximados de referencia; pueden variar según el lote y la marca.</small>') + '</div>' : ''}
           <p class="seo-envio">Envío a domicilio en ${S.ZONA}, o retiro sin cargo en Tablada 16, Villa Allende.</p>
           <a class="btn btn-primary-custom" href="#productos" onclick="if(typeof openProductDetailModal==='function'){openProductDetailModal('${S.esc(p.id)}');return false;}">Comprar</a>
         </div>

@@ -114,7 +114,42 @@ function precioFinal(p) {
   return dsc > 0 ? Math.round(base * (1 - dsc / 100)) : base;
 }
 const pesos = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-AR');
-const nombreDe = p => p.nombreMostrado || p.nombre || 'Producto';
+/* Los nombres se cargan en mayusculas y con unidades a mano ("HARINA DE TRIGO SARRACENO s/ tacc
+   x 20Kg"). En el titulo de Google, en mayusculas, parecen un grito y cuesta leerlos. Para las
+   paginas del servidor se pasan a "Harina de Trigo Sarraceno sin TACC x 20 kg": palabras en
+   mayusculas a tipo titulo, conectores en minuscula, unidades prolijas y las tildes de las
+   palabras mas comunes (los nombres se cargan sin tildes). Las palabras que ya vienen en
+   minuscula o mezcladas ("incaico", "High fat") se respetan. El panel y la tienda no cambian. */
+const _MINUS = new Set(['de', 'del', 'con', 'sin', 'y', 'e', 'en', 'la', 'el', 'las', 'los', 'para', 'a', 'al', 'o', 'u', 'por']);
+const _TILDES = {
+  pimenton: 'pimentón', azucar: 'azúcar', anana: 'ananá', aji: 'ají', mani: 'maní', manies: 'maníes', cafe: 'café',
+  fecula: 'fécula', feculas: 'féculas', limon: 'limón', oregano: 'orégano', curcuma: 'cúrcuma', chia: 'chía',
+  sesamo: 'sésamo', maiz: 'maíz', arandano: 'arándano', arandanos: 'arándanos', datil: 'dátil', datiles: 'dátiles',
+  proteina: 'proteína', organico: 'orgánico', organica: 'orgánica', economico: 'económico', jamon: 'jamón',
+  frances: 'francés', melon: 'melón', platano: 'plátano', budin: 'budín', mostaza: 'mostaza', azucarado: 'azucarado',
+  nutricion: 'nutrición', caju: 'cajú', pure: 'puré', champinon: 'champiñón', te: 'té',
+};
+function _palabra(w, primera) {
+  if (/\d/.test(w) || !/[A-ZÁÉÍÓÚÑ]/.test(w) || /[a-záéíóúñ]/.test(w)) return w; /* numeros, mezcladas o minusculas: tal cual */
+  if (w === 'TACC') return w;
+  const low = w.toLowerCase();
+  const base = low.replace(/[^a-zñ]/g, '');
+  let out = _TILDES[base] ? low.replace(base, _TILDES[base]) : low;
+  if (!primera && _MINUS.has(base)) return out;
+  return out.replace(/[a-záéíóúñ]/, c => c.toUpperCase());
+}
+function nombreLindo(raw) {
+  let s = String(raw || '').replace(/\s+/g, ' ').trim();
+  s = s.replace(/\bs\/\s*tacc\b/gi, 'sin TACC').replace(/\bsin tacc\b/gi, 'sin TACC').replace(/\bc\/\s*/gi, 'con ');
+  s = s.replace(/\bx(?=\d)/gi, 'x ');                                  /* x360gr -> x 360gr */
+  s = s.replace(/(\d)\s*(kg|gr\.?|g|ml|cc|l|u)\b\.?/gi, (m, d, u) => {   /* 1Kg -> 1 kg, 100gr -> 100 g */
+    const k = u.toLowerCase().replace('.', '');
+    return d + ' ' + (k === 'gr' ? 'g' : k === 'l' ? 'L' : k);
+  });
+  s = s.replace(/(\d)\.(\d)/g, '$1,$2');                               /* 2.5 kg -> 2,5 kg */
+  return s.split(' ').map((w, i) => _palabra(w, i === 0)).join(' ');
+}
+const nombreDe = p => nombreLindo(p.nombreMostrado || p.nombre || 'Producto');
 function imagenAbs(u) {
   if (!u) return LOGO;
   if (/^https?:\/\//.test(u)) return u;
@@ -167,5 +202,5 @@ function armarPagina(html, o) {
 
 module.exports = {
   SITE_URL, LOGO, ZONA, getDb, esc, ld, slugify, infoCategoria, productosVisibles,
-  precioFinal, pesos, nombreDe, imagenAbs, indexHtml, armarPagina,
+  precioFinal, pesos, nombreDe, nombreLindo, imagenAbs, indexHtml, armarPagina,
 };
