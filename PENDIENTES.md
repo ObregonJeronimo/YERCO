@@ -50,10 +50,16 @@ conversión a venta, totales de venta y comprobantes), bloque "PROGRAMA DE PUNTO
 `app.js`, modal `modalCuenta` + `ptTiendaModal` en `index.html`, estilos al final de `huerta.css`,
 sección 10 en `politicas.html`. Pedido del dueño: NO recomendar un premio puntual; la tienda de
 canjes muestra todos los premios que carga el admin.
-**Falta (paso 4):** `firebase deploy --only firestore:rules,functions`, push, y probar en
-yerco.ar con la cuenta del dueño como probador (Puntos → Configuración → Agregarme): cargar un
-premio, regalarse puntos a mano, hacer un pedido con toggle y canje, pasarlo a venta "Pagó" y
-ver que acredite; borrar el pedido / la venta y ver que devuelva. Después prender el programa.
+**En producción (05/11):** reglas, las 5 funciones de puntos (incl. `puntosEstadoPedido`), tienda
+y panel. Programa APAGADO, sin probadores ni premios cargados. También: el carrito dice cuántos
+puntos suma, pantalla de "pedido confirmado" con camioncito, seguimiento animado en Mis pedidos.
+Probado de punta a punta en el EMULADOR (35/35; script en el scratchpad de la sesión,
+prueba-puntos.js; ojo: el emulador necesita `require('firebase-admin/firestore').FieldValue`
+en index.js para que descontarStockPedido ande ahí, en producción anda como está).
+Los deploys de funciones los corre el dueño (el permiso de la sesión bloquea `firebase deploy`).
+**Falta:** prueba visual en yerco.ar con la cuenta del dueño como probador (Puntos →
+Configuración → Agregarme): cargar premios, regalarse puntos, pedido con toggle y canje, pasarlo
+a venta y a "Entregado", ver que acredite; borrar y ver que devuelva. Después prender el programa.
 
 **HECHO (27/10): mejora visual de descripción e info nutricional en la ficha.** Viñetas "• " →
 lista, "Conservar…" en recuadro, info nutricional → tabla (una columna por cada "POR …", así las
