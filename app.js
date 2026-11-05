@@ -1062,7 +1062,26 @@ function cartResumen(T){
     else envio='<dd>$'+formatPrice(T.envio)+'<small>o retirás sin cargo</small></dd>';
     r.innerHTML='<div><dt>Productos</dt><dd>$'+formatPrice(T.subtotal+T.ahorro)+'</dd></div>'+
         (T.ahorro>0?'<div class="hc-ahorro"><dt><i class="bi bi-tag-fill"></i> Ahorrás</dt><dd>-$'+formatPrice(T.ahorro)+'</dd></div>':'')+
-        '<div><dt>Envío'+(NEGOCIO.haceEnvios&&isFinite(free)&&T.envio>0?' <small>gratis desde $'+formatPrice(free)+'</small>':'')+'</dt>'+envio+'</div>';
+        '<div><dt>Envío'+(NEGOCIO.haceEnvios&&isFinite(free)&&T.envio>0?' <small>gratis desde $'+formatPrice(free)+'</small>':'')+'</dt>'+envio+'</div>'+
+        ptCarritoHtml(T.subtotal);
+}
+/* Puntos en el carrito: cuanto suma esta compra y, si ya tiene, que se aplican al confirmar.
+   Sin sesion y con el programa prendido, la invitacion a iniciar sesion. La config se pide una
+   sola vez aunque no haya sesion (ptIniciar solo corre al loguearse). */
+let _ptCfgPedida=false;
+function ptCarritoHtml(subtotal){
+    if(!_ptCfg){
+        if(!_ptCfgPedida&&typeof db!=='undefined'){_ptCfgPedida=true;db.collection('config').doc('puntos').get().then(s=>{if(!_ptCfg)_ptCfg=ptNorm(s.exists?s.data():null);if(carrito.length)updateCartUI();}).catch(()=>{});}
+        return '';
+    }
+    const gana=ptGanaria(subtotal);
+    if(!clienteAuth){
+        return _ptCfg.activo&&gana>0?'<div class="hc-pts"><dt><i class="bi bi-stars"></i> <a href="#" onclick="authLogin();return false">Iniciá sesión</a> y sumá <b>'+ptFmt(gana)+' puntos</b> con esta compra</dt></div>':'';
+    }
+    if(!ptHabilitado())return '';
+    const saldo=ptSaldo();
+    return (gana>0?'<div class="hc-pts"><dt><i class="bi bi-stars"></i> Con esta compra sumás <b>'+ptFmt(gana)+' puntos</b></dt></div>':'')+
+        (saldo>0?'<div class="hc-pts"><dt><i class="bi bi-wallet2"></i> Tenés '+ptFmt(saldo)+' puntos ($'+formatPrice(saldo*_ptCfg.valorPunto)+'): los usás al confirmar</dt></div>':'');
 }
 /* Sugerencias: primero lo de las mismas categorias que ya tiene el carrito, despues los
    populares y las ofertas. Una sola cara por grupo de presentaciones, solo con stock. */
@@ -2449,6 +2468,7 @@ function _ptPintarTodo(){
     document.querySelectorAll('.cuenta-tab-pt').forEach(b=>{b.style.display=hab?'':'none';});
     if(document.getElementById('modalCuenta')?.style.display==='flex'){_renderCuentaHead();if(_cuentaTab==='puntos')_renderCuentaPuntos();if(_cuentaTab==='canjear')_renderPremios('cuentaPremios');}
     if(_checkoutAbierto())updateCheckoutResumen();
+    if(carrito.length)updateCartUI();
     if(document.getElementById('ptTiendaModal')?.classList.contains('show'))_renderPremios('ptTiendaLista');
 }
 

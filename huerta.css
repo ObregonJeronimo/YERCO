@@ -476,6 +476,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 .hc-resumen dd { margin: 0; font-weight: 700; color: var(--h-ink); text-align: right; }
 .hc-resumen dd small { display: block; font-weight: 500; font-size: .7rem; color: var(--h-muted); }
 .hc-ahorro, .hc-ahorro dd { color: var(--h-green) !important; }
+/* Puntos que suma la compra (app.js, ptCarritoHtml) */
+.hc-resumen > .hc-pts { justify-content: flex-start; background: #F4F9E6; border: 1px solid #DDEBB6; border-radius: 10px; padding: 6px 10px; color: var(--h-ink); font-size: .82rem; }
+.hc-pts dt { font-weight: 500; }
+.hc-pts i { color: var(--h-green); margin-right: 3px; }
+.hc-pts b { color: var(--h-green); }
+.hc-pts a { color: var(--h-green); font-weight: 700; }
 .hc-gratis { color: var(--h-green) !important; }
 .cart-footer .cart-total { margin: 4px 0 12px; padding-top: 10px; border-top: 1px dashed var(--h-line); font-weight: 700; color: var(--h-ink); }
 .cart-footer .total-amount { font-size: 1.7rem; }
