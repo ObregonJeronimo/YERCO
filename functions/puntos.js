@@ -27,9 +27,12 @@ const {onDocumentCreated, onDocumentDeleted, onDocumentWritten} = require('fireb
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const {logger} = require('firebase-functions');
 const admin = require('firebase-admin');
+/* FieldValue del modulo de firestore, no admin.firestore.FieldValue: ese se arma recien cuando
+   se usa admin.firestore() por primera vez, y al cargar este archivo todavia no existe. Asi
+   estuvo desplegado el 05/11 y todo pedido con puntos terminaba en puntosEstado 'error'. */
+const {FieldValue: FV} = require('firebase-admin/firestore');
 
 const REGION = 'southamerica-east1';
-const FV = admin.firestore.FieldValue;
 const db = () => admin.firestore();
 
 /* Arranca APAGADO: se prende desde el panel despues de probarlo con las cuentas de `probadores`. */
