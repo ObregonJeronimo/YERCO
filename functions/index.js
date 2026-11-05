@@ -10,6 +10,8 @@
  *                             antes de que tuviera cuenta de Google
  * - descontarStockPedido:     descuenta el stock del pedido web (el cliente no tiene
  *                             permiso de escritura sobre /productos, y no deberia)
+ * - procesarPuntosPedido, devolverPuntosPedido, puntosVenta, vencerPuntos: programa de
+ *                             puntos, en puntos.js
  *
  * Requiere documento Firestore: config/telegram con campos `token` y `chatId`
  * (ese doc solo lo pueden leer los admins, ver firestore.rules).
@@ -120,6 +122,10 @@ exports.notifyTelegramOnNewOrder = onDocumentCreated(
     if (pedido.direccion) msg += `<b>Dirección:</b> ${escHtml(pedido.direccion)}\n`;
     if (pedido.notas) msg += `<b>Notas:</b> ${escHtml(pedido.notas)}\n`;
     if (itemsTxt) msg += `<b>Items:</b> ${itemsTxt}\n`;
+    /* Lo que el cliente PIDIO usar; si no le alcanzaba, procesarPuntosPedido lo marca en el panel */
+    if (Number(pedido.puntosUsar) > 0) msg += `<b>Puntos:</b> ${pedido.puntosUsar} (-$${Number(pedido.puntosDescuento || 0).toLocaleString('es-AR')})\n`;
+    const canjes = (pedido.items || []).filter(i => i && i.canje === true);
+    if (canjes.length) msg += `<b>Canje con puntos:</b> ${canjes.map(i => escHtml(i.nombre) + ' x' + i.cantidad).join(', ')}\n`;
     msg += `<b>Total:</b> $${(pedido.total || 0).toLocaleString('es-AR')}`;
     /* Enviar */
     const ok = await sendTelegramMessage(token, chatId, msg);
@@ -307,8 +313,13 @@ exports.descontarStockPedido = onDocumentCreated(
   }
 
   const porProd = {};
+  /* Lo que se COBRA, sin los productos canjeados con puntos: esos van a $0 a proposito y no
+     tienen que contar como "cobrado por debajo del costo" ni sumar al total de catalogo. Si el
+     canje no es valido lo marca procesarPuntosPedido (revisarPuntos). */
+  const porProdCobrado = {};
   (data.items || []).forEach((i) => {
     if (i && i.id) porProd[i.id] = (porProd[i.id] || 0) + Number(i.cantidad || 0);
+    if (i && i.id && i.canje !== true) porProdCobrado[i.id] = (porProdCobrado[i.id] || 0) + Number(i.cantidad || 0);
   });
   const ids = Object.keys(porProd).filter((id) => porProd[id] > 0);
   if (!ids.length) return;
@@ -340,7 +351,7 @@ exports.descontarStockPedido = onDocumentCreated(
            cliente acepto ESE precio. Cambiarselo despues seria peor. */
         const base = Number(p.precio || 0);
         const desc = Number(p.descuento || 0);
-        totalCatalogo += Math.round(base * (1 - desc / 100)) * pedido;
+        totalCatalogo += Math.round(base * (1 - desc / 100)) * (porProdCobrado[ids[k]] || 0);
 
         /* Y aca la senal que SI distingue una manipulacion de un cambio de precios.
            Con inflacion, un pedido legitimo hecho con la pagina abierta hace rato paga
@@ -348,7 +359,7 @@ exports.descontarStockPedido = onDocumentCreated(
            Lo que nunca pasa por un cambio de precios es cobrar por debajo del COSTO,
            porque el comercio estaria perdiendo plata en cada unidad. Eso es la firma de
            alguien tocando el carrito desde la consola. */
-        const itemPedido = (data.items || []).find((it) => it && it.id === ids[k]);
+        const itemPedido = (data.items || []).find((it) => it && it.id === ids[k] && it.canje !== true);
         const cobradoUnidad = itemPedido ? Number(itemPedido.precio || 0) : null;
         const costoUnidad = Number(p.costo || 0);
         if (cobradoUnidad !== null && costoUnidad > 0 && cobradoUnidad < costoUnidad) {
@@ -612,3 +623,10 @@ exports.recalcularUsoStorage = onDocumentWritten(
     }
   }
 );
+
+/* Programa de puntos: ver puntos.js */
+const puntos = require('./puntos');
+exports.procesarPuntosPedido = puntos.procesarPuntosPedido;
+exports.devolverPuntosPedido = puntos.devolverPuntosPedido;
+exports.puntosVenta = puntos.puntosVenta;
+exports.vencerPuntos = puntos.vencerPuntos;

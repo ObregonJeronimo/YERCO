@@ -108,7 +108,11 @@ service cloud.firestore {
            asi que un mayorista las junta sin darse cuenta. Mismo final silencioso que
            arriba. 300 sigue acotando el abuso sin tirar pedidos de verdad. */
         && request.resource.data.items.size() <= 300
-        && request.resource.data.origen == 'web');
+        && request.resource.data.origen == 'web'
+        /* Estos los escribe SOLO procesarPuntosPedido despues de revalidar contra el saldo.
+           Si el cliente pudiera mandarlos, un pedido nacia diciendo "puntos aplicados" y si la
+           funcion fallaba el panel le creia. */
+        && !request.resource.data.keys().hasAny(['puntosEstado','puntosAplicados','puntosMotivo','revisarPuntos']));
       /* Leer: admin o el propio cliente */
       allow read: if isAdmin()
         || (isAuthUser() && 'clienteAuthUid' in resource.data && resource.data.clienteAuthUid == request.auth.uid);
@@ -170,6 +174,24 @@ service cloud.firestore {
                .hasOnly(['ultimoAcceso','visitas'])
           && request.resource.data.ultimoAcceso == request.time
           && request.resource.data.visitas == resource.data.get('visitas', 0) + 1);
+    }
+
+    /* ===== PUNTOS =====
+       El saldo y sus movimientos los escriben las Cloud Functions (Admin SDK, no pasan por aca)
+       y el panel (ajustes a mano). El cliente solo LEE los suyos: el pedido lo arma su
+       navegador, y si pudiera escribir el saldo se cargaria los puntos que quisiera. */
+    match /puntos/{uid} {
+      allow read: if isAdmin() || (isAuthUser() && request.auth.uid == uid);
+      allow write: if isAdmin();
+      match /movs/{mov} {
+        allow read: if isAdmin() || (isAuthUser() && request.auth.uid == uid);
+        allow write: if isAdmin();
+      }
+    }
+    /* La tienda de canjes se ve sin login, como el catalogo. */
+    match /puntosPremios/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     /* ===== CUPONES ===== */

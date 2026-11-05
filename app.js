@@ -1245,6 +1245,10 @@ function openCheckoutModal(){
     setCheckoutEntrega(NEGOCIO.haceEnvios?'envio':'retiro');
     /* Limpiar cupón al abrir nuevo checkout */
     quitarCupon();
+    /* Puntos: el toggle arranca PRENDIDO cada vez (pedido del dueño); los premios se cargan para
+       el boton Canjear */
+    _ptUsar=true;
+    if(ptHabilitado())_ptCargarPremios();
     updateCheckoutResumen();
     document.getElementById('checkoutOverlay').classList.add('show');
     document.getElementById('checkoutModal').classList.add('show');
@@ -1305,7 +1309,10 @@ function updateCheckoutResumen(){
     const dcMonto=_cuponAplicado?Math.min(_cuponAplicado.monto||0,subtotal):0;
     const subtotalConDesc=subtotal-dcMonto;
     const envio=negCostoEnvio(subtotalConDesc);
-    const total=subtotalConDesc+envio;
+    /* Los puntos van DESPUES del envio gratis: usarlos no puede hacer perder el envio gratis */
+    const _pt=ptCalcular(subtotalConDesc);
+    const total=subtotalConDesc-_pt.descuento+envio;
+    _ptRenderCheckout(_pt,subtotalConDesc-_pt.descuento);
     const el=document.getElementById('chkResumen');
     if(!el)return;
     /* Direccion ya escrita (o precargada de la vez anterior) sin precio calculado: se pide. */
@@ -1318,7 +1325,9 @@ function updateCheckoutResumen(){
     const envioRow=tipoEntrega==='retiro'
         ?'<div class="chk-resumen-row"><span><i class="bi bi-shop"></i> Retiro en local</span><span style="color:#2d4a22">sin cargo</span></div>'
         :('<div class="chk-resumen-row"><span><i class="bi bi-truck"></i> Envío</span><span'+(envio===0?' style="color:#2d4a22;font-weight:600"':'')+'>'+(envio===0?'GRATIS':'$'+formatPrice(envio))+'</span></div>');
-    const cuponRow=_cuponAplicado?'<div class="chk-resumen-row" style="color:#2d6b4a"><span><i class="bi bi-ticket-perforated"></i> Cupón '+_cuponAplicado.codigo+'</span><span>-$'+formatPrice(dcMonto)+'</span></div>':'';
+    const cuponRow=(_cuponAplicado?'<div class="chk-resumen-row" style="color:#2d6b4a"><span><i class="bi bi-ticket-perforated"></i> Cupón '+_cuponAplicado.codigo+'</span><span>-$'+formatPrice(dcMonto)+'</span></div>':'')+
+        (_pt.descuento?'<div class="chk-resumen-row pt-row"><span><i class="bi bi-stars"></i> '+ptFmt(_pt.usar)+' puntos</span><span>-$'+formatPrice(_pt.descuento)+'</span></div>':'')+
+        (_pt.habilitado?_canjes.map(c=>'<div class="chk-resumen-row pt-row"><span><i class="bi bi-gift"></i> '+esc(c.nombre)+'</span><span>GRATIS</span></div>').join(''):'');
     /* Lista de productos */
     const itemsList = carrito.map(i => {
         const cant = i.cantidad > 1 ? '<span style="background:#e8f5e9;color:#2d4a22;border-radius:10px;padding:1px 7px;font-size:0.75rem;font-weight:700">x'+i.cantidad+'</span> ' : '';
@@ -1441,11 +1450,26 @@ async function confirmCheckout(){
         const subtotal=carrito.reduce((s,i)=>s+i.precio*i.cantidad,0);
         const dcMonto=cuponParaRegistrar?Math.min(cuponParaRegistrar.monto||0,subtotal):0;
         const subtotalConDesc=subtotal-dcMonto;
+        /* Puntos: se relee el saldo justo antes de confirmar (pudo cambiar con otro pedido en otra
+           pestaña). La Cloud Function lo vuelve a validar igual; esto es para no mandar algo que
+           ya sabemos que no alcanza. */
+        let _pt={habilitado:false,usar:0,descuento:0};
+        const _canjesPedido=ptHabilitado()?_canjes.slice():[];
+        if(ptHabilitado()){
+            try{const _s=await db.collection('puntos').doc(clienteAuth.uid).get();_ptDoc=_s.exists?_s.data():null;}catch(e){}
+            if(ptEnCanjes()>ptSaldo()){
+                btn.disabled=false;btn.innerHTML='Confirmar pedido';
+                showToast('Tus puntos no alcanzan para los canjes elegidos. Revisalos y confirmá de nuevo.','error');
+                updateCheckoutResumen();
+                return;
+            }
+            _pt=ptCalcular(subtotalConDesc);
+        }
         /* El precio del envio tiene que ser el de ESTA direccion: si todavia se estaba
            calculando (o no se llego a pedir), se espera aca, como mucho 8 s. */
         const _ed=tipoEntrega==='envio'?await calcularEnvioDistancia(direccion):{estado:'nada'};
         const envio=negCostoEnvio(subtotalConDesc);
-        const total=subtotalConDesc+envio;
+        const total=subtotalConDesc-_pt.descuento+envio;
         /* No se pudo ubicar la direccion (o la API fallo): se cobra el precio fijo y el
            pedido queda marcado para que el panel avise que hay que confirmar el envio. */
         const envioAConfirmar=tipoEntrega==='envio'&&envio>0&&(_ed.estado==='noEncontrada'||_ed.estado==='error');
@@ -1473,7 +1497,9 @@ async function confirmCheckout(){
             direccion:tipoEntrega==='envio'?direccion:null,
             notas:notas||null,
             tipoEntrega:tipoEntrega,
-            items:carrito.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,precioOriginal:i.precioOriginal||i.precio,descuento:i.descuento||0,cantidad:i.cantidad,subtotal:i.precio*i.cantidad})),
+            items:carrito.map(i=>({id:i.id,nombre:i.nombre,precio:i.precio,precioOriginal:i.precioOriginal||i.precio,descuento:i.descuento||0,cantidad:i.cantidad,subtotal:i.precio*i.cantidad}))
+                /* Canjes con puntos: lineas a $0 marcadas; procesarPuntosPedido valida que cada una sea un premio activo */
+                .concat(_canjesPedido.map(c=>({id:c.productoId,nombre:c.nombre,precio:0,precioOriginal:0,descuento:0,cantidad:c.cantidad,subtotal:0,canje:true,premioId:c.premioId}))),
             subtotalProductos:subtotal,
             envio:envio,
             envioGratis:tipoEntrega==='envio'&&envio===0,
@@ -1484,6 +1510,8 @@ async function confirmCheckout(){
             envioAConfirmar:envioAConfirmar,
             total:total,
             cupon:cuponParaRegistrar?{codigo:cuponParaRegistrar.codigo,monto:dcMonto}:null,
+            puntosUsar:_pt.usar||0,
+            puntosDescuento:_pt.descuento||0,
             origen:'web',
             creadoEn:firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -1511,11 +1539,14 @@ async function confirmCheckout(){
         if(tipoEntrega==='envio'&&direccion)msg+='*Dirección:* '+direccion+'\n';
         if(envioAConfirmar)msg+='*Envío:* a confirmar (no se pudo calcular por distancia)\n';
         if(cuponParaRegistrar)msg+='*Cupón:* '+cuponParaRegistrar.codigo+' (-$'+dcMonto.toLocaleString('es-AR')+')\n';
+        if(_pt.usar)msg+='*Puntos:* '+_pt.usar+' (-$'+_pt.descuento.toLocaleString('es-AR')+')\n';
+        if(_canjesPedido.length)msg+='*Canje con puntos:* '+_canjesPedido.map(c=>c.nombre+(c.cantidad>1?' x'+c.cantidad:'')).join(', ')+'\n';
         if(notas)msg+='*Notas:* '+notas+'\n';
         if(!_pedidoGuardado)msg+='\n*(Este pedido no se registro automaticamente en el sistema: hay que cargarlo a mano)*\n';
         msg+='\nGracias!';
         /* Limpiar carrito y resetear las cards de productos */
         const idsAResetear=carrito.map(i=>i.id);
+        if(_canjesPedido.length){_canjes=[];_ptGuardarCanjes();}
         carrito=[];saveCart();updateCartUI();
         idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
@@ -1664,7 +1695,7 @@ function scrollAnimProductos(){
 
 function toggleCategoryFilters(){const f=document.getElementById('categoryFilters');const btn=document.getElementById('toggleCatsBtn');f.classList.toggle('cat-hidden');if(f.classList.contains('cat-hidden')){btn.innerHTML='<i class="bi bi-funnel"></i> Categorias';}else{btn.innerHTML='<i class="bi bi-funnel-fill"></i> Categorias';}}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.aplicarCupon=aplicarCupon;window.quitarCupon=quitarCupon;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.aplicarCupon=aplicarCupon;window.quitarCupon=quitarCupon;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.openCuenta=openCuenta;window.closeCuenta=closeCuenta;window.cuentaTab=cuentaTab;window.ptAbrirTienda=ptAbrirTienda;window.ptCerrarTienda=ptCerrarTienda;window.ptCanjear=ptCanjear;window.ptQuitarCanje=ptQuitarCanje;window.ptToggleUsar=ptToggleUsar;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
 
 // Cargar contenido editable desde Firestore
 /* Clave del cache local del contenido del sitio. Si alguna vez cambia la forma del
@@ -1940,6 +1971,7 @@ async function _onUserLogin(user, showModal=false) {
         } catch (e) { console.warn('No se pudo completar el nombre:', e.message); }
     }
     _updateNavAuth(user);
+    ptIniciar();
     /* Si faltan datos obligatorios Y fue un login activo, mostrar modal */
     if (showModal && (!clienteAuth.nombre || !clienteAuth.apellido || !clienteAuth.telefono)) {
         _showModalDatos();
@@ -1996,6 +2028,8 @@ function _onUserLogout() {
     _authProcesando = false;
     _updateNavAuth(null);
     if (_pedidosListener) { _pedidosListener(); _pedidosListener = null; }
+    ptDetener();
+    closeCuenta();
 }
 
 function _updateNavAuth(user) {
@@ -2160,27 +2194,11 @@ async function guardarDatosCliente() {
 }
 
 /* === MODAL PERFIL === */
-function openPerfilModal() {
-    if (!clienteAuth) return;
-    const m = document.getElementById('modalPerfil');
-    m.style.display = 'flex';
-    document.getElementById('pfNombre').value = clienteAuth.nombre || '';
-    document.getElementById('pfApellido').value = clienteAuth.apellido || '';
-    document.getElementById('pfTelefono').value = clienteAuth.telefono || '';
-    document.getElementById('pfEmail').value = clienteAuth.email || '';
-    switchPerfilTab('datos');
-    renderDirecciones();
-}
-
-function closePerfilModal() {
-    document.getElementById('modalPerfil').style.display = 'none';
-}
-
-function switchPerfilTab(tab) {
-    document.getElementById('perfilTabDatos').style.display = tab === 'datos' ? 'block' : 'none';
-    document.getElementById('perfilTabDirecciones').style.display = tab === 'direcciones' ? 'block' : 'none';
-    document.querySelectorAll('.perfil-tab').forEach((b, i) => b.classList.toggle('active', (i === 0 && tab === 'datos') || (i === 1 && tab === 'direcciones')));
-}
+/* Perfil e historial ahora son pestañas de "Mi cuenta" (openCuenta, en el bloque de puntos).
+   Los nombres viejos quedan para no romper nada que los llame. */
+function openPerfilModal() { openCuenta('datos'); }
+function closePerfilModal() { closeCuenta(); }
+function switchPerfilTab(tab) { cuentaTab(tab); }
 
 async function guardarPerfil() {
     const nombre = document.getElementById('pfNombre').value.trim();
@@ -2191,8 +2209,8 @@ async function guardarPerfil() {
         await db.collection('clientesAuth').doc(clienteAuth.uid).update({ nombre, apellido, telefono });
         clienteAuth.nombre = nombre; clienteAuth.apellido = apellido; clienteAuth.telefono = telefono;
         _updateNavAuth(authClient.currentUser);
-        showToast('Perfil actualizado', 'success');
-        closePerfilModal();
+        showToast('Datos guardados', 'success');
+        _renderCuentaHead();
     } catch (e) { showToast('Error: ' + e.message, 'error'); }
 }
 
@@ -2253,16 +2271,8 @@ async function eliminarDireccion(idx) {
 let _todosPedidosCliente = [];
 let _filtroHistPedidos = 'todos';
 
-function openHistorialModal() {
-    if (!clienteAuth) return;
-    document.getElementById('modalHistorial').style.display = 'flex';
-    _cargarPedidosCliente();
-}
-
-function closeHistorialModal() {
-    document.getElementById('modalHistorial').style.display = 'none';
-    if (_pedidosListener) { _pedidosListener(); _pedidosListener = null; }
-}
+function openHistorialModal() { openCuenta('pedidos'); }
+function closeHistorialModal() { closeCuenta(); }
 
 function _cargarPedidosCliente() {
     if (!clienteAuth) return;
@@ -2303,20 +2313,49 @@ function _renderPedidosCliente() {
         c.innerHTML = '<div style="text-align:center;padding:2rem;color:#999">Sin pedidos.</div>';
         return;
     }
+    /* Puntos ganados por venta, para decir en cada pedido cuanto sumo */
+    const ganadoPorVenta = {};
+    _ptMovs.forEach(m => { if (m.tipo === 'gano' && m.ventaId) ganadoPorVenta[m.ventaId] = Number(m.puntos) || 0; });
+    const hab = ptHabilitado();
     c.innerHTML = pedidos.map(p => {
-        const num = '#' + String(p.numero || 0).padStart(6, '0');
-        const fecha = p.creadoEn.toLocaleDateString('es-AR');
-        const items = (p.items || []).map(i => '<div style="font-size:0.8rem;color:#555;padding:1px 0">• '+i.nombre+' <span style="color:#888">x'+i.cantidad+'</span></div>').join('');
+        const num = 'N°' + String(p.numero || 0).padStart(3, '0');
+        const fecha = p.creadoEn.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+        const its = p.items || [];
+        const items = its.slice(0, 4).map(i => '<li>' + esc(i.nombre) + ' <span>x' + i.cantidad + '</span>' + (i.canje ? ' <em>canje</em>' : '') + '</li>').join('') + (its.length > 4 ? '<li class="mas">y ' + (its.length - 4) + ' más</li>' : '');
         const estadoClass = 'estado-' + (p.estado || 'pendiente');
-        const estadoLabel = { pendiente: 'Pendiente', confirmado: 'Confirmado', entregado: 'Entregado' }[p.estado] || p.estado;
+        const estadoLabel = { pendiente: 'Pendiente', confirmado: 'Confirmado', entregado: 'Entregado' }[p.estado] || esc(p.estado || '');
+        /* Linea de puntos del pedido: lo que uso y lo que sumo (o va a sumar) */
+        let pts = '';
+        if (hab || p.puntosUsar || its.some(i => i.canje)) {
+            const partes = [];
+            const mal = p.puntosEstado === 'rechazado' || p.puntosEstado === 'error';
+            if (Number(p.puntosUsar) > 0 || its.some(i => i.canje)) {
+                if (mal) partes.push('<span class="mal"><i class="bi bi-exclamation-circle"></i> No pudimos aplicar tus puntos en este pedido; te escribimos para resolverlo.</span>');
+                else if (p.puntosEstado === 'devuelto') partes.push('<span><i class="bi bi-arrow-counterclockwise"></i> Te devolvimos los puntos de este pedido.</span>');
+                else {
+                    const usados = Number(p.puntosUsar) > 0 ? 'Usaste ' + ptFmt(p.puntosUsar) + ' puntos (-$' + formatPrice(p.puntosDescuento || 0) + ')' : '';
+                    const canjeados = its.filter(i => i.canje).map(i => esc(i.nombre)).join(', ');
+                    partes.push('<span><i class="bi bi-stars"></i> ' + usados + (canjeados ? (usados ? ' y canjeaste ' : 'Canjeaste ') + canjeados : '') + '</span>');
+                }
+            }
+            if (hab) {
+                if (p.ventaId && ganadoPorVenta[p.ventaId]) partes.push('<span class="gano"><i class="bi bi-plus-circle"></i> Sumaste ' + ptFmt(ganadoPorVenta[p.ventaId]) + ' puntos</span>');
+                else if (!p.ventaId || !(p.ventaId in ganadoPorVenta)) {
+                    const g = ptGanaria((Number(p.total) || 0) - (Number(p.envio) || 0));
+                    if (g > 0) partes.push('<span class="gana"><i class="bi bi-hourglass-split"></i> Vas a sumar ~' + ptFmt(g) + ' puntos cuando se confirme el pago</span>');
+                }
+            }
+            if (partes.length) pts = '<div class="pedido-hist-pts">' + partes.join('') + '</div>';
+        }
         return `<div class="pedido-hist-card">
             <div class="pedido-hist-top">
                 <span class="pedido-hist-num">${num}</span>
                 <span class="pedido-hist-estado ${estadoClass}">${estadoLabel}</span>
                 <span class="pedido-hist-total">$${(p.total||0).toLocaleString('es-AR')}</span>
             </div>
-            <div style="font-size:0.78rem;color:#888;margin-bottom:0.5rem">${fecha} · ${p.tipoEntrega==='envio'?'Envío':'Retiro'}</div>
-            <div class="pedido-hist-items">${items}</div>
+            <div class="pedido-hist-fecha">${fecha} · ${p.tipoEntrega==='envio'?'Envío a domicilio':'Retiro'}</div>
+            <ul class="pedido-hist-items">${items}</ul>
+            ${pts}
             <button class="btn-repetir" onclick="repetirPedido('${p.id}')"><i class="bi bi-arrow-repeat"></i> Repetir pedido</button>
         </div>`;
     }).join('');
@@ -2328,6 +2367,8 @@ async function repetirPedido(pedidoId) {
     let agregados = 0, omitidos = [];
     carrito = [];
     for (const item of (pedido.items || [])) {
+        /* Los canjes con puntos no se repiten: se vuelven a canjear desde la tienda de puntos */
+        if (item.canje) continue;
         const prod = productos.find(p => p.id === item.id);
         if (!prod) { omitidos.push(item.nombre + ' (ya no existe)'); continue; }
         if ((prod.stock || 0) <= 0) { omitidos.push(item.nombre + ' (sin stock)'); continue; }
@@ -2338,6 +2379,233 @@ async function repetirPedido(pedidoId) {
     closeHistorialModal();
     if (omitidos.length) showToast('Omitidos: ' + omitidos.join(', '), 'error');
     if (agregados) { showToast('Pedido cargado en tu carrito', 'success'); openCart(); }
+}
+
+/* ===== PROGRAMA DE PUNTOS =====
+   El saldo se LEE de puntos/{uid} (en vivo) y nunca se escribe desde aca: lo mueven las Cloud
+   Functions (functions/puntos.js) y el panel. Lo que hace la tienda es pedir: el pedido sale con
+   puntosUsar / puntosDescuento y los canjes como items a $0 (canje:true), y procesarPuntosPedido
+   lo revalida contra el saldo antes de descontar. Si algo no cierra, el pedido queda marcado
+   para el comercio y no se descuenta nada.
+   ptNorm, ptMaxDescuento y ptUsables son gemelas de functions/puntos.js (normalizarConfig,
+   maxDescuentoPesos, puntosUsables): si se cambia una, cambiar la otra. */
+const PT_DEFECTO={activo:false,probadores:[],pesosPorPunto:1000,valorPunto:20,minimoParaUsar:50,topePorcentaje:30,mesesVencimiento:12,combinarConCupon:true};
+let _ptCfg=null;          /* config normalizada */
+let _ptDoc=null;          /* puntos/{uid} del cliente (o null si todavia no tiene) */
+let _ptMovs=[];           /* ultimos movimientos */
+let _ptPremios=null;      /* puntosPremios activos (se cargan al abrir la tienda o la cuenta) */
+let _ptUnsub=null,_ptUnsubMovs=null;
+let _ptUsar=true;         /* toggle del checkout: PRENDIDO por defecto cada vez que se abre */
+let _canjes=[];           /* [{premioId,productoId,nombre,imagen,puntos,cantidad}] para el proximo pedido */
+function ptNum(v,d,mn,mx){const n=Number(v);return isFinite(n)?Math.min(mx,Math.max(mn,n)):d;}
+function ptNorm(c){c=c||{};return{activo:c.activo===true,probadores:Array.isArray(c.probadores)?c.probadores.filter(x=>typeof x==='string'):[],pesosPorPunto:Math.round(ptNum(c.pesosPorPunto,PT_DEFECTO.pesosPorPunto,1,10000000)),valorPunto:ptNum(c.valorPunto,PT_DEFECTO.valorPunto,0,1000000),minimoParaUsar:Math.round(ptNum(c.minimoParaUsar,PT_DEFECTO.minimoParaUsar,0,1000000)),topePorcentaje:ptNum(c.topePorcentaje,PT_DEFECTO.topePorcentaje,0,100),mesesVencimiento:Math.round(ptNum(c.mesesVencimiento,PT_DEFECTO.mesesVencimiento,0,120)),combinarConCupon:c.combinarConCupon!==false};}
+function ptMaxDescuento(base){return Math.max(0,Math.floor(base*_ptCfg.topePorcentaje/100));}
+function ptUsables(saldo,base){if(!(_ptCfg.valorPunto>0))return 0;const n=Math.min(Math.max(0,Math.floor(saldo)),Math.floor(ptMaxDescuento(base)/_ptCfg.valorPunto));return n>=Math.max(1,_ptCfg.minimoParaUsar)?n:0;}
+function ptHabilitado(){return !!(clienteAuth&&_ptCfg&&(_ptCfg.activo||_ptCfg.probadores.includes(clienteAuth.uid)));}
+function ptSaldo(){return Math.max(0,Math.floor(Number(_ptDoc&&_ptDoc.saldo)||0));}
+function ptEnCanjes(){return _canjes.reduce((s,c)=>s+c.puntos*c.cantidad,0);}
+const ptFmt=n=>Math.round(Number(n)||0).toLocaleString('es-AR');
+function ptGanaria(montoProductos){return _ptCfg&&_ptCfg.pesosPorPunto>0?Math.floor(Math.max(0,montoProductos)/_ptCfg.pesosPorPunto):0;}
+
+/* Cuenta del checkout: base = productos ya sin el cupon. Devuelve lo que se usa y por que no. */
+function ptCalcular(base){
+    const r={habilitado:ptHabilitado(),saldo:ptSaldo(),enCanjes:ptEnCanjes(),usar:0,descuento:0,motivo:''};
+    if(!r.habilitado)return r;
+    r.libres=Math.max(0,r.saldo-r.enCanjes);
+    if(_cuponAplicado&&!_ptCfg.combinarConCupon){r.motivo='Los puntos no se combinan con cupones.';return r;}
+    const n=ptUsables(r.libres,base);
+    if(!n){
+        if(r.libres<_ptCfg.minimoParaUsar)r.motivo=r.saldo>=_ptCfg.minimoParaUsar&&r.enCanjes?'El resto de tus puntos está en los canjes.':'Te faltan '+ptFmt(_ptCfg.minimoParaUsar-r.libres)+' puntos para usarlos como descuento (mínimo '+ptFmt(_ptCfg.minimoParaUsar)+').';
+        return r;
+    }
+    r.disponibles=n;
+    if(_ptUsar){r.usar=n;r.descuento=n*_ptCfg.valorPunto;}
+    return r;
+}
+
+function ptIniciar(){
+    if(!clienteAuth||typeof db==='undefined')return;
+    const uid=clienteAuth.uid;
+    try{_canjes=JSON.parse(localStorage.getItem('yercoCanjes_'+uid)||'[]');if(!Array.isArray(_canjes))_canjes=[];}catch(e){_canjes=[];}
+    db.collection('config').doc('puntos').get().then(s=>{
+        _ptCfg=ptNorm(s.exists?s.data():null);
+        if(!ptHabilitado()){_ptPintarTodo();return;}
+        if(_ptUnsub)_ptUnsub();
+        _ptUnsub=db.collection('puntos').doc(uid).onSnapshot(d=>{_ptDoc=d.exists?d.data():null;_ptPintarTodo();},e=>console.warn('puntos:',e.message));
+        if(_ptUnsubMovs)_ptUnsubMovs();
+        _ptUnsubMovs=db.collection('puntos').doc(uid).collection('movs').orderBy('fecha','desc').limit(60).onSnapshot(q=>{_ptMovs=q.docs.map(d=>Object.assign({id:d.id},d.data()));if(_cuentaTab==='puntos')_renderCuentaPuntos();if(_cuentaTab==='pedidos')_renderPedidosCliente();},e=>console.warn('movs:',e.message));
+    }).catch(e=>console.warn('config puntos:',e.message));
+}
+function ptDetener(){
+    if(_ptUnsub){_ptUnsub();_ptUnsub=null;}
+    if(_ptUnsubMovs){_ptUnsubMovs();_ptUnsubMovs=null;}
+    _ptDoc=null;_ptMovs=[];_canjes=[];_ptPintarTodo();
+}
+function _ptGuardarCanjes(){if(clienteAuth){try{localStorage.setItem('yercoCanjes_'+clienteAuth.uid,JSON.stringify(_canjes));}catch(e){}}}
+function _ptPintarTodo(){
+    const hab=ptHabilitado();
+    const it=document.getElementById('udPuntos');
+    if(it){it.style.display=hab?'':'none';const b=document.getElementById('udPuntosNum');if(b)b.textContent=ptFmt(ptSaldo());}
+    document.querySelectorAll('.cuenta-tab-pt').forEach(b=>{b.style.display=hab?'':'none';});
+    if(document.getElementById('modalCuenta')?.style.display==='flex'){_renderCuentaHead();if(_cuentaTab==='puntos')_renderCuentaPuntos();if(_cuentaTab==='canjear')_renderPremios('cuentaPremios');}
+    if(_checkoutAbierto())updateCheckoutResumen();
+    if(document.getElementById('ptTiendaModal')?.classList.contains('show'))_renderPremios('ptTiendaLista');
+}
+
+/* --- Premios --- */
+async function _ptCargarPremios(){
+    if(_ptPremios)return _ptPremios;
+    try{const s=await db.collection('puntosPremios').where('activo','==',true).get();_ptPremios=s.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(a.puntos||0)-(b.puntos||0));}
+    catch(e){console.warn('premios:',e.message);_ptPremios=[];}
+    return _ptPremios;
+}
+/* Un premio se muestra si el producto existe, esta visible y le queda stock despues del carrito */
+function _ptPremioEstado(pr){
+    const p=productos.find(x=>x.id===pr.productoId);
+    if(!p||p.oculto===true)return null;
+    const enCarrito=(carrito.find(i=>i.id===p.id)||{}).cantidad||0;
+    const yaCanje=_canjes.filter(c=>c.premioId===pr.id).reduce((s,c)=>s+c.cantidad,0);
+    const previos=Number(((_ptDoc&&_ptDoc.canjesPorPremio)||{})[pr.id])||0;
+    const libres=ptSaldo()-ptEnCanjes();
+    let no='';
+    if((Number(p.stock)||0)-enCarrito-yaCanje<=0)no='Sin stock';
+    else if(pr.limitePorCliente&&previos+yaCanje>=pr.limitePorCliente)no='Ya lo canjeaste';
+    else if(libres<pr.puntos)no='Te faltan '+ptFmt(pr.puntos-libres)+' pts';
+    return{p,yaCanje,no};
+}
+function _renderPremios(contId){
+    const c=document.getElementById(contId);if(!c)return;
+    if(!_ptPremios){c.innerHTML='<p class="pt-vacio">Cargando premios...</p>';_ptCargarPremios().then(()=>_renderPremios(contId));return;}
+    const lista=_ptPremios.map(pr=>({pr,e:_ptPremioEstado(pr)})).filter(x=>x.e);
+    if(!lista.length){c.innerHTML='<p class="pt-vacio">Todavía no hay premios para canjear. ¡Seguí sumando puntos!</p>';return;}
+    c.innerHTML=lista.map(({pr,e})=>{
+        const img=optImg(e.p.imagen,200)||e.p.imagen||'img/default-product.jpg';
+        const btn=e.yaCanje
+            ?'<button class="pt-premio-btn quitar" onclick="ptQuitarCanje(\''+pr.id+'\')"><i class="bi bi-check-lg"></i> Agregado · quitar</button>'
+            :(e.no?'<button class="pt-premio-btn" disabled>'+esc(e.no)+'</button>':'<button class="pt-premio-btn" onclick="ptCanjear(\''+pr.id+'\')"><i class="bi bi-gift"></i> Canjear</button>');
+        return '<div class="pt-premio'+(e.no&&!e.yaCanje?' lejos':'')+'"><img src="'+esc(img)+'" alt="" loading="lazy" onerror="this.src=\'img/default-product.jpg\'"><div class="pt-premio-nombre">'+esc(e.p.nombreMostrado||e.p.nombre)+'</div><div class="pt-premio-pts">'+ptFmt(pr.puntos)+' puntos</div>'+btn+'</div>';
+    }).join('');
+}
+function ptCanjear(premioId){
+    const pr=(_ptPremios||[]).find(x=>x.id===premioId);if(!pr)return;
+    const e=_ptPremioEstado(pr);
+    if(!e||e.no){showToast(e?e.no:'Este premio ya no está disponible','error');return;}
+    _canjes.push({premioId:pr.id,productoId:e.p.id,nombre:e.p.nombreMostrado||e.p.nombre,imagen:e.p.imagen||'',puntos:Number(pr.puntos)||0,cantidad:1});
+    _ptGuardarCanjes();
+    showToast(_checkoutAbierto()?'Canje agregado a tu pedido':'Listo: se suma gratis a tu próximo pedido','success');
+    _ptPintarTodo();
+}
+function ptQuitarCanje(premioId){
+    const i=_canjes.findIndex(c=>c.premioId===premioId);
+    if(i>=0){_canjes.splice(i,1);_ptGuardarCanjes();_ptPintarTodo();}
+}
+function ptAbrirTienda(){
+    document.getElementById('ptTiendaSaldo').textContent=ptFmt(Math.max(0,ptSaldo()-ptEnCanjes()));
+    document.getElementById('ptTiendaModal').classList.add('show');
+    document.getElementById('ptTiendaOverlay').classList.add('show');
+    _renderPremios('ptTiendaLista');
+}
+function ptCerrarTienda(){
+    document.getElementById('ptTiendaModal').classList.remove('show');
+    document.getElementById('ptTiendaOverlay').classList.remove('show');
+}
+function ptToggleUsar(on){_ptUsar=!!on;updateCheckoutResumen();}
+
+/* Bloque de puntos del checkout. Recibe la cuenta ya hecha por updateCheckoutResumen. */
+function _ptRenderCheckout(r,montoProductos){
+    const el=document.getElementById('chkPuntosSection');if(!el)return;
+    if(!r.habilitado){el.style.display='none';el.innerHTML='';return;}
+    el.style.display='';
+    const gana=ptGanaria(montoProductos);
+    const pct=montoProductos+r.descuento>0?Math.round(r.descuento/(montoProductos+r.descuento)*100):0;
+    let h='<div class="pt-chk"><div class="pt-chk-top"><span class="pt-chk-ico"><i class="bi bi-stars"></i></span><div class="pt-chk-saldo"><b>Tenés '+ptFmt(r.saldo)+' puntos</b><small>valen $'+formatPrice(r.saldo*_ptCfg.valorPunto)+' en descuentos</small></div>'+
+        '<button type="button" class="pt-chk-tienda" onclick="ptAbrirTienda()"><i class="bi bi-gift"></i> Canjear</button></div>';
+    if(r.disponibles){
+        h+='<label class="pt-switch-row"><span><b>Usar mis puntos</b><small>'+(r.usar?ptFmt(r.usar)+' puntos = -$'+formatPrice(r.descuento)+' ('+pct+'% de esta compra)':'Los guardás para más adelante')+'</small></span>'+
+           '<input type="checkbox" role="switch" '+(_ptUsar?'checked ':'')+'onchange="ptToggleUsar(this.checked)" aria-label="Usar mis puntos en esta compra"><span class="pt-switch" aria-hidden="true"></span></label>';
+    }else if(r.motivo&&r.saldo>0){
+        h+='<p class="pt-chk-nota">'+esc(r.motivo)+'</p>';
+    }
+    if(_canjes.length){
+        h+='<div class="pt-chk-canjes">'+_canjes.map(c=>'<div class="pt-canje"><img src="'+esc(optImg(c.imagen,80)||c.imagen||'img/default-product.jpg')+'" alt="" onerror="this.src=\'img/default-product.jpg\'"><span><b>'+esc(c.nombre)+'</b><small>Gratis con '+ptFmt(c.puntos*c.cantidad)+' puntos</small></span><button type="button" onclick="ptQuitarCanje(\''+c.premioId+'\')" aria-label="Quitar canje"><i class="bi bi-x-lg"></i></button></div>').join('')+'</div>';
+    }
+    if(gana>0)h+='<p class="pt-chk-gana"><i class="bi bi-plus-circle"></i> Con esta compra sumás <b>'+ptFmt(gana)+' puntos</b> cuando se confirme el pago.</p>';
+    el.innerHTML=h+'</div>';
+}
+
+/* ===== MI CUENTA =====
+   Una sola ventana con pestañas (antes "Mi perfil" y "Mis pedidos" eran dos). En el celular
+   ocupa la pantalla entera. Los ids de los formularios de datos y direcciones son los de antes,
+   asi que guardarPerfil, guardarDireccion, etc. siguen igual. */
+let _cuentaTab='pedidos';
+function openCuenta(tab){
+    if(!clienteAuth)return;
+    const m=document.getElementById('modalCuenta');if(!m)return;
+    m.style.display='flex';document.body.style.overflow='hidden';
+    document.getElementById('pfNombre').value=clienteAuth.nombre||'';
+    document.getElementById('pfApellido').value=clienteAuth.apellido||'';
+    document.getElementById('pfTelefono').value=clienteAuth.telefono||'';
+    document.getElementById('pfEmail').value=clienteAuth.email||'';
+    renderDirecciones();
+    _renderCuentaHead();
+    _ptPintarTodo();
+    cuentaTab(tab||'pedidos');
+}
+function closeCuenta(){
+    const m=document.getElementById('modalCuenta');if(m)m.style.display='none';
+    document.body.style.overflow='';
+    if(_pedidosListener){_pedidosListener();_pedidosListener=null;}
+}
+function cuentaTab(tab){
+    if((tab==='puntos'||tab==='canjear')&&!ptHabilitado())tab='pedidos';
+    _cuentaTab=tab;
+    document.querySelectorAll('.cuenta-tab').forEach(b=>{const on=b.getAttribute('data-tab')===tab;b.classList.toggle('active',on);b.setAttribute('aria-selected',on?'true':'false');});
+    document.querySelectorAll('.cuenta-panel').forEach(p=>{p.style.display=p.getAttribute('data-tab')===tab?'':'none';});
+    if(tab==='pedidos'){if(!_pedidosListener)_cargarPedidosCliente();else _renderPedidosCliente();}
+    if(tab==='puntos')_renderCuentaPuntos();
+    if(tab==='canjear')_renderPremios('cuentaPremios');
+}
+function _renderCuentaHead(){
+    const n=((clienteAuth.nombre||'')+' '+(clienteAuth.apellido||'')).trim()||clienteAuth.email;
+    document.getElementById('cuentaAvatar').textContent=(((clienteAuth.nombre||'')[0]||'')+((clienteAuth.apellido||'')[0]||'')).toUpperCase()||(clienteAuth.email||'?')[0].toUpperCase();
+    document.getElementById('cuentaNombre').textContent=n;
+    const desde=clienteAuth.creadoEn&&clienteAuth.creadoEn.toDate?clienteAuth.creadoEn.toDate():null;
+    document.getElementById('cuentaSub').textContent=clienteAuth.email+(desde?' · cliente desde '+desde.toLocaleDateString('es-AR',{month:'long',year:'numeric'}):'');
+    const card=document.getElementById('cuentaPuntosCard');
+    if(!ptHabilitado()){card.style.display='none';return;}
+    card.style.display='';
+    const saldo=ptSaldo();
+    const vence=_ptVence();
+    /* Sin recomendar un premio puntual (pedido del dueño): el boton lleva a la tienda completa */
+    card.innerHTML='<div class="cuenta-pts-top"><div><div class="cuenta-pts-num">'+ptFmt(saldo)+'</div><div class="cuenta-pts-lbl">puntos · valen $'+formatPrice(saldo*_ptCfg.valorPunto)+'</div></div>'+
+        '<button type="button" class="cuenta-pts-btn" onclick="cuentaTab(\'canjear\')"><i class="bi bi-gift"></i> Tienda de canjes</button></div>'+
+        (vence?'<div class="cuenta-pts-vence"><i class="bi bi-hourglass-split"></i> Vencen el '+vence.toLocaleDateString('es-AR')+' si no comprás antes</div>':'');
+}
+function _ptVence(){
+    if(!_ptCfg||!_ptCfg.mesesVencimiento||!(ptSaldo()>0)||!_ptDoc||!_ptDoc.ultimaCompra||!_ptDoc.ultimaCompra.toDate)return null;
+    const d=_ptDoc.ultimaCompra.toDate();d.setMonth(d.getMonth()+_ptCfg.mesesVencimiento);return d;
+}
+const _PT_MOV={gano:['bi-plus-circle','Sumaste'],uso:['bi-bag-check','Usaste'],devolucion:['bi-arrow-counterclockwise','Te devolvimos'],ajuste:['bi-gift','Ajuste de Yerco'],vencimiento:['bi-hourglass-bottom','Vencieron']};
+function _renderCuentaPuntos(){
+    const c=document.getElementById('cuentaMovs');if(!c||!_ptCfg)return;
+    const cfg=_ptCfg;
+    document.getElementById('cuentaComoFunciona').innerHTML=
+        '<li>Sumás <b>1 punto cada $'+formatPrice(cfg.pesosPorPunto)+'</b> en productos, cuando se confirma el pago de tu compra.</li>'+
+        '<li>Cada punto vale <b>$'+formatPrice(cfg.valorPunto)+'</b> de descuento en tus próximas compras'+(cfg.minimoParaUsar?', a partir de '+ptFmt(cfg.minimoParaUsar)+' puntos':'')+'. Cubren hasta el '+cfg.topePorcentaje+'% de cada compra.</li>'+
+        '<li>También los podés <b>canjear por productos gratis</b>.</li>'+
+        '<li>Al confirmar un pedido se usan solos; si preferís guardarlos, apagá "Usar mis puntos".</li>'+
+        (cfg.mesesVencimiento?'<li>Vencen si pasan '+cfg.mesesVencimiento+' meses sin comprar.</li>':'');
+    const movs=_ptMovs.filter(m=>!(m.tipo==='gano'&&!Number(m.puntos)));
+    if(!movs.length){c.innerHTML='<p class="pt-vacio">Todavía no tenés movimientos. Tus puntos aparecen acá cuando se confirma el pago de una compra.</p>';return;}
+    c.innerHTML=movs.map(m=>{
+        const t=_PT_MOV[m.tipo]||['bi-dot',''];const pts=Number(m.puntos)||0;
+        const f=m.fecha&&m.fecha.toDate?m.fecha.toDate().toLocaleDateString('es-AR'):'';
+        let det='';
+        if(m.tipo==='gano')det='Compra'+(m.ventaNum?' N°'+String(m.ventaNum).padStart(3,'0'):'');
+        else if(m.tipo==='uso'){const p=[];if(m.puntosDescuento)p.push('descuento de $'+formatPrice(m.descuento));(m.canjes||[]).forEach(x=>p.push(x.nombre));det=(m.pedidoNum?'Pedido N°'+String(m.pedidoNum).padStart(3,'0')+': ':'')+p.join(', ');}
+        else det=m.motivo||'';
+        return '<div class="pt-mov"><i class="bi '+t[0]+'"></i><span class="pt-mov-txt"><b>'+t[1]+'</b><small>'+esc(f+(det?' · '+det:''))+'</small></span><span class="pt-mov-pts '+(pts>=0?'mas':'menos')+'">'+(pts>0?'+':'')+ptFmt(pts)+'</span></div>';
+    }).join('');
 }
 
 /* ===== CUPONES ===== */

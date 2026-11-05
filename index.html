@@ -67,8 +67,9 @@
     <button class="btn-avatar-nav" id="avatarNavBtn" onclick="toggleUserMenu()"><span id="avatarInitials"></span></button>
     <div class="user-dropdown" id="userDropdown">
       <div class="user-dropdown-info"><strong id="udNombre"></strong><small id="udEmail"></small></div>
-      <a href="#" onclick="openPerfilModal();closeUserMenu()"><i class="bi bi-person"></i> Mi perfil</a>
-      <a href="#" onclick="openHistorialModal();closeUserMenu()"><i class="bi bi-clock-history"></i> Mis pedidos</a>
+      <a href="#" onclick="openCuenta('pedidos');closeUserMenu();return false"><i class="bi bi-person"></i> Mi cuenta</a>
+      <a href="#" onclick="openCuenta('pedidos');closeUserMenu();return false"><i class="bi bi-clock-history"></i> Mis pedidos</a>
+      <a href="#" id="udPuntos" style="display:none" onclick="openCuenta('puntos');closeUserMenu();return false"><i class="bi bi-stars"></i> Mis puntos <span class="ud-pts" id="udPuntosNum">0</span></a>
       <a href="#" onclick="authLogout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
     </div>
   </div>
@@ -180,6 +181,7 @@
                 </div>
                 <div id="chkCuponMsg" style="font-size:0.82rem;margin-top:0.4rem"></div>
             </div>
+            <div class="chk-section" id="chkPuntosSection" style="display:none"></div>
             <div class="chk-section">
                 <div id="chkResumen" class="chk-resumen"></div>
             </div>
@@ -233,46 +235,67 @@
       </div>
     </div>
 
-    <!-- MODAL PERFIL -->
-    <div class="modal-auth-overlay" id="modalPerfil" style="display:none">
-      <div class="modal-auth-box" style="max-width:480px">
-        <div class="modal-auth-header">
-          <h3><i class="bi bi-person-circle"></i> Mi perfil</h3>
-          <button onclick="closePerfilModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#666"><i class="bi bi-x-lg"></i></button>
+    <!-- MI CUENTA (antes "Mi perfil" y "Mis pedidos" por separado) -->
+    <div class="modal-auth-overlay cuenta-overlay" id="modalCuenta" style="display:none" onclick="if(event.target===this)closeCuenta()">
+      <div class="cuenta-box" role="dialog" aria-modal="true" aria-labelledby="cuentaNombre">
+        <div class="cuenta-head">
+          <div class="cuenta-avatar" id="cuentaAvatar" aria-hidden="true"></div>
+          <div class="cuenta-quien"><h3 id="cuentaNombre"></h3><small id="cuentaSub"></small></div>
+          <button type="button" class="cuenta-x" onclick="closeCuenta()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
         </div>
-        <div class="perfil-tabs"><button class="perfil-tab active" onclick="switchPerfilTab('datos')">Mis datos</button><button class="perfil-tab" onclick="switchPerfilTab('direcciones')">Mis direcciones</button></div>
-        <!-- Tab datos -->
-        <div id="perfilTabDatos">
-          <div class="auth-form-group"><label>Nombre</label><input type="text" id="pfNombre" class="auth-input"></div>
-          <div class="auth-form-group"><label>Apellido</label><input type="text" id="pfApellido" class="auth-input"></div>
-          <div class="auth-form-group"><label>Teléfono</label><input type="tel" id="pfTelefono" class="auth-input"></div>
-          <div class="auth-form-group"><label>Email</label><input type="text" class="auth-input" id="pfEmail" readonly style="opacity:0.6"></div>
-          <button class="btn-auth-primary" onclick="guardarPerfil()"><i class="bi bi-check-lg"></i> Guardar cambios</button>
+        <div class="cuenta-pts" id="cuentaPuntosCard" style="display:none"></div>
+        <div class="cuenta-tabs" role="tablist">
+          <button type="button" class="cuenta-tab active" data-tab="pedidos" role="tab" onclick="cuentaTab('pedidos')"><i class="bi bi-bag"></i> Pedidos</button>
+          <button type="button" class="cuenta-tab cuenta-tab-pt" data-tab="puntos" role="tab" style="display:none" onclick="cuentaTab('puntos')"><i class="bi bi-stars"></i> Puntos</button>
+          <button type="button" class="cuenta-tab cuenta-tab-pt" data-tab="canjear" role="tab" style="display:none" onclick="cuentaTab('canjear')"><i class="bi bi-gift"></i> Tienda de canjes</button>
+          <button type="button" class="cuenta-tab" data-tab="datos" role="tab" onclick="cuentaTab('datos')"><i class="bi bi-person"></i> Mis datos</button>
+          <button type="button" class="cuenta-tab" data-tab="direcciones" role="tab" onclick="cuentaTab('direcciones')"><i class="bi bi-geo-alt"></i> Direcciones</button>
         </div>
-        <!-- Tab direcciones -->
-        <div id="perfilTabDirecciones" style="display:none">
-          <div id="listaDirecciones" style="margin-bottom:1rem"></div>
-          <button class="btn-auth-secondary" id="btnAgregarDir" onclick="mostrarFormDir()"><i class="bi bi-plus-lg"></i> Agregar dirección</button>
-          <div id="formDireccion" style="display:none;margin-top:1rem;border-top:1px solid #eee;padding-top:1rem">
-            <div class="auth-form-group"><label>Nombre de la dirección *</label><input type="text" id="dirNombre" class="auth-input" placeholder="Ej: Mi casa, Trabajo..."></div>
-            <div class="auth-form-group"><label>Dirección completa *</label><input type="text" id="dirTexto" class="auth-input" placeholder="Calle, número, barrio..."></div>
-            <div style="display:flex;gap:0.5rem"><button class="btn-auth-primary" style="flex:1" onclick="guardarDireccion()">Guardar</button><button class="btn-auth-secondary" style="flex:1" onclick="cancelarFormDir()">Cancelar</button></div>
-          </div>
+        <div class="cuenta-body">
+          <section class="cuenta-panel" data-tab="pedidos">
+            <div class="hist-tabs"><button class="hist-tab active" onclick="filterHistPedidos('todos')">Todos</button><button class="hist-tab" onclick="filterHistPedidos('pendiente')">Pendientes</button><button class="hist-tab" onclick="filterHistPedidos('confirmado')">Confirmados</button><button class="hist-tab" onclick="filterHistPedidos('entregado')">Entregados</button></div>
+            <div id="listaPedidosCliente"><div class="pt-vacio">Cargando...</div></div>
+          </section>
+          <section class="cuenta-panel" data-tab="puntos" style="display:none">
+            <h4 class="cuenta-h4">Cómo funciona</h4>
+            <ul class="cuenta-como" id="cuentaComoFunciona"></ul>
+            <h4 class="cuenta-h4">Movimientos</h4>
+            <div id="cuentaMovs"></div>
+            <p class="cuenta-legal">Los puntos no se pueden cambiar por dinero. <a href="politicas.html#puntos" target="_blank" rel="noopener">Condiciones del programa</a></p>
+          </section>
+          <section class="cuenta-panel" data-tab="canjear" style="display:none">
+            <p class="cuenta-intro">Todos los productos que podés llevarte gratis con tus puntos. Elegí los que quieras: se suman a tu próximo pedido y los puntos se descuentan cuando lo confirmás.</p>
+            <div class="pt-premios" id="cuentaPremios"></div>
+          </section>
+          <section class="cuenta-panel" data-tab="datos" style="display:none">
+            <div class="auth-form-group"><label for="pfNombre">Nombre</label><input type="text" id="pfNombre" class="auth-input" autocomplete="given-name"></div>
+            <div class="auth-form-group"><label for="pfApellido">Apellido</label><input type="text" id="pfApellido" class="auth-input" autocomplete="family-name"></div>
+            <div class="auth-form-group"><label for="pfTelefono">Teléfono / WhatsApp</label><input type="tel" id="pfTelefono" class="auth-input" autocomplete="tel" inputmode="tel"></div>
+            <div class="auth-form-group"><label for="pfEmail">Email</label><input type="text" class="auth-input" id="pfEmail" readonly style="opacity:0.6"></div>
+            <button class="btn-auth-primary" onclick="guardarPerfil()"><i class="bi bi-check-lg"></i> Guardar cambios</button>
+            <button class="cuenta-salir" onclick="closeCuenta();authLogout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</button>
+          </section>
+          <section class="cuenta-panel" data-tab="direcciones" style="display:none">
+            <div id="listaDirecciones" style="margin-bottom:1rem"></div>
+            <button class="btn-auth-secondary" id="btnAgregarDir" onclick="mostrarFormDir()"><i class="bi bi-plus-lg"></i> Agregar dirección</button>
+            <div id="formDireccion" style="display:none;margin-top:1rem;border-top:1px solid var(--h-line,#eee);padding-top:1rem">
+              <div class="auth-form-group"><label for="dirNombre">Nombre de la dirección *</label><input type="text" id="dirNombre" class="auth-input" placeholder="Ej: Mi casa, Trabajo..."></div>
+              <div class="auth-form-group"><label for="dirTexto">Dirección completa *</label><input type="text" id="dirTexto" class="auth-input" placeholder="Calle, número, barrio..."></div>
+              <div style="display:flex;gap:0.5rem"><button class="btn-auth-primary" style="flex:1" onclick="guardarDireccion()">Guardar</button><button class="btn-auth-secondary" style="flex:1" onclick="cancelarFormDir()">Cancelar</button></div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
 
-    <!-- MODAL HISTORIAL PEDIDOS -->
-    <div class="modal-auth-overlay" id="modalHistorial" style="display:none">
-      <div class="modal-auth-box" style="max-width:600px;max-height:85vh;overflow-y:auto">
-        <div class="modal-auth-header">
-          <h3><i class="bi bi-clock-history"></i> Mis pedidos</h3>
-          <button onclick="closeHistorialModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#666"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="hist-tabs"><button class="hist-tab active" onclick="filterHistPedidos('todos')">Todos</button><button class="hist-tab" onclick="filterHistPedidos('pendiente')">Pendientes</button><button class="hist-tab" onclick="filterHistPedidos('confirmado')">Confirmados</button><button class="hist-tab" onclick="filterHistPedidos('entregado')">Entregados</button></div>
-        <div id="listaPedidosCliente"><div style="text-align:center;padding:2rem;color:#999">Cargando...</div></div>
-      </div>
-    </div>
+    <!-- TIENDA DE CANJES (desde el checkout) -->
+    <div class="checkout-overlay pt-tienda-overlay" id="ptTiendaOverlay" onclick="ptCerrarTienda()"></div>
+    <aside class="pt-tienda" id="ptTiendaModal" role="dialog" aria-modal="true" aria-labelledby="ptTiendaTit">
+      <div class="chk-header"><h3 id="ptTiendaTit"><i class="bi bi-gift"></i> Canjeá tus puntos</h3><button class="chk-close" onclick="ptCerrarTienda()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button></div>
+      <div class="pt-tienda-saldo">Tenés <b id="ptTiendaSaldo">0</b> puntos disponibles</div>
+      <div class="pt-tienda-body"><div class="pt-premios" id="ptTiendaLista"></div></div>
+      <div class="chk-footer"><button class="chk-confirm-btn pt-tienda-listo" onclick="ptCerrarTienda()">Listo</button></div>
+    </aside>
 
 </body>
 </html>

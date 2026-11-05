@@ -1,9 +1,56 @@
 # YERCO — Pendientes
 
-## ▶ LEER PRIMERO — estado al 27/10/2026 y pendientes en orden
+## ▶ LEER PRIMERO — estado al 05/11/2026 y pendientes en orden
 
 Árbol: `main`, todo commiteado y pusheado (ver `git log -1`), salvo `publicaciones/` (el reel,
-fuera del repo a propósito) y este cambio de encabezado. Producción (yerco.ar) = lo último de `main`.
+fuera del repo a propósito). Producción (yerco.ar) = lo último de `main`.
+
+### ▶ EN CURSO (05/11) — Programa de puntos + "Mi cuenta" nueva
+
+Pedido del dueño: perfil del cliente más lindo, puntos por compra que se usan como descuento en la
+siguiente (toggle "Usar mis puntos" PRENDIDO por defecto en el checkout, mostrando el % que
+representa; botón al lado a una tienda de canjes; apagándolo no gasta puntos), y una sección
+"Puntos" en el panel con configuración y tienda de canjes (productos con valor en puntos).
+
+**Decisiones (05/11):** cada punto vale $ fijo (no % escalonado) · se acreditan cuando la VENTA
+queda "Pagó" (no al pedir; si pasa a "No pagó", se edita o se borra, se ajustan solos) · no son
+retroactivos (todos arrancan en 0; ajuste manual desde el panel) · vencen si pasan X meses sin
+comprar (configurable).
+
+**Diseño:**
+- El saldo NO lo escribe nunca el navegador (el pedido y su total los arma el cliente y se pueden
+  tocar desde la consola). `puntos/{uid}` (saldo, ultimaCompra, canjes por premio) + subcolección
+  `movs` (gano/uso/devolucion/ajuste/vencimiento). Lee el dueño y el admin; escriben las Cloud
+  Functions (Admin SDK) y el panel.
+- Config en `config/puntos` (activo, probadores, pesosPorPunto, valorPunto, minimoParaUsar,
+  topePorcentaje, mesesVencimiento, combinarConCupon). Premios en `puntosPremios` (producto,
+  puntos, activo, límite por cliente).
+- Pedido: el cliente manda `puntosUsar`, `puntosDescuento` y los canjes (items a $0 con
+  `canje:true`); la función `procesarPuntosPedido` revalida en transacción contra el saldo y la
+  config y descuenta, o marca `puntosEstado:'rechazado'` + `revisarPuntos`. Pedido borrado sin
+  venta → devuelve. Venta (onWritten) → acredita / ajusta / devuelve. Vencimiento: función
+  programada.
+- El envío gratis se calcula ANTES de los puntos (si no, usar puntos te puede sacar del envío
+  gratis). Productos canjeados a $0: arreglar `descontarStockPedido` (los marcaría "bajo costo")
+  y la conversión a venta (los cobraría a precio de lista).
+- Arranca APAGADO con modo "solo probadores"; se prende recién después de probarlo en yerco.ar.
+- Términos del programa en politicas.html.
+
+**Orden:** 1) reglas + funciones · 2) panel (sección Puntos, pedidos y ventas) · 3) tienda
+(checkout, "Mi cuenta" con pestañas, términos) · 4) prueba en producción en modo probador.
+Avisar antes de cada push y de cada deploy de reglas/funciones.
+
+**Estado (05/11):** 1-3 HECHOS en código y probados en local con datos simulados (PC y 360 px).
+Archivos: `functions/puntos.js` (+ arreglos de canjes a $0 y Telegram en `functions/index.js`),
+`firestore.rules`, `admin-puntos.js` + sección/modales/estilos en `admin.html` (también pedidos,
+conversión a venta, totales de venta y comprobantes), bloque "PROGRAMA DE PUNTOS" y "MI CUENTA" en
+`app.js`, modal `modalCuenta` + `ptTiendaModal` en `index.html`, estilos al final de `huerta.css`,
+sección 10 en `politicas.html`. Pedido del dueño: NO recomendar un premio puntual; la tienda de
+canjes muestra todos los premios que carga el admin.
+**Falta (paso 4):** `firebase deploy --only firestore:rules,functions`, push, y probar en
+yerco.ar con la cuenta del dueño como probador (Puntos → Configuración → Agregarme): cargar un
+premio, regalarse puntos a mano, hacer un pedido con toggle y canje, pasarlo a venta "Pagó" y
+ver que acredite; borrar el pedido / la venta y ver que devuelva. Después prender el programa.
 
 **HECHO (27/10): mejora visual de descripción e info nutricional en la ficha.** Viñetas "• " →
 lista, "Conservar…" en recuadro, info nutricional → tabla (una columna por cada "POR …", así las
