@@ -630,3 +630,4 @@ exports.procesarPuntosPedido = puntos.procesarPuntosPedido;
 exports.devolverPuntosPedido = puntos.devolverPuntosPedido;
 exports.puntosVenta = puntos.puntosVenta;
 exports.vencerPuntos = puntos.vencerPuntos;
+exports.puntosEstadoPedido = puntos.puntosEstadoPedido;

@@ -729,3 +729,99 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--h-ink); }
 .pt-mov-pts { font-weight: 800; font-size: .95rem; white-space: nowrap; }
 .pt-mov-pts.mas { color: var(--h-green); }
 .pt-mov-pts.menos { color: var(--h-off); }
+
+/* ============================================================================
+   ANIMACIONES DE PEDIDO (noviembre 2026): camioncito de "pedido confirmado" y seguimiento
+   de cada pedido en Mi cuenta. Dibujos SVG en app.js (SVG_CAMION, _ICO). Solo transform y
+   opacity; con "reducir movimiento" quedan quietos (bloque del final).
+   ============================================================================ */
+.cam-escena { position: relative; height: 120px; margin: -6px -6px 6px; border-radius: 16px; overflow: hidden; background: linear-gradient(#EEF5DF, #F4F6EC 70%); }
+.cam-fondo { position: absolute; left: 0; bottom: 18px; width: 200%; height: 90px; animation: camFondo 9s linear infinite; }
+.cam-ruta { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: #D8CFB8; }
+.cam-ruta::after { content: ""; position: absolute; left: 0; top: 10px; width: 200%; height: 3px; background: repeating-linear-gradient(90deg, #fff 0 18px, transparent 18px 34px); animation: camRuta .7s linear infinite; }
+.cam-escena .cam { position: absolute; left: 50%; bottom: 10px; width: 150px; margin-left: -75px; animation: camLlega 1s cubic-bezier(.2, .8, .2, 1) both; }
+.cam-cuerpo { animation: camRebote .42s ease-in-out infinite alternate; }
+.cam-rueda { animation: camGira .55s linear infinite; }
+@keyframes camFondo { to { transform: translateX(-50%); } }
+@keyframes camRuta { to { transform: translateX(-34px); } }
+@keyframes camLlega { from { transform: translateX(-160%); } to { transform: none; } }
+@keyframes camRebote { from { transform: translateY(0); } to { transform: translateY(-1.5px); } }
+@keyframes camGira { to { transform: rotate(360deg); } }
+
+.pok-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(22, 48, 32, .45); display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity .25s; }
+.pok-overlay.show { opacity: 1; }
+.pok-box { width: 100%; max-width: 420px; background: #fff; border-radius: 22px; padding: 1.1rem 1.25rem 1.25rem; text-align: center; color: var(--h-ink); box-shadow: 0 24px 60px rgba(22, 48, 32, .3); transform: translateY(14px) scale(.98); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+.pok-overlay.show .pok-box { transform: none; }
+.pok-box h3 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 1.4rem; margin: .4rem 0 .3rem; }
+.pok-txt { font-size: .9rem; color: var(--h-muted); margin: 0 0 .9rem; }
+.pok-pts { background: var(--h-ink); color: #fff; border-radius: 16px; padding: .85rem 1rem; margin-bottom: .9rem; }
+.ok-pts-num { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 2rem; line-height: 1; color: var(--h-lime); animation: okPts .6s .5s cubic-bezier(.2, .8, .2, 1.4) both; }
+.ok-pts-num span { font-size: 1rem; color: #fff; font-weight: 700; }
+.ok-pts-txt { font-size: .82rem; opacity: .85; margin-top: .3rem; }
+.ok-pts-usados { font-size: .8rem; margin-top: .55rem; padding-top: .55rem; border-top: 1px solid rgba(255, 255, 255, .15); opacity: .9; }
+.ok-pts-usados i { color: var(--h-lime); }
+@keyframes okPts { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.pok-wa { display: flex; align-items: center; justify-content: center; gap: .45rem; background: #25D366; color: #fff; text-decoration: none; font-weight: 700; border-radius: 999px; padding: .75rem; }
+.pok-wa:hover { background: #1da851; color: #fff; }
+.pok-acc { display: flex; gap: .5rem; margin-top: .6rem; }
+.pok-acc button { flex: 1; background: var(--h-bg2); border: none; color: var(--h-ink); border-radius: 999px; padding: .6rem; font-weight: 600; font-size: .86rem; cursor: pointer; }
+.pok-acc button:hover { background: var(--h-lime); }
+
+/* Seguimiento del pedido (Mi cuenta) */
+.seg { background: var(--h-bg); border-radius: 12px; padding: .7rem .75rem .55rem; margin-bottom: .65rem; }
+.seg-pasos { display: flex; align-items: flex-start; }
+.seg-paso { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 74px; flex: 0 0 auto; text-align: center; }
+.seg-paso small { font-size: .7rem; line-height: 1.15; color: var(--h-muted); font-weight: 600; }
+.seg-ico { position: relative; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--h-line); color: #A6B49C; }
+.seg-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.seg-paso.hecho .seg-ico { background: var(--h-green); border-color: var(--h-green); color: #fff; }
+.seg-paso.hecho small, .seg-paso.actual small { color: var(--h-ink); }
+.seg-paso.actual .seg-ico { border-color: var(--h-green); color: var(--h-green); }
+.seg-linea { position: relative; flex: 1; height: 3px; margin-top: 17px; background: var(--h-line); border-radius: 2px; }
+.seg-linea.llena { background: var(--h-green); }
+.seg-msg { margin: .5rem 0 0; font-size: .8rem; color: var(--h-ink); text-align: center; }
+/* Recibido: un pulso suave alrededor del paso */
+.seg-pendiente .seg-paso.actual .seg-ico::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--h-green); animation: segPulso 1.8s ease-out infinite; }
+@keyframes segPulso { from { transform: scale(1); opacity: .7; } to { transform: scale(1.7); opacity: 0; } }
+/* En preparacion: la caja se mece y el camioncito va y viene por la linea que falta */
+.seg-confirmado .seg-paso.actual .seg-ico svg { animation: segMece 1.6s ease-in-out infinite; }
+@keyframes segMece { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+.seg-cam { position: absolute; top: -13px; left: 0; width: 30px; animation: segCamina 3.2s ease-in-out infinite; }
+.seg-cam .cam { width: 30px; height: auto; display: block; }
+@keyframes segCamina { 0% { left: 0; } 50% { left: calc(100% - 30px); } 100% { left: 0; } }
+.seg-cam .cam-rueda { animation-duration: .4s; }
+/* Entregado: caja con un sello verde que aparece y una tilde que se dibuja */
+.seg-entregado .seg-paso.actual .seg-ico { width: 42px; height: 42px; margin-top: -3px; background: #F4F9E6; border-color: var(--h-green); }
+.ico-entregado { width: 28px !important; height: 28px !important; overflow: visible; }
+.ico-entregado .caja { stroke: var(--h-green); stroke-width: 1.8; }
+.ico-entregado .sello { fill: var(--h-green); stroke: #F4F9E6; stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: segSello .5s .2s cubic-bezier(.2, .8, .2, 1.5) both; }
+.ico-entregado .tilde { stroke: #fff; stroke-width: 2.2; stroke-dasharray: 12; stroke-dashoffset: 12; animation: segTilde .4s .6s ease-out forwards; }
+@keyframes segSello { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes segTilde { to { stroke-dashoffset: 0; } }
+.seg-entregado .seg-msg { color: var(--h-green); font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cam-fondo, .cam-ruta::after, .cam-escena .cam, .cam-cuerpo, .cam-rueda, .seg-cam, .seg-ico::after, .seg-ico svg, .ok-pts-num { animation: none !important; }
+    .seg-cam { left: 40%; }
+    .ico-entregado .sello { animation: none; }
+    .ico-entregado .tilde { animation: none; stroke-dashoffset: 0; }
+}
+/* La caja de "Entregado" queda gris y sin sello hasta que el pedido llega a ese paso */
+.seg-paso:not(.actual) .ico-entregado .caja { stroke: currentColor; }
+.seg-paso:not(.actual) .ico-entregado .sello, .seg-paso:not(.actual) .ico-entregado .tilde { display: none; }
+.seg-paso:not(.actual) .ico-entregado { width: 20px !important; height: 20px !important; }
+.seg-entregado .seg-paso.actual .seg-ico { width: 50px; height: 50px; margin-top: -7px; }
+.seg-entregado .seg-paso.actual .ico-entregado { width: 36px !important; height: 36px !important; }
+.seg-entregado .seg-paso.actual { width: 84px; }
+.seg-cam { top: -17px; width: 40px; }
+.seg-cam .cam { width: 40px; }
+@keyframes segCamina { 0% { left: 0; } 50% { left: calc(100% - 40px); } 100% { left: 0; } }
+@media (max-width: 420px) {
+    .seg { padding: .65rem .5rem .5rem; }
+    .seg-paso { width: 58px; }
+    .seg-paso small { font-size: .66rem; }
+    .seg-entregado .seg-paso.actual { width: 64px; }
+    .seg-cam, .seg-cam .cam { width: 30px; }
+    .seg-cam { top: -14px; }
+    @keyframes segCamina { 0% { left: 0; } 50% { left: calc(100% - 30px); } 100% { left: 0; } }
+}

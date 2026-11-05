@@ -288,6 +288,18 @@
       </div>
     </div>
 
+    <!-- PEDIDO CONFIRMADO (app.js, mostrarPedidoOk) -->
+    <div class="pok-overlay" id="pedidoOk" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pedidoOkTit" onclick="if(event.target===this)cerrarPedidoOk()">
+      <div class="pok-box">
+        <div id="pedidoOkEscena"></div>
+        <h3 id="pedidoOkTit"></h3>
+        <p id="pedidoOkTxt" class="pok-txt"></p>
+        <div id="pedidoOkPts" class="pok-pts" style="display:none"></div>
+        <a id="pedidoOkWa" class="pok-wa" href="#" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> Abrir WhatsApp</a>
+        <div class="pok-acc"><button type="button" onclick="cerrarPedidoOk();openCuenta('pedidos')">Ver mis pedidos</button><button type="button" onclick="cerrarPedidoOk()">Seguir comprando</button></div>
+      </div>
+    </div>
+
     <!-- TIENDA DE CANJES (desde el checkout) -->
     <div class="checkout-overlay pt-tienda-overlay" id="ptTiendaOverlay" onclick="ptCerrarTienda()"></div>
     <aside class="pt-tienda" id="ptTiendaModal" role="dialog" aria-modal="true" aria-labelledby="ptTiendaTit">

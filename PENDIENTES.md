@@ -13,7 +13,10 @@ representa; botón al lado a una tienda de canjes; apagándolo no gasta puntos),
 "Puntos" en el panel con configuración y tienda de canjes (productos con valor en puntos).
 
 **Decisiones (05/11):** cada punto vale $ fijo (no % escalonado) · se acreditan cuando la VENTA
-queda "Pagó" (no al pedir; si pasa a "No pagó", se edita o se borra, se ajustan solos) · no son
+está "Pagó" Y su pedido web está "Entregado" (pedido del dueño: si no, el cliente pedía, Joaco lo
+pasaba a venta —que viene "Pagó" por defecto— y usaba los puntos en otra compra sin haber
+recibido ni pagado la primera; si el pedido vuelve atrás, se borra sin entregar, la venta pasa a
+"No pagó", se edita o se borra, se ajustan solos; ventas de mostrador: alcanza con "Pagó") · no son
 retroactivos (todos arrancan en 0; ajuste manual desde el panel) · vencen si pasan X meses sin
 comprar (configurable).
 

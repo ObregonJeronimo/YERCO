@@ -126,7 +126,7 @@ function ptRenderResumen() {
     (top.length
       ? '<h4 class="pt-h4">Más puntos acumulados</h4><div class="hist-list">' + top.map(s =>
           '<div class="pt-fila" onclick="ptAbrirCliente(\'' + esc(s.uid) + '\')"><span>' + esc(ptNombreCliente(s.uid)) + '</span><span class="pt-fila-num">' + ptPts(s.saldo) + ' pts <small>' + ptPesos(s.saldo * cfg.valorPunto) + '</small></span></div>').join('') + '</div>'
-      : '<p class="pt-vacio">Todavía nadie tiene puntos. Se acreditan cuando una venta de un cliente con cuenta en la web queda en "Pagó".</p>');
+      : '<p class="pt-vacio">Todavía nadie tiene puntos. Se acreditan cuando una venta de un cliente con cuenta en la web está en "Pagó" y, si vino de un pedido web, ese pedido está "Entregado".</p>');
 }
 
 function ptTextoReglas(cfg) {

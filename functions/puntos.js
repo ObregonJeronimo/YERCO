@@ -7,7 +7,8 @@
  * estas funciones (Admin SDK, no pasan por las reglas) y el panel; el cliente solo lo lee.
  *
  * Como se mueve un punto:
- *   - GANA: cuando la VENTA queda "Pago" (puntosVenta). Si despues se marca "No pago", se edita
+ *   - GANA: cuando la VENTA queda "Pago" y su pedido web esta "entregado" (puntosVenta y
+ *     puntosEstadoPedido). Si despues se marca "No pago", el pedido vuelve atras, se edita
  *     o se borra, el mismo movimiento se recalcula y el saldo se ajusta solo.
  *   - USA: el cliente pide usar puntos (descuento) y/o canjear premios en el pedido;
  *     procesarPuntosPedido lo revalida contra el saldo y la config, en una transaccion, y recien
@@ -23,7 +24,7 @@
  * Las cuentas de calculo (puntosPorMonto, maxDescuentoPesos, puntosUsables) tienen su gemela en
  * app.js, que las usa para mostrar lo mismo en el checkout: si se cambia una, cambiar la otra.
  */
-const {onDocumentCreated, onDocumentDeleted, onDocumentWritten} = require('firebase-functions/v2/firestore');
+const {onDocumentCreated, onDocumentDeleted, onDocumentUpdated, onDocumentWritten} = require('firebase-functions/v2/firestore');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const {logger} = require('firebase-functions');
 const admin = require('firebase-admin');
@@ -229,9 +230,20 @@ exports.devolverPuntosPedido = onDocumentDeleted(
   {document: 'pedidos/{pedidoId}', region: REGION, memory: '256MiB', timeoutSeconds: 60},
   async event => {
     const p = event.data && event.data.data();
-    if (!p || p.puntosEstado !== 'aplicado' || !p.clienteAuthUid) return;
-    /* Si ya se paso a venta, los puntos usados viajan con la venta: se devuelven si se borra ella */
-    if (p.ventaId) return;
+    if (!p) return;
+    /* Si ya se paso a venta, la venta guarda en que estado quedo el pedido (ventaFinalizada lo
+       usa) y los puntos usados viajan con ella: se devuelven si se borra la venta. */
+    if (p.ventaId) {
+      try {
+        const vRef = db().collection('ventas').doc(String(p.ventaId));
+        const v = await vRef.get();
+        if (v.exists) await vRef.update({pedidoEstadoFinal: p.estado || ''});
+      } catch (e) {
+        logger.error('No se pudo anotar el estado final del pedido en la venta ' + p.ventaId, e);
+      }
+      return;
+    }
+    if (p.puntosEstado !== 'aplicado' || !p.clienteAuthUid) return;
     try {
       await devolverUso(p.clienteAuthUid, event.params.pedidoId, 'Pedido #' + (p.numero || '') + ' anulado');
     } catch (e) {
@@ -245,10 +257,26 @@ exports.devolverPuntosPedido = onDocumentDeleted(
    --------------------------------------------------------------------------------------------- */
 function ventaPagada(v) { return !(v && v.pagado === false); }
 
+/* Una venta da puntos cuando esta paga Y, si nacio de un pedido web, ese pedido esta
+   "entregado". Sin lo segundo alcanzaba con pasar el pedido a venta (que se marca "Pago" por
+   defecto) para que el cliente tuviera los puntos y los usara en otra compra antes de recibir
+   y pagar la primera. Si el pedido ya no existe, la venta es el registro que queda y vale sola.
+   Las ventas de mostrador no tienen pedido: el cliente se lleva todo en el momento. */
+function ventaFinalizada(venta, pedido) {
+  if (!venta || !ventaPagada(venta)) return false;
+  if (!venta.pedidoId) return true;
+  /* Pedido borrado: vale el estado que tenia al borrarse (lo guarda devolverPuntosPedido en la
+     venta). Si no, borrar un pedido sin entregar le regalaba los puntos. */
+  if (!pedido) return venta.pedidoEstadoFinal === 'entregado';
+  return pedido.estado === 'entregado';
+}
+
 async function ajustarGanado(uid, ventaId, venta) {
   const movRef = refMov(uid, 'venta_' + ventaId);
   await db().runTransaction(async t => {
-    const [cfgS, movS] = await t.getAll(refConfig(), movRef);
+    const pedRef = venta && venta.pedidoId ? db().collection('pedidos').doc(String(venta.pedidoId)) : null;
+    const [cfgS, movS, pedS] = await t.getAll(refConfig(), movRef, ...(pedRef ? [pedRef] : []));
+    const pedido = pedS && pedS.exists ? pedS.data() : null;
     const cfg = normalizarConfig(cfgS.exists ? cfgS.data() : null);
     const mov = movS.exists ? movS.data() : null;
     const actual = mov ? Number(mov.puntos) || 0 : 0;
@@ -256,7 +284,7 @@ async function ajustarGanado(uid, ventaId, venta) {
        config y alguien edita una venta vieja, no se le recalcula con la nueva. */
     const ppp = mov && mov.pesosPorPunto ? mov.pesosPorPunto : cfg.pesosPorPunto;
     const base = venta ? Math.max(0, (Number(venta.total) || 0) - (Number(venta.envio) || 0)) : 0;
-    const deseado = venta && ventaPagada(venta) ? puntosPorMonto(base, ppp) : 0;
+    const deseado = ventaFinalizada(venta, pedido) ? puntosPorMonto(base, ppp) : 0;
     const delta = deseado - actual;
     if (!delta) return;
     /* Con el programa apagado no se acredita nada nuevo, pero si se descuenta lo de una venta
@@ -269,7 +297,7 @@ async function ajustarGanado(uid, ventaId, venta) {
     t.set(movRef, {
       tipo: 'gano', puntos: deseado, monto: base, pesosPorPunto: ppp, ventaId,
       ventaNum: venta ? venta.numero || null : (mov ? mov.ventaNum || null : null),
-      motivo: venta ? (ventaPagada(venta) ? '' : 'Venta marcada como no pagada') : 'Venta eliminada',
+      motivo: !venta ? 'Venta eliminada' : !ventaPagada(venta) ? 'Venta marcada como no pagada' : (deseado ? '' : 'Pedido todavía no entregado'),
       fecha: mov && mov.fecha ? mov.fecha : ahora, actualizadoEn: ahora,
     }, {merge: true});
   });
@@ -293,6 +321,24 @@ exports.puntosVenta = onDocumentWritten(
       }
     } catch (e) {
       logger.error('Error ajustando los puntos de la venta ' + ventaId, e);
+    }
+  }
+);
+
+/* El pedido pasa a "entregado" (o vuelve atras): se recalculan los puntos de su venta */
+exports.puntosEstadoPedido = onDocumentUpdated(
+  {document: 'pedidos/{pedidoId}', region: REGION, memory: '256MiB', timeoutSeconds: 60},
+  async event => {
+    const antes = event.data.before.data() || {};
+    const despues = event.data.after.data() || {};
+    if (antes.estado === despues.estado || !despues.ventaId) return;
+    try {
+      const v = await db().collection('ventas').doc(String(despues.ventaId)).get();
+      if (!v.exists) return;
+      const venta = v.data();
+      if (venta.clienteAuthUid) await ajustarGanado(venta.clienteAuthUid, v.id, venta);
+    } catch (e) {
+      logger.error('Error ajustando puntos por el estado del pedido ' + event.params.pedidoId, e);
     }
   }
 );

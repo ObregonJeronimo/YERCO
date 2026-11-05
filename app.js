@@ -1569,7 +1569,6 @@ async function confirmCheckout(){
         carrito=[];saveCart();updateCartUI();
         idsAResetear.forEach(id=>updateProductCard(id));
         closeCheckoutModal();closeCart();
-        showToast('Pedido N°'+numeroFmt+' confirmado','success');
         /* Registrar uso del cupón ANTES de abrir WhatsApp (en móvil location.href corta la ejecución del código que sigue) */
         if (cuponParaRegistrar) {
             try {
@@ -1609,7 +1608,13 @@ async function confirmCheckout(){
         /* Abrir WhatsApp - en móvil location.href, en desktop nueva pestaña */
         const waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
         const esMovil=/iPad|iPhone|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if(esMovil){window.location.href=waUrl;}else{window.open(waUrl,'_blank');}
+        /* Pantalla de confirmacion con los puntos que suma. En el celular se espera un poco antes
+           de ir a WhatsApp para que se vea; en la PC WhatsApp abre en otra pestaña y la pantalla
+           queda en la tienda (abrirlo tarde lo bloquearia el navegador como popup). */
+        const _gana=ptHabilitado()?ptGanaria(subtotalConDesc-_pt.descuento):0;
+        const _usados=[_pt.usar?'Usaste '+ptFmt(_pt.usar)+' puntos (-$'+formatPrice(_pt.descuento)+')':'',_canjesPedido.length?'Canjeaste '+_canjesPedido.map(c=>c.nombre).join(', '):''].filter(Boolean).join(' y ');
+        mostrarPedidoOk(numeroFmt,_gana,_usados,waUrl,esMovil);
+        if(esMovil){setTimeout(()=>{window.location.href=waUrl;},2800);}else{window.open(waUrl,'_blank');}
     }catch(e){
         console.error('Error en checkout:',e);
         showToast('Error: '+(e.message||'No se pudo confirmar'),'error');
@@ -1714,7 +1719,7 @@ function scrollAnimProductos(){
 
 function toggleCategoryFilters(){const f=document.getElementById('categoryFilters');const btn=document.getElementById('toggleCatsBtn');f.classList.toggle('cat-hidden');if(f.classList.contains('cat-hidden')){btn.innerHTML='<i class="bi bi-funnel"></i> Categorias';}else{btn.innerHTML='<i class="bi bi-funnel-fill"></i> Categorias';}}
 
-window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.aplicarCupon=aplicarCupon;window.quitarCupon=quitarCupon;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.openCuenta=openCuenta;window.closeCuenta=closeCuenta;window.cuentaTab=cuentaTab;window.ptAbrirTienda=ptAbrirTienda;window.ptCerrarTienda=ptCerrarTienda;window.ptCanjear=ptCanjear;window.ptQuitarCanje=ptQuitarCanje;window.ptToggleUsar=ptToggleUsar;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
+window.filterByCategory=filterByCategory;window.filterBySubCategory=filterBySubCategory;window.updateProductQuantity=updateProductQuantity;window.addToCart=addToCart;window.updateCartItemQuantity=updateCartItemQuantity;window.removeFromCart=removeFromCart;window.onSearchInput=onSearchInput;window.toggleSortPrice=toggleSortPrice;window.toggleSortAlfa=toggleSortAlfa;window.goToPage=goToPage;window.toggleCategoryFilters=toggleCategoryFilters;window.openProductDetailModal=openProductDetailModal;window.closeProductDetailModal=closeProductDetailModal;window.pdmCarouselNav=pdmCarouselNav;window.pdmCarouselGoTo=pdmCarouselGoTo;window.refreshProductDetailModal=refreshProductDetailModal;window.clearCart=clearCart;window.openCheckoutModal=openCheckoutModal;window.closeCheckoutModal=closeCheckoutModal;window.setCheckoutEntrega=setCheckoutEntrega;window.confirmCheckout=confirmCheckout;window.onSelectDireccion=onSelectDireccion;window.aplicarCupon=aplicarCupon;window.quitarCupon=quitarCupon;window.authLogin=authLogin;window.onMobilePersonaClick=onMobilePersonaClick;window.authLogout=authLogout;window.toggleUserMenu=toggleUserMenu;window.closeUserMenu=closeUserMenu;window.guardarDatosCliente=guardarDatosCliente;window.openPerfilModal=openPerfilModal;window.closePerfilModal=closePerfilModal;window.switchPerfilTab=switchPerfilTab;window.guardarPerfil=guardarPerfil;window.mostrarFormDir=mostrarFormDir;window.cancelarFormDir=cancelarFormDir;window.guardarDireccion=guardarDireccion;window.eliminarDireccion=eliminarDireccion;window.openHistorialModal=openHistorialModal;window.closeHistorialModal=closeHistorialModal;window.openCuenta=openCuenta;window.closeCuenta=closeCuenta;window.cuentaTab=cuentaTab;window.ptAbrirTienda=ptAbrirTienda;window.ptCerrarTienda=ptCerrarTienda;window.ptCanjear=ptCanjear;window.ptQuitarCanje=ptQuitarCanje;window.ptToggleUsar=ptToggleUsar;window.cerrarPedidoOk=cerrarPedidoOk;window.filterHistPedidos=filterHistPedidos;window.repetirPedido=repetirPedido;
 
 // Cargar contenido editable desde Firestore
 /* Clave del cache local del contenido del sitio. Si alguna vez cambia la forma del
@@ -2361,7 +2366,7 @@ function _renderPedidosCliente() {
                 if (p.ventaId && ganadoPorVenta[p.ventaId]) partes.push('<span class="gano"><i class="bi bi-plus-circle"></i> Sumaste ' + ptFmt(ganadoPorVenta[p.ventaId]) + ' puntos</span>');
                 else if (!p.ventaId || !(p.ventaId in ganadoPorVenta)) {
                     const g = ptGanaria((Number(p.total) || 0) - (Number(p.envio) || 0));
-                    if (g > 0) partes.push('<span class="gana"><i class="bi bi-hourglass-split"></i> Vas a sumar ~' + ptFmt(g) + ' puntos cuando se confirme el pago</span>');
+                    if (g > 0) partes.push('<span class="gana"><i class="bi bi-hourglass-split"></i> Vas a sumar ~' + ptFmt(g) + ' puntos cuando recibas el pedido y esté pago</span>');
                 }
             }
             if (partes.length) pts = '<div class="pedido-hist-pts">' + partes.join('') + '</div>';
@@ -2373,6 +2378,7 @@ function _renderPedidosCliente() {
                 <span class="pedido-hist-total">$${(p.total||0).toLocaleString('es-AR')}</span>
             </div>
             <div class="pedido-hist-fecha">${fecha} · ${p.tipoEntrega==='envio'?'Envío a domicilio':'Retiro'}</div>
+            ${seguimientoPedidoHtml(p.estado||'pendiente')}
             <ul class="pedido-hist-items">${items}</ul>
             ${pts}
             <button class="btn-repetir" onclick="repetirPedido('${p.id}')"><i class="bi bi-arrow-repeat"></i> Repetir pedido</button>
@@ -2549,7 +2555,7 @@ function _ptRenderCheckout(r,montoProductos){
     if(_canjes.length){
         h+='<div class="pt-chk-canjes">'+_canjes.map(c=>'<div class="pt-canje"><img src="'+esc(optImg(c.imagen,80)||c.imagen||'img/default-product.jpg')+'" alt="" onerror="this.src=\'img/default-product.jpg\'"><span><b>'+esc(c.nombre)+'</b><small>Gratis con '+ptFmt(c.puntos*c.cantidad)+' puntos</small></span><button type="button" onclick="ptQuitarCanje(\''+c.premioId+'\')" aria-label="Quitar canje"><i class="bi bi-x-lg"></i></button></div>').join('')+'</div>';
     }
-    if(gana>0)h+='<p class="pt-chk-gana"><i class="bi bi-plus-circle"></i> Con esta compra sumás <b>'+ptFmt(gana)+' puntos</b> cuando se confirme el pago.</p>';
+    if(gana>0)h+='<p class="pt-chk-gana"><i class="bi bi-plus-circle"></i> Con esta compra sumás <b>'+ptFmt(gana)+' puntos</b> cuando recibas tu pedido y esté pago.</p>';
     el.innerHTML=h+'</div>';
 }
 
@@ -2610,13 +2616,13 @@ function _renderCuentaPuntos(){
     const c=document.getElementById('cuentaMovs');if(!c||!_ptCfg)return;
     const cfg=_ptCfg;
     document.getElementById('cuentaComoFunciona').innerHTML=
-        '<li>Sumás <b>1 punto cada $'+formatPrice(cfg.pesosPorPunto)+'</b> en productos, cuando se confirma el pago de tu compra.</li>'+
+        '<li>Sumás <b>1 punto cada $'+formatPrice(cfg.pesosPorPunto)+'</b> en productos, cuando recibís tu compra y está paga.</li>'+
         '<li>Cada punto vale <b>$'+formatPrice(cfg.valorPunto)+'</b> de descuento en tus próximas compras'+(cfg.minimoParaUsar?', a partir de '+ptFmt(cfg.minimoParaUsar)+' puntos':'')+'. Cubren hasta el '+cfg.topePorcentaje+'% de cada compra.</li>'+
         '<li>También los podés <b>canjear por productos gratis</b>.</li>'+
         '<li>Al confirmar un pedido se usan solos; si preferís guardarlos, apagá "Usar mis puntos".</li>'+
         (cfg.mesesVencimiento?'<li>Vencen si pasan '+cfg.mesesVencimiento+' meses sin comprar.</li>':'');
     const movs=_ptMovs.filter(m=>!(m.tipo==='gano'&&!Number(m.puntos)));
-    if(!movs.length){c.innerHTML='<p class="pt-vacio">Todavía no tenés movimientos. Tus puntos aparecen acá cuando se confirma el pago de una compra.</p>';return;}
+    if(!movs.length){c.innerHTML='<p class="pt-vacio">Todavía no tenés movimientos. Tus puntos aparecen acá cuando recibís una compra y está paga.</p>';return;}
     c.innerHTML=movs.map(m=>{
         const t=_PT_MOV[m.tipo]||['bi-dot',''];const pts=Number(m.puntos)||0;
         const f=m.fecha&&m.fecha.toDate?m.fecha.toDate().toLocaleDateString('es-AR'):'';
@@ -2627,6 +2633,62 @@ function _renderCuentaPuntos(){
         return '<div class="pt-mov"><i class="bi '+t[0]+'"></i><span class="pt-mov-txt"><b>'+t[1]+'</b><small>'+esc(f+(det?' · '+det:''))+'</small></span><span class="pt-mov-pts '+(pts>=0?'mas':'menos')+'">'+(pts>0?'+':'')+ptFmt(pts)+'</span></div>';
     }).join('');
 }
+
+/* ===== ANIMACIONES DE PEDIDO =====
+   Dibujos propios en SVG (sin emojis): el camioncito de la confirmacion y el seguimiento de
+   cada pedido en Mi cuenta. Se mueven solo con transform/opacity y se apagan con "reducir
+   movimiento" (huerta.css). */
+const SVG_CAMION='<svg class="cam" viewBox="0 0 140 64" aria-hidden="true">'+
+    '<g class="cam-cuerpo">'+
+    '<rect x="10" y="12" width="66" height="36" rx="7" fill="#C6E57A" stroke="#163020" stroke-width="2.5"/>'+
+    '<path d="M36 38c0-9 6-16 16-17 1 10-6 17-16 17z" fill="#2C7342"/><path d="M36 38l9-9" stroke="#C6E57A" stroke-width="1.6" stroke-linecap="round"/>'+
+    '<path d="M76 22h22c3 0 5 1 7 4l9 12c1 2 2 3 2 5v5H76z" fill="#2C7342" stroke="#163020" stroke-width="2.5" stroke-linejoin="round"/>'+
+    '<path d="M82 27h14c1.5 0 2.6.6 3.4 1.8l5 7.2H82z" fill="#E9EEDC"/>'+
+    '<rect x="112" y="40" width="5" height="4" rx="1.5" fill="#F4E27A"/>'+
+    '</g>'+
+    '<g class="cam-rueda" style="transform-origin:32px 50px"><circle cx="32" cy="50" r="8.5" fill="#163020"/><circle cx="32" cy="50" r="3.5" fill="#F4F6EC"/><path d="M32 42.5v4M32 53.5v4M24.5 50h4M35.5 50h4" stroke="#F4F6EC" stroke-width="1.6"/></g>'+
+    '<g class="cam-rueda" style="transform-origin:98px 50px"><circle cx="98" cy="50" r="8.5" fill="#163020"/><circle cx="98" cy="50" r="3.5" fill="#F4F6EC"/><path d="M98 42.5v4M98 53.5v4M90.5 50h4M101.5 50h4" stroke="#F4F6EC" stroke-width="1.6"/></g>'+
+    '</svg>';
+const SVG_ESCENA='<div class="cam-escena" aria-hidden="true">'+
+    '<svg class="cam-fondo" viewBox="0 0 600 120" preserveAspectRatio="none"><g fill="#DCE8C4"><path d="M0 120V80c60-30 120-30 180 0s120 30 180 0 120-30 180 0 60 20 60 20v40z"/></g>'+
+    '<g fill="#B4D85E"><circle cx="70" cy="62" r="16"/><circle cx="250" cy="58" r="20"/><circle cx="430" cy="64" r="15"/><circle cx="560" cy="60" r="18"/></g>'+
+    '<g stroke="#2C7342" stroke-width="4"><path d="M70 78v18M250 78v18M430 79v17M560 78v18"/></g></svg>'+
+    '<div class="cam-ruta"></div>'+SVG_CAMION+'</div>';
+const _ICO={
+    recibido:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+    prepara:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4.5" width="13" height="16" rx="2"/><path d="M9 3.5h6v3H9zM8.5 11l1.5 1.5 2.5-2.5M14 11.5h2M8.5 16h7"/></svg>',
+    entregado:'<svg class="ico-entregado" viewBox="0 0 32 32" aria-hidden="true"><path class="caja" d="M4 11l11-6 11 6v10l-11 6-11-6z"/><path class="caja" d="M4 11l11 6 11-6M15 17v10"/><circle class="sello" cx="24" cy="23.5" r="8"/><path class="tilde" d="M20.3 23.7l2.6 2.6 4.8-5"/></svg>'
+};
+/* Seguimiento de 3 pasos de un pedido de la web */
+function seguimientoPedidoHtml(estado){
+    const n={pendiente:0,confirmado:1,entregado:2}[estado];
+    if(n===undefined)return '';
+    const pasos=[['recibido','Recibido'],['prepara','En preparación'],['entregado','Entregado']];
+    const msg=['Recibimos tu pedido. Te confirmamos todo por WhatsApp.','Lo estamos preparando para entregártelo.','Entregado. ¡Gracias por tu compra!'][n];
+    return '<div class="seg seg-'+estado+'" role="img" aria-label="Estado: '+pasos[n][1]+'">'+
+        '<div class="seg-pasos">'+pasos.map((p,i)=>
+            (i?'<span class="seg-linea'+(i<=n?' llena':'')+'">'+(n===1&&i===2?'<span class="seg-cam">'+SVG_CAMION+'</span>':'')+'</span>':'')+
+            '<span class="seg-paso'+(i<n?' hecho':'')+(i===n?' actual':'')+'"><span class="seg-ico">'+_ICO[p[0]]+'</span><small>'+p[1]+'</small></span>').join('')+
+        '</div><p class="seg-msg">'+msg+'</p></div>';
+}
+
+/* Pantalla de pedido confirmado: el camioncito, el numero, y los puntos que va a sumar */
+function mostrarPedidoOk(numero,ganaPts,usados,waUrl,esMovil){
+    const el=document.getElementById('pedidoOk');if(!el)return;
+    document.getElementById('pedidoOkEscena').innerHTML=SVG_ESCENA;
+    document.getElementById('pedidoOkTit').textContent='¡Pedido N°'+numero+' confirmado!';
+    document.getElementById('pedidoOkTxt').textContent=esMovil?'Te llevamos a WhatsApp para que nos envíes el pedido...':'Abrimos WhatsApp en otra pestaña para que nos envíes el pedido.';
+    const pts=document.getElementById('pedidoOkPts');
+    if(ganaPts>0||usados){
+        pts.style.display='';
+        pts.innerHTML=(ganaPts>0?'<div class="ok-pts-num">+'+ptFmt(ganaPts)+' <span>puntos</span></div><div class="ok-pts-txt">Se suman a tu cuenta cuando recibas el pedido y esté pago.</div>':'')+
+            (usados?'<div class="ok-pts-usados"><i class="bi bi-check2-circle"></i> '+esc(usados)+'</div>':'');
+    }else{pts.style.display='none';pts.innerHTML='';}
+    document.getElementById('pedidoOkWa').href=waUrl;
+    el.style.display='flex';
+    requestAnimationFrame(()=>el.classList.add('show'));
+}
+function cerrarPedidoOk(){const el=document.getElementById('pedidoOk');if(el){el.classList.remove('show');el.style.display='none';}}
 
 /* ===== CUPONES ===== */
 let _cuponAplicado = null;
