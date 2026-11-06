@@ -94,8 +94,8 @@ function ptTab(t) {
 function ptRenderEstado() {
   const el = document.getElementById('ptEstadoChip');
   if (!el || !_ptCfg) return;
-  if (_ptCfg.activo) { el.className = 'pt-chip on'; el.textContent = 'Activo para todos'; }
-  else if (_ptCfg.probadores.length) { el.className = 'pt-chip prueba'; el.textContent = 'Solo probadores (' + _ptCfg.probadores.length + ')'; }
+  if (_ptCfg.activo) { el.className = 'pt-chip on'; el.textContent = 'Prendido para todos'; }
+  else if (_ptCfg.probadores.length) { el.className = 'pt-chip prueba'; el.textContent = 'Solo para probar (' + _ptCfg.probadores.length + ')'; }
   else { el.className = 'pt-chip off'; el.textContent = 'Apagado'; }
 }
 
@@ -148,21 +148,62 @@ function ptRenderConfig() {
   if (!c) return;
   const set = (id, v) => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; } };
   set('ptActivo', c.activo);
-  set('ptPesosPorPunto', c.pesosPorPunto);
-  set('ptValorPunto', c.valorPunto);
+  set('ptPesosPorPunto', c.pesosPorPunto.toLocaleString('es-AR'));
+  set('ptValorPunto', c.valorPunto.toLocaleString('es-AR'));
   set('ptMinimo', c.minimoParaUsar);
   set('ptTope', c.topePorcentaje);
   set('ptMeses', c.mesesVencimiento);
   set('ptCupon', c.combinarConCupon);
   ptRenderProbadores(c.probadores);
+  _ptModo = c.activo ? 'todos' : (c.probadores.length ? 'prueba' : 'apagado');
+  _ptEjMonto = _ptEjMonto || 100000;
   ptPreview();
+}
+
+/* Quien ve el programa: tres opciones en vez de un interruptor + una lista de "probadores".
+   'prueba' = apagado para todos menos las cuentas elegidas. Al guardar en 'apagado' se vacia
+   la lista, asi "apagado" quiere decir que no lo ve nadie. */
+let _ptModo = 'apagado';
+let _ptEjMonto = 100000;
+function ptElegirModo(m) {
+  _ptModo = m;
+  if (m === 'prueba' && !_ptProbadoresForm.length && auth.currentUser && _ptClientes[auth.currentUser.uid]) {
+    _ptProbadoresForm.push(auth.currentUser.uid);
+    ptRenderProbadores(_ptProbadoresForm);
+  }
+  ptPreview();
+}
+/* Botones de % a devolver: ajustan el valor del punto con los $ por punto que hay */
+function ptDevolver(pct) {
+  const ppp = montoAR(document.getElementById('ptPesosPorPunto').value) || PT_DEFECTO.pesosPorPunto;
+  document.getElementById('ptValorPunto').value = Math.max(1, Math.round(ppp * pct / 100)).toLocaleString('es-AR');
+  ptPreview();
+}
+function ptEjemplo(c) {
+  const el = document.getElementById('ptEjemplo');
+  if (!el) return;
+  const pts = Math.floor(_ptEjMonto / c.pesosPorPunto);
+  const pct = c.pesosPorPunto > 0 ? c.valorPunto / c.pesosPorPunto * 100 : 0;
+  const inp = document.getElementById('ptEjMonto');
+  const conFoco = inp && document.activeElement === inp;
+  if (!inp) {
+    el.innerHTML = '<span class="pt-ej-paso"><small>Si alguien compra</small><span>$<input type="text" inputmode="numeric" id="ptEjMonto" oninput="limpiarMonto(this);_ptEjMonto=montoAR(this.value)||0;ptPreview()"></span></span>' +
+      '<i class="bi bi-arrow-right"></i><span class="pt-ej-paso"><small>gana</small><b id="ptEjPts"></b></span>' +
+      '<i class="bi bi-arrow-right"></i><span class="pt-ej-paso"><small>que valen</small><b id="ptEjVale"></b></span>' +
+      '<span class="pt-ej-pct" id="ptEjPct"></span>';
+    document.getElementById('ptEjMonto').value = _ptEjMonto.toLocaleString('es-AR');
+  } else if (!conFoco) inp.value = _ptEjMonto.toLocaleString('es-AR');
+  document.getElementById('ptEjPts').textContent = ptPts(pts) + ' puntos';
+  document.getElementById('ptEjVale').textContent = ptPesos(pts * c.valorPunto) + ' de descuento';
+  document.getElementById('ptEjPct').textContent = 'Devolvés el ' + pct.toLocaleString('es-AR', { maximumFractionDigits: 2 }) + '%';
+  document.querySelectorAll('.pt-rapidos button').forEach(b => b.classList.toggle('activo', Math.abs(parseFloat(b.textContent) - pct) < 0.01));
 }
 
 function ptLeerForm() {
   const v = id => document.getElementById(id);
   return ptNorm({
-    activo: v('ptActivo').checked,
-    probadores: _ptProbadoresForm.slice(),
+    activo: _ptModo === 'todos',
+    probadores: _ptModo === 'apagado' ? [] : _ptProbadoresForm.slice(),
     pesosPorPunto: montoAR(v('ptPesosPorPunto').value),
     valorPunto: montoAR(v('ptValorPunto').value),
     minimoParaUsar: parseInt(v('ptMinimo').value, 10),
@@ -183,7 +224,16 @@ function ptPreview() {
   }
   const pct = c.pesosPorPunto > 0 ? c.valorPunto / c.pesosPorPunto * 100 : 0;
   if (pct > 10) aviso += '<div class="pt-aviso"><i class="bi bi-exclamation-triangle"></i> Estás devolviendo más del 10% de cada compra. Revisá que el margen lo aguante.</div>';
+  if (_ptModo === 'prueba' && !c.probadores.length) aviso += '<div class="pt-aviso"><i class="bi bi-exclamation-triangle"></i> Elegiste "Solo para probar" pero no agregaste a nadie: así no lo ve nadie.</div>';
   el.innerHTML = ptTextoReglas(c) + aviso;
+  document.querySelectorAll('#ptPanelConfig .pt-modo').forEach(b => { const on = b.getAttribute('data-modo') === _ptModo; b.classList.toggle('activo', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  const bp = document.getElementById('ptBloqueProbadores');
+  if (bp) bp.style.display = _ptModo === 'prueba' ? '' : 'none';
+  ptEjemplo(c);
+  /* Cambios sin guardar */
+  const bar = document.getElementById('ptGuardarBar');
+  const sucio = JSON.stringify(c) !== JSON.stringify(_ptCfg);
+  if (bar) { bar.classList.toggle('sucio', sucio); document.getElementById('ptGuardarEstado').textContent = sucio ? 'Tenés cambios sin guardar' : 'Todo guardado'; }
 }
 
 let _ptProbadoresForm = [];
@@ -193,7 +243,8 @@ function ptRenderProbadores(lista) {
   if (!el) return;
   el.innerHTML = _ptProbadoresForm.length
     ? _ptProbadoresForm.map((uid, i) => '<span class="pt-probador">' + esc(ptNombreCliente(uid)) + (_ptClientes[uid] && _ptClientes[uid].email ? ' <small>' + esc(_ptClientes[uid].email) + '</small>' : '') + ' <button type="button" title="Quitar" onclick="ptQuitarProbador(' + i + ')"><i class="bi bi-x"></i></button></span>').join('')
-    : '<span class="pt-vacio" style="margin:0">Nadie. Con el programa apagado y sin probadores, la tienda no muestra nada de puntos.</span>';
+    : '<span class="pt-vacio" style="margin:0">Todavía nadie. Agregate a vos para verlo en yerco.ar con tu cuenta.</span>';
+  if (_ptCfg) ptPreview();
 }
 function ptQuitarProbador(i) { _ptProbadoresForm.splice(i, 1); ptRenderProbadores(_ptProbadoresForm); }
 function ptAgregarProbador() {
@@ -221,7 +272,10 @@ async function ptGuardarConfig() {
     if (!await pedirConfirmacion('Vas a bajar el valor del punto de ' + ptPesos(_ptCfg.valorPunto) + ' a ' + ptPesos(c.valorPunto) + '. Los puntos que ya juntaron los clientes pasan a valer menos. ¿Seguro?', { titulo: 'Bajar el valor del punto', peligro: true })) return;
   }
   if (c.activo && !_ptCfg.activo) {
-    if (!await pedirConfirmacion('Se prende el programa de puntos para TODOS los clientes de la tienda. ¿Ya lo probaste con las cuentas de prueba?', { titulo: 'Prender el programa' })) return;
+    if (!await pedirConfirmacion('Desde ahora TODOS los clientes con cuenta van a ver y sumar puntos en yerco.ar. ¿Prendemos el programa?', { titulo: 'Prender el programa para todos' })) return;
+  }
+  if (!c.activo && _ptCfg.activo) {
+    if (!await pedirConfirmacion('Los clientes dejan de ver sus puntos y no suman más hasta que lo vuelvas a prender. Lo que ya tienen no se borra. ¿Apagamos el programa?', { titulo: 'Apagar el programa', peligro: true })) return;
   }
   const btn = document.getElementById('ptGuardarBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Guardando...'; }
@@ -230,6 +284,7 @@ async function ptGuardarConfig() {
     await db.collection('config').doc('puntos').set(data);
     const antes = _ptCfg;
     _ptCfg = c;
+    ptPreview();
     const cambios = Object.keys(c).filter(k => JSON.stringify(c[k]) !== JSON.stringify(antes[k]));
     if (typeof logAction === 'function') logAction('editar', 'Configuración de puntos', cambios.length ? cambios.map(k => k + ': ' + JSON.stringify(antes[k]) + ' → ' + JSON.stringify(c[k])).join(' | ') : 'sin cambios');
     showAdminToast('Configuración de puntos guardada', 'success');

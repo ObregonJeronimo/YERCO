@@ -407,6 +407,14 @@
 .pt-tabla-wrap{overflow-x:auto}.pt-tabla{width:100%;border-collapse:collapse;font-size:0.86rem}.pt-tabla th{text-align:left;font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;padding:0.5rem;border-bottom:1px solid var(--border)}.pt-tabla td{padding:0.55rem 0.5rem;border-bottom:1px solid var(--border);vertical-align:top}.pt-tabla tbody tr{cursor:pointer}.pt-tabla tbody tr:hover td{background:var(--bg-input)}.pt-tabla small{color:var(--text-dim)}.pt-num{font-family:var(--mono);text-align:right;white-space:nowrap}
 .pt-mov{display:flex;align-items:flex-start;gap:0.65rem;padding:0.55rem 0;border-bottom:1px solid var(--border)}.pt-mov>i{color:var(--text-dim);margin-top:2px}.pt-mov-txt{flex:1;min-width:0}.pt-mov-txt b{display:block;font-size:0.88rem}.pt-mov-txt small{color:var(--text-dim);font-size:0.78rem;line-height:1.4}.pt-mov-pts{font-family:var(--mono);font-weight:700;white-space:nowrap}.pt-mov-pts.mas{color:#67c23a}.pt-mov-pts.menos{color:var(--danger)}
 .pt-ped{border-left:3px solid;background:var(--bg-input);border-radius:6px;padding:0.45rem 0.65rem;font-size:0.82rem;margin:0.4rem 0;line-height:1.45}.pt-ped>i{color:var(--accent-light)}.pt-ped-motivo{margin-top:0.25rem;color:var(--text-dim)}
+.pt-paso{display:flex;gap:0.9rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:0.85rem}.pt-paso-num{width:30px;height:30px;border-radius:50%;background:var(--accent-bg);color:var(--accent-light);display:grid;place-items:center;font-weight:700;flex:0 0 auto}.pt-paso-cuerpo{flex:1;min-width:0}.pt-paso-tit{font-size:1rem;font-weight:700;margin:4px 0 0.85rem}
+.pt-modos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.6rem}.pt-modo{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;background:var(--bg-input);border:2px solid var(--border);border-radius:12px;padding:0.8rem 0.9rem;color:var(--text);cursor:pointer;font-family:var(--font)}.pt-modo i{font-size:1.25rem;color:var(--text-dim)}.pt-modo b{font-size:0.95rem}.pt-modo small{font-size:0.78rem;color:var(--text-dim);line-height:1.35}.pt-modo:hover{border-color:var(--accent)}.pt-modo.activo{border-color:var(--accent);background:var(--accent-bg)}.pt-modo.activo i{color:var(--accent-light)}.pt-modo[data-modo=apagado].activo{border-color:var(--danger);background:var(--danger-bg)}.pt-modo[data-modo=apagado].activo i{color:var(--danger)}.pt-modo[data-modo=prueba].activo{border-color:var(--warning);background:var(--warning-bg)}.pt-modo[data-modo=prueba].activo i{color:var(--warning)}
+.pt-probadores-box{margin-top:0.85rem;padding-top:0.85rem;border-top:1px dashed var(--border)}.pt-sub{font-size:0.85rem;font-weight:600}
+.pt-frase{font-size:0.95rem;line-height:1.5;margin:0 0 0.7rem;display:flex;align-items:center;flex-wrap:wrap;gap:0.35rem}.pt-frase small{color:var(--text-dim)}.pt-in{display:inline-flex;align-items:center;gap:4px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.2rem 0.55rem;font-weight:700;color:var(--accent-light)}.pt-in:focus-within{border-color:var(--accent)}.pt-in input{width:84px;background:none;border:none;color:var(--text);font-family:var(--mono);font-size:0.95rem;font-weight:700;outline:none;padding:0.25rem 0}.pt-check{cursor:pointer;gap:0.6rem}
+.pt-rapidos{display:flex;align-items:center;flex-wrap:wrap;gap:0.4rem;margin:0.2rem 0 0.9rem;font-size:0.85rem;color:var(--text-dim)}.pt-rapidos button{background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:16px;padding:0.3rem 0.8rem;font-family:var(--font);font-weight:700;cursor:pointer}.pt-rapidos button:hover,.pt-rapidos button.activo{border-color:var(--accent);color:var(--accent-light);background:var(--accent-bg)}
+.pt-ejemplo{display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem;background:var(--bg-input);border-radius:10px;padding:0.75rem 0.9rem;font-size:0.9rem}.pt-ejemplo .pt-ej-paso{display:flex;flex-direction:column}.pt-ejemplo .pt-ej-paso small{font-size:0.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px}.pt-ejemplo .pt-ej-paso b{font-size:1.05rem}.pt-ejemplo .pt-ej-paso input{width:110px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-weight:700;padding:0.2rem 0.45rem}.pt-ejemplo>i{color:var(--text-dim)}.pt-ej-pct{margin-left:auto;background:var(--accent-bg);color:var(--accent-light);border-radius:14px;padding:0.25rem 0.7rem;font-weight:700;font-size:0.85rem}
+.pt-nota{font-size:0.8rem;color:var(--text-dim);margin:0.75rem 0 0}
+.pt-guardar-bar{position:sticky;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:1rem;background:var(--bg);border-top:1px solid var(--border);padding:0.75rem 0;margin-top:0.5rem;z-index:5}.pt-guardar-bar span{font-size:0.85rem;color:var(--text-dim)}.pt-guardar-bar.sucio span{color:var(--warning);font-weight:700}
     </style>
 <!-- cache bust -->
 </head>
@@ -494,30 +502,53 @@
       </div>
       <div id="ptPanelResumen"><div class="empty-state" style="padding:2rem"><p>Cargando...</p></div></div>
       <div id="ptPanelConfig" style="display:none">
-        <div class="card" style="margin-bottom:1rem">
-          <label style="display:flex;align-items:flex-start;gap:0.85rem;cursor:pointer">
-            <label class="toggle-switch" style="margin-top:2px"><input type="checkbox" id="ptActivo" onchange="ptPreview()"><span class="toggle-slider"></span></label>
-            <span><span style="display:block;font-size:1rem;font-weight:700;margin-bottom:0.2rem">Programa activo para todos</span>
-            <span style="display:block;font-size:0.85rem;color:var(--text-dim);line-height:1.5">Apagado, la tienda no muestra nada de puntos y no se acreditan, salvo para los <b>probadores</b> de abajo. Usalo para probar todo en yerco.ar antes de prenderlo.</span></span>
-          </label>
-          <div style="margin-top:1rem;font-size:0.85rem;font-weight:600">Probadores</div>
-          <div class="pt-probadores" id="ptProbadores"></div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <input type="email" class="form-input" id="ptProbadorMail" placeholder="Mail de un cliente con cuenta en la tienda" style="flex:1;min-width:220px" onkeydown="if(event.key==='Enter')ptAgregarProbador()">
-            <button class="btn btn-secondary" style="width:auto" onclick="ptAgregarProbador()"><i class="bi bi-plus-lg"></i> Agregar</button>
-            <button class="btn btn-secondary" style="width:auto" onclick="ptAgregarmeProbador()"><i class="bi bi-person-plus"></i> Agregarme</button>
+        <div class="pt-paso"><div class="pt-paso-num">1</div><div class="pt-paso-cuerpo">
+          <h4 class="pt-paso-tit">¿Quién ve el programa de puntos?</h4>
+          <div class="pt-modos" role="radiogroup">
+            <button type="button" class="pt-modo" data-modo="apagado" role="radio" onclick="ptElegirModo('apagado')"><i class="bi bi-pause-circle"></i><b>Apagado</b><small>Nadie ve puntos en la tienda.</small></button>
+            <button type="button" class="pt-modo" data-modo="prueba" role="radio" onclick="ptElegirModo('prueba')"><i class="bi bi-eyeglasses"></i><b>Solo para probar</b><small>Lo ven solo las cuentas que elijas.</small></button>
+            <button type="button" class="pt-modo" data-modo="todos" role="radio" onclick="ptElegirModo('todos')"><i class="bi bi-people-fill"></i><b>Todos los clientes</b><small>Cualquiera con cuenta suma y usa puntos.</small></button>
           </div>
-        </div>
-        <div class="card" style="margin-bottom:1rem"><div class="pt-campos">
-          <div class="form-group"><label>Cada cu&aacute;ntos $ en productos se gana 1 punto</label><input type="text" inputmode="numeric" class="form-input" id="ptPesosPorPunto" oninput="limpiarMonto(this);ptPreview()"><span class="pt-ayuda">Sin el env&iacute;o. Se acreditan cuando la venta est&aacute; en "Pag&oacute;" y su pedido en "Entregado".</span></div>
-          <div class="form-group"><label>Cu&aacute;nto vale 1 punto ($ de descuento)</label><input type="text" inputmode="numeric" class="form-input" id="ptValorPunto" oninput="limpiarMonto(this);ptPreview()"><span class="pt-ayuda">Bajarlo achica lo que ya juntaron los clientes.</span></div>
-          <div class="form-group"><label>M&iacute;nimo de puntos para usarlos</label><input type="number" min="0" class="form-input" id="ptMinimo" oninput="ptPreview()"><span class="pt-ayuda">Con menos, el checkout no ofrece el descuento (s&iacute; pueden canjear premios).</span></div>
-          <div class="form-group"><label>Tope por compra (% de los productos)</label><input type="number" min="0" max="100" class="form-input" id="ptTope" oninput="ptPreview()"><span class="pt-ayuda">Los puntos nunca cubren m&aacute;s que este % de una compra.</span></div>
-          <div class="form-group"><label>Vencen tras estos meses sin comprar</label><input type="number" min="0" max="120" class="form-input" id="ptMeses" oninput="ptPreview()"><span class="pt-ayuda">0 = no vencen nunca.</span></div>
-          <div class="form-group" style="display:flex;align-items:center"><label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;margin:0"><label class="toggle-switch"><input type="checkbox" id="ptCupon" onchange="ptPreview()"><span class="toggle-slider"></span></label> Se pueden usar junto con un cup&oacute;n</label></div>
+          <div id="ptBloqueProbadores" class="pt-probadores-box" style="display:none">
+            <div class="pt-sub">¿Quiénes lo prueban?</div>
+            <div class="pt-probadores" id="ptProbadores"></div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <button class="btn btn-secondary" style="width:auto" onclick="ptAgregarmeProbador()"><i class="bi bi-person-plus"></i> Agregarme a mí</button>
+              <input type="email" class="form-input" id="ptProbadorMail" placeholder="u otro mail de un cliente con cuenta" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter')ptAgregarProbador()">
+              <button class="btn btn-secondary" style="width:auto" onclick="ptAgregarProbador()"><i class="bi bi-plus-lg"></i> Agregar</button>
+            </div>
+          </div>
+          <input type="checkbox" id="ptActivo" hidden>
         </div></div>
-        <div class="card" style="margin-bottom:1rem"><div style="font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.6rem">As&iacute; lo ve el cliente</div><div id="ptPreview"></div></div>
-        <button class="btn btn-primary" style="width:auto" id="ptGuardarBtn" onclick="ptGuardarConfig()"><i class="bi bi-check-lg"></i> Guardar</button>
+
+        <div class="pt-paso"><div class="pt-paso-num">2</div><div class="pt-paso-cuerpo">
+          <h4 class="pt-paso-tit">¿Cuántos puntos ganan y cuánto valen?</h4>
+          <p class="pt-frase">Por cada <span class="pt-in">$<input type="text" inputmode="numeric" id="ptPesosPorPunto" oninput="limpiarMonto(this);ptPreview()"></span> que compran en productos, el cliente gana <b>1 punto</b>.</p>
+          <p class="pt-frase">Cada punto le descuenta <span class="pt-in">$<input type="text" inputmode="numeric" id="ptValorPunto" oninput="limpiarMonto(this);ptPreview()"></span> en su próxima compra.</p>
+          <div class="pt-rapidos"><span>O elegí cuánto querés devolver:</span>
+            <button type="button" onclick="ptDevolver(1)">1%</button><button type="button" onclick="ptDevolver(2)">2%</button><button type="button" onclick="ptDevolver(3)">3%</button><button type="button" onclick="ptDevolver(5)">5%</button>
+          </div>
+          <div class="pt-ejemplo" id="ptEjemplo"></div>
+          <p class="pt-nota"><i class="bi bi-info-circle"></i> Los puntos se suman cuando la venta está en "Pagó" y el pedido en "Entregado". El envío no suma.</p>
+        </div></div>
+
+        <div class="pt-paso"><div class="pt-paso-num">3</div><div class="pt-paso-cuerpo">
+          <h4 class="pt-paso-tit">Reglas para usarlos</h4>
+          <p class="pt-frase">Pueden usarlos como descuento desde los <span class="pt-in"><input type="number" min="0" id="ptMinimo" oninput="ptPreview()"> puntos</span>.</p>
+          <p class="pt-frase">Los puntos cubren como máximo el <span class="pt-in"><input type="number" min="0" max="100" id="ptTope" oninput="ptPreview()">%</span> de cada compra.</p>
+          <p class="pt-frase">Vencen si pasan <span class="pt-in"><input type="number" min="0" max="120" id="ptMeses" oninput="ptPreview()"> meses</span> sin comprar <small>(0 = no vencen nunca)</small>.</p>
+          <label class="pt-frase pt-check"><label class="toggle-switch"><input type="checkbox" id="ptCupon" onchange="ptPreview()"><span class="toggle-slider"></span></label> Se pueden usar en la misma compra que un cupón.</label>
+        </div></div>
+
+        <div class="pt-paso"><div class="pt-paso-num"><i class="bi bi-eye"></i></div><div class="pt-paso-cuerpo">
+          <h4 class="pt-paso-tit">Así se lo explicamos al cliente</h4>
+          <div id="ptPreview"></div>
+        </div></div>
+
+        <div class="pt-guardar-bar" id="ptGuardarBar">
+          <span id="ptGuardarEstado">Sin cambios</span>
+          <button class="btn btn-primary" style="width:auto" id="ptGuardarBtn" onclick="ptGuardarConfig()"><i class="bi bi-check-lg"></i> Guardar</button>
+        </div>
       </div>
       <div id="ptPanelPremios" style="display:none">
         <div class="toolbar" style="margin-bottom:1rem;flex-wrap:wrap">
